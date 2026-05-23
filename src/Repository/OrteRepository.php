@@ -24,6 +24,10 @@ class OrteRepository
     /** Cache-TTL für Ortslisten (20 Minuten) */
     private const CACHE_TTL = 1200;
 
+    /** Filter-Modi für die Liste */
+    public const MODE_ALL    = 'all';     // alle Hierarchie-Ebenen
+    public const MODE_LEAVES = 'leaves';  // nur Blätter (keine Place-Kinder)
+
     public function __construct(
         private readonly ApcuCacheService $cache
     ) {}
@@ -35,27 +39,36 @@ class OrteRepository
     /**
      * Gibt alle Orte eines Baums zurück, optional gefiltert nach Namen.
      *
+     * @param string $mode MODE_ALL oder MODE_LEAVES
      * @return list<OrtDto>
      */
-    public function alleOrte(Tree $tree, string $filter = ''): array
+    public function alleOrte(Tree $tree, string $filter = '', string $mode = self::MODE_ALL): array
     {
-        $cacheKey = sprintf('orte:%d:%s', $tree->id(), md5($filter));
+        $mode     = $this->normalizeMode($mode);
+        $cacheKey = sprintf('orte:%d:%s:%s', $tree->id(), $mode, md5($filter));
 
-        return $this->cache->remember($cacheKey, function () use ($tree, $filter) {
-            return $this->queryAlleOrte($tree, $filter);
+        return $this->cache->remember($cacheKey, function () use ($tree, $filter, $mode) {
+            return $this->queryAlleOrte($tree, $filter, $mode);
         }, self::CACHE_TTL);
     }
 
     /**
      * Gesamtzahl der Orte im Baum (für Paginierung).
      */
-    public function anzahlOrte(Tree $tree, string $filter = ''): int
+    public function anzahlOrte(Tree $tree, string $filter = '', string $mode = self::MODE_ALL): int
     {
-        $cacheKey = sprintf('orte_count:%d:%s', $tree->id(), md5($filter));
+        $mode     = $this->normalizeMode($mode);
+        $cacheKey = sprintf('orte_count:%d:%s:%s', $tree->id(), $mode, md5($filter));
 
-        return $this->cache->remember($cacheKey, function () use ($tree, $filter) {
-            return $this->queryAnzahlOrte($tree, $filter);
+        return $this->cache->remember($cacheKey, function () use ($tree, $filter, $mode) {
+            return $this->queryAnzahlOrte($tree, $filter, $mode);
         }, self::CACHE_TTL);
+    }
+
+    /** Schützt vor ungültigen Mode-Werten aus URL-/Pref-Input. */
+    private function normalizeMode(string $mode): string
+    {
+        return $mode === self::MODE_LEAVES ? self::MODE_LEAVES : self::MODE_ALL;
     }
 
     /**
@@ -83,7 +96,7 @@ class OrteRepository
     // ---------------------------------------------------------------
 
     /** @return list<OrtDto> */
-    private function queryAlleOrte(Tree $tree, string $filter): array
+    private function queryAlleOrte(Tree $tree, string $filter, string $mode): array
     {
         $query = $this->baseQuery($tree);
 
@@ -95,6 +108,8 @@ class OrteRepository
             });
         }
 
+        $this->applyModeFilter($query, $mode);
+
         $rows = $query
             ->orderBy('p.p_place')
             ->get();
@@ -105,7 +120,7 @@ class OrteRepository
             ->all();
     }
 
-    private function queryAnzahlOrte(Tree $tree, string $filter): int
+    private function queryAnzahlOrte(Tree $tree, string $filter, string $mode): int
     {
         $query = DB::table('places AS p')
             ->where('p.p_file', '=', $tree->id());
@@ -119,7 +134,27 @@ class OrteRepository
                   });
         }
 
+        $this->applyModeFilter($query, $mode);
+
         return (int) $query->count('p.p_id');
+    }
+
+    /**
+     * Wendet den Hierarchie-Filter an: MODE_LEAVES zeigt nur Orte ohne
+     * Place-Kinder (Blätter der webtrees-Hierarchie). Verwaltungs-Ebenen
+     * wie "Amt Kirchheim", "Hzm. Württemberg" werden ausgeblendet.
+     */
+    private function applyModeFilter(\Illuminate\Database\Query\Builder $query, string $mode): void
+    {
+        if ($mode !== self::MODE_LEAVES) {
+            return;
+        }
+        $query->whereNotExists(function ($q): void {
+            $q->select(DB::raw('1'))
+              ->from('places AS child')
+              ->whereColumn('child.p_parent_id', 'p.p_id')
+              ->whereColumn('child.p_file',     'p.p_file');
+        });
     }
 
     private function queryOrtById(Tree $tree, int $id): ?OrtDto

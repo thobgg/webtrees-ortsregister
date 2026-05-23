@@ -47,8 +47,10 @@ class OrteDataTable extends AbstractDataTableHandler
             return ['total' => 0, 'filtered' => 0, 'rows' => []];
         }
 
-        $alle     = $this->orteRepository->alleOrte($tree, $search);
-        $total    = $this->orteRepository->anzahlOrte($tree);
+        $mode = OrtePage::readFilterMode();
+
+        $alle     = $this->orteRepository->alleOrte($tree, $search, $mode);
+        $total    = $this->orteRepository->anzahlOrte($tree, '', $mode);
         $filtered = count($alle);
 
         // Sortierung — Spalte 2 = Ereignisse (numerisch), sonst Pfad (natürlich)

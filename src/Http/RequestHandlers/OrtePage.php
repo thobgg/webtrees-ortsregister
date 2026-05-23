@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Ortsregister\Http\RequestHandlers;
 
 use Ortsregister\Repository\OrteRepository;
+use Fisharebest\Webtrees\Auth;
 use Fisharebest\Webtrees\I18N;
 use Fisharebest\Webtrees\Tree;
 use Psr\Http\Message\ResponseInterface;
@@ -20,6 +21,9 @@ class OrtePage extends AbstractOrtsregisterHandler
 {
     private const PER_PAGE = 50;
 
+    /** User-Preference-Schlüssel für den Hierarchie-Filter-Modus */
+    public const PREF_PLACE_FILTER_MODE = 'ortsregister_place_filter_mode';
+
     public function __construct(
         private readonly OrteRepository $orteRepository
     ) {}
@@ -32,6 +36,8 @@ class OrtePage extends AbstractOrtsregisterHandler
         $filter = trim((string) ($params['q'] ?? ''));
         $page   = max(1, (int) ($params['page'] ?? 1));
 
+        $mode = self::readFilterMode();
+
         if ($tree === null) {
             return $this->viewResponse($this->viewName('orte'), [
                 'title'      => I18N::translate('Orte'),
@@ -41,14 +47,15 @@ class OrtePage extends AbstractOrtsregisterHandler
                 'totalPages' => 1,
                 'totalOrte'  => 0,
                 'orte'       => [],
+                'filterMode' => $mode,
             ]);
         }
 
-        $gesamtAnzahl = $this->orteRepository->anzahlOrte($tree, $filter);
+        $gesamtAnzahl = $this->orteRepository->anzahlOrte($tree, $filter, $mode);
         $totalPages   = max(1, (int) ceil($gesamtAnzahl / self::PER_PAGE));
         $page         = min($page, $totalPages);
 
-        $alleOrte = $this->orteRepository->alleOrte($tree, $filter);
+        $alleOrte = $this->orteRepository->alleOrte($tree, $filter, $mode);
         $orte     = array_slice($alleOrte, ($page - 1) * self::PER_PAGE, self::PER_PAGE);
 
         return $this->viewResponse($this->viewName('orte'), [
@@ -60,6 +67,19 @@ class OrtePage extends AbstractOrtsregisterHandler
             'totalPages' => $totalPages,
             'totalOrte'  => $gesamtAnzahl,
             'orte'       => $orte,
+            'filterMode' => $mode,
         ]);
+    }
+
+    /**
+     * Liest die User-Preference. Default: alle Ebenen zeigen (konservativ,
+     * niemand wird überrascht). Pref wird via SetPlaceFilterMode geschrieben.
+     */
+    public static function readFilterMode(): string
+    {
+        $raw = Auth::user()->getPreference(self::PREF_PLACE_FILTER_MODE);
+        return $raw === OrteRepository::MODE_LEAVES
+            ? OrteRepository::MODE_LEAVES
+            : OrteRepository::MODE_ALL;
     }
 }

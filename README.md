@@ -31,9 +31,26 @@ Vesta module family, but focuses on the UX layer on top of them.
 ## Feature list (current state)
 
 - List view of all places with server-side DataTables pagination
+- **Hierarchy filter** (see below): "All levels" vs. "Leaves only"
 - Full-text filter
 - Leaflet map with MarkerCluster
 - Place detail page with person/family lists
+- **Merge operation** with JSON backup, opaque subtag handling, suffix-match
+  across intermediate hierarchy levels
+
+### Hierarchy filter
+
+webtrees splits PLAC strings at commas and stores **one record per level**.
+From `Weiler, Amt Kirchheim, Hzm. Württemberg` you get three records (Weiler,
+Amt Kirchheim, Hzm. Württemberg). Administrative middle levels like „Amt
+Kirchheim" are not real places, but appear in the default list.
+
+**"Leaves only" mode** hides any hierarchy level that has place children.
+Only the leaves remain — typically the real localities. Persists per user
+(user preference).
+
+Default: "All levels" (no data-loss feeling, conservative). Toggle above the
+list.
 
 ## Roadmap
 

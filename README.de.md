@@ -30,9 +30,27 @@ zur Vesta-Modul-Familie, sondern fokussiert sich auf die UX-Schicht.
 ## Funktionsumfang (aktueller Stand)
 
 - Listenansicht aller Orte mit Server-seitiger DataTables-Paginierung
+- **Hierarchie-Filter** (siehe unten): „Alle Ebenen" vs. „Nur Endorte"
 - Volltextfilter
 - Leaflet-Karte mit MarkerCluster
 - Ort-Detail-Seite mit Personen-/Familienlisten
+- **Merge-Operation** mit Backup als JSON, opake Subtag-Übernahme, Suffix-Match
+  über mittlere Hierarchie-Ebenen
+
+### Hierarchie-Filter
+
+webtrees zerlegt PLAC-Strings an Kommas und legt **pro Ebene** einen eigenen
+Place-Record an. Aus `Weiler, Amt Kirchheim, Hzm. Württemberg` entstehen drei
+Records (Weiler, Amt Kirchheim, Hzm. Württemberg). Verwaltungs-Zwischenebenen
+wie „Amt Kirchheim" sind semantisch keine Orte, tauchen aber in der
+Standardliste auf.
+
+**„Nur Endorte"-Modus** blendet alle Hierarchie-Ebenen aus, die Place-Kinder
+haben. Es bleiben nur die Blätter der Hierarchie übrig — typischerweise die
+„echten" Ortschaften. Pro Nutzer persistiert (User-Preference).
+
+Default: „Alle Ebenen" (kein Datenverlust-Eindruck, konservativ). Toggle
+oberhalb der Liste.
 
 ## Roadmap
 

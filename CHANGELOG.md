@@ -2,6 +2,18 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung: [SemVer](https://semver.org/lang/de/).
 
+## [Unreleased]
+
+### Hinzugefügt
+- **Merge-Operation für Orte**: `PlaceOperationService` mit analyzeMerge /
+  executeMerge / undoMerge. Opake Subtag-Übernahme, Konflikt-Resolve-Modal,
+  Backup-JSON pro Operation, Suffix-Match über mittlere Hierarchie-Ebenen.
+- **Hierarchie-Filter** in der Liste: „Alle Ebenen" vs. „Nur Endorte" (Blätter
+  ohne Place-Kinder). Persistiert pro User. Default „Alle Ebenen".
+- DB-Tabellen `ortsregister_place_meta` (leer, Vorbereitung Phase 4) und
+  `ortsregister_merge_log` (Operations-Historie).
+- PHPUnit-11-Test-Suite mit Tests für `GedcomPlaceManipulator`.
+
 ## [0.1.0] – 2026-05-22
 
 ### Erstes eigenständiges Release (Pre-Release)

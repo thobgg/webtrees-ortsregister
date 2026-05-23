@@ -6,14 +6,17 @@
  *
  * @var string                              $title
  * @var \Fisharebest\Webtrees\Tree|null     $tree
+ * @var string                              $filterMode  'all' | 'leaves'
  */
 
 use Fisharebest\Webtrees\I18N;
 
-$ajaxUrl       = e(route('ortsregister.orte.data', ['tree' => $tree?->name()]));
-$kartenUrl     = e(route('ortsregister.orte.karte', ['tree' => $tree?->name()]));
-$mergePreview  = e(route('ortsregister.merge.preview', ['tree' => $tree?->name()]));
-$mergeExecute  = e(route('ortsregister.merge.execute', ['tree' => $tree?->name()]));
+$ajaxUrl         = e(route('ortsregister.orte.data', ['tree' => $tree?->name()]));
+$kartenUrl       = e(route('ortsregister.orte.karte', ['tree' => $tree?->name()]));
+$mergePreview    = e(route('ortsregister.merge.preview', ['tree' => $tree?->name()]));
+$mergeExecute    = e(route('ortsregister.merge.execute', ['tree' => $tree?->name()]));
+$filterModeUrl   = e(route('ortsregister.filter-mode', ['tree' => $tree?->name()]));
+$filterMode      = $filterMode ?? 'all';
 ?>
 
 <div class="container-lg mt-4 mb-5" id="ortsregister-orte">
@@ -24,12 +27,33 @@ $mergeExecute  = e(route('ortsregister.merge.execute', ['tree' => $tree?->name()
         </ol>
     </nav>
 
-    <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
         <h1 class="mb-0"><?= e($title) ?></h1>
         <?php if ($tree !== null) : ?>
+        <div class="d-flex gap-2 align-items-center">
+            <div class="btn-group btn-group-sm" role="group"
+                 aria-label="<?= e(I18N::translate('Hierarchie-Filter')) ?>"
+                 data-filter-mode-url="<?= $filterModeUrl ?>">
+                <input type="radio" class="btn-check ortsregister-filter-mode" name="ortsregister-filter-mode"
+                       id="filter-mode-all" value="all" autocomplete="off"
+                       <?= $filterMode === 'all' ? 'checked' : '' ?>>
+                <label class="btn btn-outline-secondary" for="filter-mode-all"
+                       title="<?= e(I18N::translate('Alle Hierarchie-Ebenen anzeigen (inkl. Verwaltungseinheiten wie Ämter, Kreise, Länder)')) ?>">
+                    <?= I18N::translate('Alle Ebenen') ?>
+                </label>
+
+                <input type="radio" class="btn-check ortsregister-filter-mode" name="ortsregister-filter-mode"
+                       id="filter-mode-leaves" value="leaves" autocomplete="off"
+                       <?= $filterMode === 'leaves' ? 'checked' : '' ?>>
+                <label class="btn btn-outline-secondary" for="filter-mode-leaves"
+                       title="<?= e(I18N::translate('Nur Endorte zeigen (Blätter der Hierarchie). Übergeordnete Ebenen wie „Amt Kirchheim" oder „Württemberg" werden ausgeblendet.')) ?>">
+                    <?= I18N::translate('Nur Endorte') ?>
+                </label>
+            </div>
             <a href="<?= $kartenUrl ?>" class="btn btn-outline-primary btn-sm">
                 <i class="fas fa-map me-1"></i><?= I18N::translate('Kartenansicht') ?>
             </a>
+        </div>
         <?php endif ?>
     </div>
 
@@ -122,6 +146,30 @@ document.addEventListener('DOMContentLoaded', function () {
             // Nach jedem Render: Radios gemäß aktuellem State wieder anhaken
             restoreSelectionRadios();
         },
+    });
+
+    // ---- Hierarchie-Filter-Toggle ----
+    document.querySelectorAll('.ortsregister-filter-mode').forEach(function (radio) {
+        radio.addEventListener('change', function () {
+            const url = radio.closest('[data-filter-mode-url]').dataset.filterModeUrl;
+            const fd = new FormData();
+            fd.append('_csrf', table.dataset.csrf);
+            fd.append('mode', radio.value);
+            fetch(url, {
+                method: 'POST',
+                body: fd,
+                headers: { 'X-CSRF-TOKEN': table.dataset.csrf },
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    dt.api().ajax.reload();
+                } else {
+                    alert('Fehler beim Setzen des Filters: ' + (data.message || 'unbekannt'));
+                }
+            })
+            .catch(err => alert('Netzwerkfehler: ' + err));
+        });
     });
 
     // ---- Merge-Selection State ----

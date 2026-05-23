@@ -11,6 +11,7 @@ use Ortsregister\Http\RequestHandlers\OrteDataTable;
 use Ortsregister\Http\RequestHandlers\OrteDetailPage;
 use Ortsregister\Http\RequestHandlers\OrteKarte;
 use Ortsregister\Http\RequestHandlers\OrtePage;
+use Ortsregister\Http\RequestHandlers\SetPlaceFilterMode;
 use Ortsregister\Service\GedcomPlaceManipulator;
 use Ortsregister\Service\PlaceOperationService;
 use Fisharebest\Webtrees\Auth;
@@ -68,6 +69,8 @@ class OrtsregisterModule extends AbstractModule implements
         $router->get('ortsregister.orte.karte',    '/tree/{tree}/orte/karte',          OrteKarte::class);
         $router->get('ortsregister.merge.preview', '/tree/{tree}/orte/merge/preview',  MergeModalPage::class);
         $router->get('ortsregister.merge.execute', '/tree/{tree}/orte/merge/execute',  MergeExecute::class)
+               ->allows('POST');
+        $router->get('ortsregister.filter-mode',   '/tree/{tree}/orte/filter-mode',    SetPlaceFilterMode::class)
                ->allows('POST');
         $router->get('ortsregister.orte.detail',   '/tree/{tree}/orte/{place_id}',     OrteDetailPage::class);
     }
