@@ -50,6 +50,10 @@ $filterMode      = $filterMode ?? 'all';
                     <?= I18N::translate('Nur Endorte') ?>
                 </label>
             </div>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="ortsregister-merge-mode-toggle"
+                    title="<?= e(I18N::translate('Auswahl-Spalte zum Mergen von zwei Orten ein-/ausblenden')) ?>">
+                <i class="fas fa-code-branch me-1"></i><?= I18N::translate('Merge-Modus') ?>
+            </button>
             <a href="<?= $kartenUrl ?>" class="btn btn-outline-primary btn-sm">
                 <i class="fas fa-map me-1"></i><?= I18N::translate('Kartenansicht') ?>
             </a>
@@ -133,7 +137,7 @@ document.addEventListener('DOMContentLoaded', function () {
             paginate: { first: '«', last: '»', next: '›', previous: '‹' },
         },
         columns: [
-            { orderable: false, searchable: false, className: 'text-center' },
+            { orderable: false, searchable: false, className: 'text-center', visible: false },
             { orderable: true,  searchable: true  },
             { orderable: true,  searchable: false, className: 'text-end' },
             { orderable: false, searchable: false, className: 'text-center' },
@@ -146,6 +150,24 @@ document.addEventListener('DOMContentLoaded', function () {
             // Nach jedem Render: Radios gemäß aktuellem State wieder anhaken
             restoreSelectionRadios();
         },
+    });
+
+    // ---- Merge-Modus-Toggle ----
+    // Auswahl-Spalte ist initial versteckt (visible:false oben).
+    // Toggle macht sie sichtbar + zeigt aktiven Status visuell.
+    document.getElementById('ortsregister-merge-mode-toggle').addEventListener('click', function () {
+        const col = dt.api().column(0);
+        const visible = !col.visible();
+        col.visible(visible);
+        this.classList.toggle('active', visible);
+        this.classList.toggle('btn-secondary', visible);
+        this.classList.toggle('btn-outline-secondary', !visible);
+        if (!visible) {
+            // Beim Ausblenden auch State zurücksetzen
+            mergeState.srcId = null;
+            mergeState.dstId = null;
+            updateBar();
+        }
     });
 
     // ---- Hierarchie-Filter-Toggle ----
