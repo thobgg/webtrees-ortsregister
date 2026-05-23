@@ -1,0 +1,169 @@
+<?php
+
+/**
+ * View: ortsregister::orte-karte
+ * Route: GET /tree/{tree}/orte/karte
+ *
+ * @var string                              $title
+ * @var \Fisharebest\Webtrees\Tree|null     $tree
+ * @var string                              $geoJson
+ * @var int                                 $anzahlMitKoordinaten
+ * @var int                                 $anzahlOhneKoordinaten
+ */
+
+use Fisharebest\Webtrees\I18N;
+
+?>
+
+<div class="container-lg mt-4 mb-5" id="ortsregister-karte">
+
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="<?= e(route('ortsregister.orte', ['tree' => $tree?->name()])) ?>"><?= I18N::translate('Ortsregister') ?></a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page"><?= I18N::translate('Karte') ?></li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <h1 class="mb-0"><?= e($title) ?></h1>
+        <div class="d-flex gap-2">
+            <span class="badge bg-success fs-6 d-flex align-items-center gap-1">
+                <i class="fas fa-map-marker-alt"></i>
+                <?= I18N::plural('%s Ort mit Koordinaten', '%s Orte mit Koordinaten',
+                    $anzahlMitKoordinaten, I18N::number($anzahlMitKoordinaten)) ?>
+            </span>
+            <?php if ($anzahlOhneKoordinaten > 0) : ?>
+                <span class="badge bg-secondary fs-6 d-flex align-items-center gap-1">
+                    <i class="fas fa-map-marker-slash"></i>
+                    <?= I18N::number($anzahlOhneKoordinaten) ?> <?= I18N::translate('ohne Koordinaten') ?>
+                </span>
+            <?php endif ?>
+            <a href="<?= e(route('ortsregister.orte', ['tree' => $tree?->name()])) ?>" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-list me-1"></i><?= I18N::translate('Zur Liste') ?>
+            </a>
+        </div>
+    </div>
+
+    <?php if ($tree === null) : ?>
+        <div class="alert alert-warning"><?= I18N::translate('Bitte wählen Sie einen Stammbaum aus.') ?></div>
+    <?php elseif ($anzahlMitKoordinaten === 0) : ?>
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            <?= I18N::translate(
+                'Keine Orte mit Koordinaten gefunden. '
+                . 'Bitte erfassen Sie Koordinaten im webtrees-Ortsverzeichnis.'
+            ) ?>
+        </div>
+    <?php else : ?>
+
+        <!-- Karte -->
+        <div id="ortsregister-leaflet"
+             style="height: 560px; border-radius: .375rem; border: 1px solid var(--bs-border-color);"
+             data-geojson='<?= $geoJson /* JSON ist HTML-safe durch JSON_UNESCAPED_UNICODE */ ?>'>
+        </div>
+
+        <!-- Leaflet -->
+        <link rel="stylesheet"
+              href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+              integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+              crossorigin="anonymous">
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+                integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN2GqGk="
+                crossorigin="anonymous"></script>
+        <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"
+                crossorigin="anonymous"></script>
+        <link rel="stylesheet"
+              href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+              crossorigin="anonymous">
+        <link rel="stylesheet"
+              href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+              crossorigin="anonymous">
+
+        <script>
+        (function () {
+            const mapEl  = document.getElementById('ortsregister-leaflet');
+            const geoJson = JSON.parse(mapEl.dataset.geojson);
+
+            // Tile-Layer (OpenStreetMap)
+            const map = L.map(mapEl, { preferCanvas: true });
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+                maxZoom: 19,
+            }).addTo(map);
+
+            // Marker-Cluster-Gruppe
+            const cluster = L.markerClusterGroup({
+                maxClusterRadius: 50,
+                showCoverageOnHover: false,
+                chunkedLoading: true,
+            });
+
+            // Icon je nach Ereigniszahl färben
+            function markerIcon(ereignisse) {
+                const size   = Math.min(32, Math.max(18, Math.sqrt(ereignisse) * 6));
+                const color  = ereignisse >= 10 ? '#0d6efd'
+                             : ereignisse >= 5  ? '#0dcaf0'
+                             :                    '#6c757d';
+                return L.divIcon({
+                    className:   '',
+                    html: `<div style="
+                        width:${size}px;height:${size}px;
+                        background:${color};border-radius:50%;
+                        border:2px solid #fff;
+                        box-shadow:0 1px 3px rgba(0,0,0,.4);
+                        display:flex;align-items:center;justify-content:center;
+                        color:#fff;font-size:${Math.round(size*0.45)}px;font-weight:bold;">
+                        ${ereignisse > 0 ? ereignisse : ''}
+                    </div>`,
+                    iconSize:   [size, size],
+                    iconAnchor: [size / 2, size / 2],
+                });
+            }
+
+            // Marker aus GeoJSON erzeugen
+            const layer = L.geoJSON(geoJson, {
+                pointToLayer(feature, latlng) {
+                    return L.marker(latlng, {
+                        icon: markerIcon(feature.properties.ereignisse),
+                        title: feature.properties.name,
+                        alt:   feature.properties.name,
+                    });
+                },
+                onEachFeature(feature, layer) {
+                    layer.bindPopup(feature.properties.popup, { maxWidth: 260 });
+                },
+            });
+
+            cluster.addLayer(layer);
+            map.addLayer(cluster);
+
+            // Auf Marker zentrieren
+            if (geoJson.features.length > 0) {
+                map.fitBounds(layer.getBounds().pad(0.1));
+            } else {
+                map.setView([51.0, 10.0], 6);  // Deutschland-Mitte als Fallback
+            }
+
+            // Legende
+            const legend = L.control({ position: 'bottomright' });
+            legend.onAdd = function () {
+                const div = L.DomUtil.create('div', 'leaflet-bar');
+                div.style.cssText = 'background:white;padding:8px 12px;font-size:12px;line-height:1.6';
+                div.innerHTML = `
+                    <strong><?= e(I18N::translate('Legende')) ?></strong><br>
+                    <span style="color:#0d6efd">●</span> ≥10 <?= e(I18N::translate('Ereignisse')) ?><br>
+                    <span style="color:#0dcaf0">●</span> 5–9 <?= e(I18N::translate('Ereignisse')) ?><br>
+                    <span style="color:#6c757d">●</span> 1–4 <?= e(I18N::translate('Ereignisse')) ?>
+                `;
+                return div;
+            };
+            legend.addTo(map);
+        })();
+        </script>
+
+    <?php endif ?>
+
+</div>

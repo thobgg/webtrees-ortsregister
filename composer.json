@@ -1,0 +1,21 @@
+{
+    "name": "thobgg/ortsregister",
+    "description": "webtrees custom module – Ortsregister (visuelle Landing-Page, Medien-Verknüpfung)",
+    "type": "webtrees-module",
+    "license": "GPL-3.0-or-later",
+    "require": {
+        "php": "^8.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Ortsregister\\": "src/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "autoloader-suffix": "ThobggOrtsregister",
+        "platform": {
+            "php": "8.4"
+        }
+    }
+}

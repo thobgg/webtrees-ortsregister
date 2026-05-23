@@ -1,0 +1,100 @@
+# Ortsregister – Deutsche Übersetzungen
+# Copyright (C) 2026 Thomas Bugge
+# This file is distributed under the same license as the Ortsregister module.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: ortsregister 0.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-22 00:00+0000\n"
+"PO-Revision-Date: 2026-05-22 00:00+0000\n"
+"Last-Translator: \n"
+"Language-Team: German\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Ortsregister"
+msgstr "Ortsregister"
+
+msgid "Ort"
+msgstr "Ort"
+
+msgid "Ort nicht gefunden"
+msgstr "Ort nicht gefunden"
+
+msgid "Ortskarte"
+msgstr "Ortskarte"
+
+msgid "Karte"
+msgstr "Karte"
+
+msgid "Kartenansicht"
+msgstr "Kartenansicht"
+
+msgid "Zur Liste"
+msgstr "Zur Liste"
+
+msgid "Bitte wählen Sie einen Stammbaum aus."
+msgstr "Bitte wählen Sie einen Stammbaum aus."
+
+msgid "Dieser Ort wurde nicht gefunden."
+msgstr "Dieser Ort wurde nicht gefunden."
+
+msgid "Koordinaten"
+msgstr "Koordinaten"
+
+msgid "ohne Koordinaten"
+msgstr "ohne Koordinaten"
+
+msgid "Keine Orte mit Koordinaten gefunden. Bitte erfassen Sie Koordinaten im webtrees-Ortsverzeichnis."
+msgstr "Keine Orte mit Koordinaten gefunden. Bitte erfassen Sie Koordinaten im webtrees-Ortsverzeichnis."
+
+msgid "%s Ort mit Koordinaten"
+msgid_plural "%s Orte mit Koordinaten"
+msgstr[0] "%s Ort mit Koordinaten"
+msgstr[1] "%s Orte mit Koordinaten"
+
+msgid "Ereignisse"
+msgstr "Ereignisse"
+
+msgid "Personen"
+msgstr "Personen"
+
+msgid "Medien"
+msgstr "Medien"
+
+msgid "Bilder zu diesem Ort"
+msgstr "Bilder zu diesem Ort"
+
+msgid "Weitere Medien"
+msgstr "Weitere Medien"
+
+msgid "Personen mit Ereignissen an diesem Ort"
+msgstr "Personen mit Ereignissen an diesem Ort"
+
+msgid "Externe Ressourcen"
+msgstr "Externe Ressourcen"
+
+msgid "Legende"
+msgstr "Legende"
+
+msgid "Suchen:"
+msgstr "Suchen:"
+
+msgid "_MENU_ Einträge"
+msgstr "_MENU_ Einträge"
+
+msgid "_START_–_END_ von _TOTAL_"
+msgstr "_START_–_END_ von _TOTAL_"
+
+msgid "Keine Einträge"
+msgstr "Keine Einträge"
+
+msgid "Keine Treffer"
+msgstr "Keine Treffer"
+
+msgid "Wird geladen …"
+msgstr "Wird geladen …"

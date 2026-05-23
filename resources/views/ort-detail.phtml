@@ -1,0 +1,158 @@
+<?php
+
+use Fisharebest\Webtrees\I18N;
+use Fisharebest\Webtrees\Media;
+
+/** @var \Ortsregister\Dto\OrtDto|null $ort */
+/** @var \Fisharebest\Webtrees\Tree|null $tree */
+/** @var array<int,\Fisharebest\Webtrees\Individual> $personen */
+/** @var array<int,Media> $medien */
+/** @var string $title */
+
+// Bilder von Nicht-Bildern trennen
+$bilder  = [];
+$sonstige = [];
+foreach ($medien as $medium) {
+    if ($medium->firstImageFile() !== null) {
+        $bilder[] = $medium;
+    } else {
+        $sonstige[] = $medium;
+    }
+}
+
+// Headerbild: erstes Medium mit "-Fo-" im Dateinamen bevorzugt, sonst erstes Bild
+$headerbild = null;
+foreach ($bilder as $medium) {
+    $file = $medium->firstImageFile();
+    if ($file !== null && stripos($file->filename(), '-Fo-') !== false) {
+        $headerbild = $medium;
+        break;
+    }
+}
+if ($headerbild === null && $bilder !== []) {
+    $headerbild = $bilder[0];
+}
+?>
+<div class="container-lg mt-4 mb-5">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="<?= e(route('ortsregister.orte', ['tree' => $tree?->name()])) ?>"><?= I18N::translate('Ortsregister') ?></a>
+            </li>
+            <li class="breadcrumb-item active"><?= e($title) ?></li>
+        </ol>
+    </nav>
+
+    <?php if ($ort === null) : ?>
+        <div class="alert alert-warning"><?= I18N::translate('Dieser Ort wurde nicht gefunden.') ?></div>
+    <?php else : ?>
+
+        <?php if ($headerbild !== null) : ?>
+            <div class="mb-4 rounded overflow-hidden shadow-sm" style="max-height: 380px;">
+                <a href="<?= e($headerbild->url()) ?>" class="d-block">
+                    <?= $headerbild->displayImage(1200, 380, 'crop', ['class' => 'w-100 d-block', 'style' => 'object-fit: cover;']) ?>
+                </a>
+            </div>
+        <?php endif ?>
+
+        <h1 class="mb-1"><?= e($ort->name) ?></h1>
+        <?php if ($ort->vollstaendigerPfad !== $ort->name) : ?>
+            <p class="text-muted mb-4"><?= e($ort->vollstaendigerPfad) ?></p>
+        <?php endif ?>
+
+        <div class="row g-3 mb-4">
+            <div class="col-sm-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <div class="fs-2 fw-bold text-primary"><?= $ort->anzahlEreignisse ?></div>
+                        <div class="text-muted small"><?= I18N::translate('Ereignisse') ?></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <div class="fs-2 fw-bold text-primary"><?= count($personen) ?></div>
+                        <div class="text-muted small"><?= I18N::translate('Personen') ?></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <div class="fs-2 fw-bold text-primary"><?= count($medien) ?></div>
+                        <div class="text-muted small"><?= I18N::translate('Medien') ?></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <?php if (count($bilder) > 0) : ?>
+        <div class="card mb-4">
+            <div class="card-header fw-semibold">
+                <i class="fas fa-images me-2"></i><?= I18N::translate('Bilder zu diesem Ort') ?>
+                <span class="badge bg-secondary ms-2"><?= count($bilder) ?></span>
+            </div>
+            <div class="card-body">
+                <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-6 g-3">
+                    <?php foreach ($bilder as $medium) : ?>
+                        <div class="col">
+                            <a href="<?= e($medium->url()) ?>" class="d-block text-decoration-none" title="<?= e(strip_tags($medium->fullName())) ?>">
+                                <?= $medium->displayImage(200, 200, 'crop', ['class' => 'img-fluid rounded shadow-sm', 'loading' => 'lazy']) ?>
+                            </a>
+                        </div>
+                    <?php endforeach ?>
+                </div>
+            </div>
+        </div>
+        <?php endif ?>
+
+        <?php if (count($sonstige) > 0) : ?>
+        <div class="card mb-4">
+            <div class="card-header fw-semibold">
+                <i class="fas fa-file me-2"></i><?= I18N::translate('Weitere Medien') ?>
+                <span class="badge bg-secondary ms-2"><?= count($sonstige) ?></span>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    <?php foreach ($sonstige as $medium) : ?>
+                    <li class="list-group-item">
+                        <a href="<?= e($medium->url()) ?>"><?= $medium->fullName() ?></a>
+                    </li>
+                    <?php endforeach ?>
+                </ul>
+            </div>
+        </div>
+        <?php endif ?>
+
+        <?php if (count($personen) > 0) : ?>
+        <div class="card mb-4">
+            <div class="card-header fw-semibold">
+                <i class="fas fa-users me-2"></i><?= I18N::translate('Personen mit Ereignissen an diesem Ort') ?>
+                <span class="badge bg-secondary ms-2"><?= count($personen) ?></span>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    <?php foreach ($personen as $person) : ?>
+                    <li class="list-group-item">
+                        <a href="<?= e($person->url()) ?>"><?= $person->fullName() ?></a>
+                    </li>
+                    <?php endforeach ?>
+                </ul>
+            </div>
+        </div>
+        <?php endif ?>
+
+        <div class="card mb-4">
+            <div class="card-header fw-semibold">
+                <i class="fas fa-external-link-alt me-2"></i><?= I18N::translate('Externe Ressourcen') ?>
+            </div>
+            <div class="card-body d-flex flex-wrap gap-2">
+                <a href="https://de.wikipedia.org/wiki/<?= urlencode($ort->name) ?>" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-sm">Wikipedia</a>
+                <a href="https://www.matricula-online.eu/search/?q=<?= urlencode($ort->name) ?>" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-sm">Matricula</a>
+                <a href="https://www.archion.de/de/browse/?place=<?= urlencode($ort->name) ?>" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-sm">Archion</a>
+                <a href="https://www.archivportal-d.de/search?query=<?= urlencode($ort->name) ?>" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-sm">Archivportal-D</a>
+            </div>
+        </div>
+    <?php endif ?>
+</div>

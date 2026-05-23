@@ -1,0 +1,14 @@
+/vendor/
+/composer.phar
+/.phpunit.cache/
+/build/
+/backups/
+/tools/ged_analyze_full.json
+*.bak
+*.bak2
+*.old
+*.tmp
+*.swp
+.DS_Store
+.idea/
+.vscode/
