@@ -19,8 +19,6 @@ use Psr\Http\Message\ServerRequestInterface;
  */
 class MergeModalPage extends AbstractOrtsregisterHandler
 {
-    protected string $layout = 'layouts/ajax';
-
     public function __construct(
         private readonly PlaceOperationService $service,
     ) {}
@@ -29,6 +27,11 @@ class MergeModalPage extends AbstractOrtsregisterHandler
         ServerRequestInterface $request,
         ?Tree                  $tree,
     ): ResponseInterface {
+        // AJAX-Fragment: kein Seiten-Layout drumherum, nur reines Modal-HTML.
+        // Muss in respond() gesetzt werden, nicht als Property (Pattern aus
+        // webtrees-Core BranchesListModule Z.169).
+        $this->layout = 'layouts/ajax';
+
         $params = $request->getQueryParams();
         $srcId  = (int) ($params['src'] ?? 0);
         $dstId  = (int) ($params['dst'] ?? 0);
