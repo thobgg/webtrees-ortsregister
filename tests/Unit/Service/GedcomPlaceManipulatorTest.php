@@ -110,6 +110,34 @@ final class GedcomPlaceManipulatorTest extends TestCase
         self::assertStringNotContainsString('Hambvurg', $out);
     }
 
+    // Hierarchie-Suffix-Match: webtrees verlinkt placelinks zu jeder Ebene
+    public function testReplaceSuffixMatchKeepsLowerHierarchyLevels(): void
+    {
+        $gedcom = "0 @I1@ INDI\n1 BIRT\n2 PLAC Weiler, Amt Kirchheim, Kgr. Württemberg";
+        $out = $this->manipulator->replacePlacBlock(
+            $gedcom,
+            'Amt Kirchheim, Kgr. Württemberg',
+            'Amt Kirchheim, Hzm. Württemberg',
+        );
+        self::assertStringContainsString(
+            '2 PLAC Weiler, Amt Kirchheim, Hzm. Württemberg',
+            $out,
+        );
+        self::assertStringNotContainsString('Kgr.', $out);
+    }
+
+    public function testReplaceDoesNotMatchPartialNonSuffix(): void
+    {
+        // 'Amt Kirchheim' im Wertestring aber nicht als Suffix → kein Match
+        $gedcom = "0 @I1@ INDI\n1 BIRT\n2 PLAC Amt Kirchheim Süd, Andere Region";
+        $out = $this->manipulator->replacePlacBlock(
+            $gedcom,
+            'Amt Kirchheim, Kgr. Württemberg',
+            'Amt Kirchheim, Hzm. Württemberg',
+        );
+        self::assertSame($gedcom, $out);
+    }
+
     // ---------- extractDirectSubtags ----------
 
     public function testExtractDirectSubtagsReturnsTagToValuesMap(): void

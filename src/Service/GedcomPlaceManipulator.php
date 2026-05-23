@@ -53,10 +53,29 @@ class GedcomPlaceManipulator
 
         while ($i < $n) {
             $line = $lines[$i];
-            if (preg_match('/^(\d+)\s+PLAC\s?(.*)$/u', $line, $m) === 1
-                && (string) $m[2] === $sourceValue) {
-                $anchorLevel = (int) $m[1];
+            $matched   = false;
+            $newPlacValue = null;
+            $anchorLevel  = 0;
 
+            if (preg_match('/^(\d+)\s+PLAC\s?(.*)$/u', $line, $m) === 1) {
+                $anchorLevel = (int) $m[1];
+                $placValue   = (string) $m[2];
+
+                // webtrees verlinkt placelinks zu JEDER Hierarchie-Ebene eines PLAC.
+                // Beispiel: Place 'Amt Kirchheim, Kgr. Wuerttemberg' wird auch von
+                // einem PLAC 'Weiler, Amt Kirchheim, Kgr. Wuerttemberg' referenziert.
+                // Match: exakt ODER Suffix nach ', '.
+                if ($placValue === $sourceValue) {
+                    $matched      = true;
+                    $newPlacValue = $targetValue;
+                } elseif (str_ends_with($placValue, ', ' . $sourceValue)) {
+                    $matched      = true;
+                    $prefix       = substr($placValue, 0, strlen($placValue) - strlen($sourceValue));
+                    $newPlacValue = $prefix . $targetValue;
+                }
+            }
+
+            if ($matched) {
                 // Subtree einsammeln
                 $subtreeLines = [];
                 $j = $i + 1;
@@ -73,7 +92,7 @@ class GedcomPlaceManipulator
                     $anchorLevel,
                 );
 
-                $result[] = sprintf('%d PLAC %s', $anchorLevel, $targetValue);
+                $result[] = sprintf('%d PLAC %s', $anchorLevel, $newPlacValue);
                 foreach ($newSubtree as $sub) {
                     $result[] = $sub;
                 }
