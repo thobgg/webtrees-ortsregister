@@ -1,0 +1,146 @@
+<?php
+
+/**
+ * View: ortsregister::merge-modal  (AJAX-Fragment für Bootstrap-Modal-Body)
+ *
+ * @var \Ortsregister\Dto\MergeAnalysis $analysis
+ * @var \Fisharebest\Webtrees\Tree      $tree
+ * @var bool                            $autoAcceptEditsActive
+ */
+
+use Fisharebest\Webtrees\I18N;
+use Ortsregister\Dto\SubtagConflict;
+
+?>
+<div class="modal-header">
+    <h5 class="modal-title">
+        <i class="fas fa-code-branch me-2"></i>
+        <?= I18N::translate('Orte zusammenführen') ?>
+    </h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+<div class="modal-body">
+
+    <?php if (!$autoAcceptEditsActive) : ?>
+        <div class="alert alert-danger">
+            <i class="fas fa-exclamation-triangle me-1"></i>
+            <?= I18N::translate('Deine Benutzereinstellung „Änderungen automatisch übernehmen" ist nicht aktiv. Der Merge würde fehlschlagen. Bitte in den Benutzereinstellungen aktivieren und erneut versuchen.') ?>
+        </div>
+    <?php endif ?>
+
+    <div class="row mb-3">
+        <div class="col-5">
+            <div class="card border-warning">
+                <div class="card-header bg-warning-subtle small">
+                    <i class="fas fa-arrow-right me-1"></i><?= I18N::translate('Quelle (wird aufgelöst)') ?>
+                </div>
+                <div class="card-body">
+                    <div class="fw-semibold"><?= e($analysis->sourceValue) ?></div>
+                    <div class="text-muted small">ID <?= $analysis->sourcePlaceId ?></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-2 d-flex align-items-center justify-content-center">
+            <i class="fas fa-long-arrow-alt-right fs-2 text-muted"></i>
+        </div>
+        <div class="col-5">
+            <div class="card border-success">
+                <div class="card-header bg-success-subtle small">
+                    <i class="fas fa-bullseye me-1"></i><?= I18N::translate('Ziel (gewinnt)') ?>
+                </div>
+                <div class="card-body">
+                    <div class="fw-semibold"><?= e($analysis->targetValue) ?></div>
+                    <div class="text-muted small">ID <?= $analysis->targetPlaceId ?></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h6 class="text-muted small text-uppercase"><?= I18N::translate('Betroffene Datensätze') ?></h6>
+    <p class="mb-3">
+        <?php if ($analysis->totalAffected() === 0) : ?>
+            <span class="badge bg-secondary"><?= I18N::translate('Keine') ?></span>
+        <?php else : ?>
+            <?php foreach ($analysis->affectedCounts as $type => $n) : ?>
+                <span class="badge bg-primary me-1"><?= e($type) ?>: <?= $n ?></span>
+            <?php endforeach ?>
+            <span class="text-muted small ms-2"><?= I18N::translate('Gesamt: %s', (string) $analysis->totalAffected()) ?></span>
+        <?php endif ?>
+    </p>
+
+    <?php if ($analysis->warnings !== []) : ?>
+        <?php foreach ($analysis->warnings as $w) : ?>
+            <div class="alert alert-warning small">
+                <i class="fas fa-exclamation-triangle me-1"></i><?= e($w) ?>
+            </div>
+        <?php endforeach ?>
+    <?php endif ?>
+
+    <h6 class="text-muted small text-uppercase mt-3"><?= I18N::translate('Subtag-Konflikte') ?></h6>
+    <?php if (!$analysis->hasConflicts()) : ?>
+        <p class="text-success small mb-3">
+            <i class="fas fa-check-circle me-1"></i>
+            <?= I18N::translate('Keine Konflikte. Quell-Subtags werden opak übernommen.') ?>
+        </p>
+    <?php else : ?>
+        <div class="table-responsive mb-3">
+            <table class="table table-sm table-bordered align-middle">
+                <thead class="table-light small">
+                    <tr>
+                        <th><?= I18N::translate('Tag') ?></th>
+                        <th><?= I18N::translate('Quelle') ?></th>
+                        <th><?= I18N::translate('Ziel') ?></th>
+                        <th style="width:36%"><?= I18N::translate('Entscheidung') ?></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($analysis->conflicts as $c) : ?>
+                        <tr>
+                            <td><code><?= e($c->tag) ?></code></td>
+                            <td class="small"><?= e($c->sourceValue) ?></td>
+                            <td class="small"><?= e($c->targetValue) ?></td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group" aria-label="<?= e($c->tag) ?>">
+                                    <input type="radio" class="btn-check ortsregister-resolve" name="res__<?= e($c->tag) ?>"
+                                           id="res_<?= e($c->tag) ?>_src" value="<?= SubtagConflict::RESOLUTION_SOURCE ?>" autocomplete="off">
+                                    <label class="btn btn-outline-warning" for="res_<?= e($c->tag) ?>_src">
+                                        <?= I18N::translate('Quelle') ?>
+                                    </label>
+
+                                    <input type="radio" class="btn-check ortsregister-resolve" name="res__<?= e($c->tag) ?>"
+                                           id="res_<?= e($c->tag) ?>_tgt" value="<?= SubtagConflict::RESOLUTION_TARGET ?>" autocomplete="off" checked>
+                                    <label class="btn btn-outline-success" for="res_<?= e($c->tag) ?>_tgt">
+                                        <?= I18N::translate('Ziel (Default)') ?>
+                                    </label>
+
+                                    <input type="radio" class="btn-check ortsregister-resolve" name="res__<?= e($c->tag) ?>"
+                                           id="res_<?= e($c->tag) ?>_drop" value="<?= SubtagConflict::RESOLUTION_DROP ?>" autocomplete="off">
+                                    <label class="btn btn-outline-danger" for="res_<?= e($c->tag) ?>_drop">
+                                        <?= I18N::translate('Verwerfen') ?>
+                                    </label>
+                                </div>
+                            </td>
+                        </tr>
+                    <?php endforeach ?>
+                </tbody>
+            </table>
+        </div>
+    <?php endif ?>
+
+    <div class="alert alert-info small mb-0">
+        <i class="fas fa-info-circle me-1"></i>
+        <?= I18N::translate('Vor der Ausführung wird ein Backup als JSON unter modules_v4/ortsregister/backups/ geschrieben. Quell-Place wird automatisch entfernt sobald keine Referenzen mehr darauf zeigen.') ?>
+    </div>
+</div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+        <?= I18N::translate('Abbrechen') ?>
+    </button>
+    <button type="button" class="btn btn-primary" id="ortsregister-merge-confirm"
+            <?= $autoAcceptEditsActive ? '' : 'disabled' ?>
+            data-src="<?= $analysis->sourcePlaceId ?>"
+            data-dst="<?= $analysis->targetPlaceId ?>">
+        <i class="fas fa-check me-1"></i>
+        <?= I18N::translate('Merge ausführen') ?>
+    </button>
+</div>

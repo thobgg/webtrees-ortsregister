@@ -23,9 +23,10 @@ use Psr\Http\Message\ServerRequestInterface;
 class OrteDataTable extends AbstractDataTableHandler
 {
     private const SORT_MAP = [
-        0 => 'name',
-        1 => 'anzahl',
-        2 => 'name',   // Koordinaten nicht sortierbar → Fallback auf Name
+        0 => 'name',   // Auswahl-Spalte nicht sortierbar → Fallback Name
+        1 => 'name',
+        2 => 'anzahl',
+        3 => 'name',   // Koordinaten nicht sortierbar → Fallback Name
     ];
 
     public function __construct(
@@ -50,10 +51,10 @@ class OrteDataTable extends AbstractDataTableHandler
         $total    = $this->orteRepository->anzahlOrte($tree);
         $filtered = count($alle);
 
-        // Sortierung
+        // Sortierung — Spalte 2 = Ereignisse (numerisch), sonst Pfad (natürlich)
         usort($alle, static function (OrtDto $a, OrtDto $b) use ($orderColumn): int {
             return match ($orderColumn) {
-                1       => $a->anzahlEreignisse <=> $b->anzahlEreignisse,
+                2       => $a->anzahlEreignisse <=> $b->anzahlEreignisse,
                 default => strnatcasecmp($a->vollstaendigerPfad, $b->vollstaendigerPfad),
             };
         });
@@ -74,6 +75,19 @@ class OrteDataTable extends AbstractDataTableHandler
     /** @return list<string> */
     private function toRow(OrtDto $ort, string $treeName): array
     {
+        // Auswahl-Spalte: zwei Radios (Quelle / Ziel) für Merge-Selection
+        $auswahlHtml = sprintf(
+            '<div class="d-flex gap-1 ortsregister-select" data-place-id="%1$d">'
+            . '<input type="radio" class="btn-check ortsregister-src" name="ortsregister-src" '
+            .   'id="src-%1$d" value="%1$d" autocomplete="off">'
+            . '<label class="btn btn-sm btn-outline-warning" for="src-%1$d" title="Als Quelle">Q</label>'
+            . '<input type="radio" class="btn-check ortsregister-dst" name="ortsregister-dst" '
+            .   'id="dst-%1$d" value="%1$d" autocomplete="off">'
+            . '<label class="btn btn-sm btn-outline-success" for="dst-%1$d" title="Als Ziel">Z</label>'
+            . '</div>',
+            $ort->id,
+        );
+
         // Ort-Spalte: verlinkter Name + ggf. Pfad darunter
         $ortHtml = sprintf(
             '<a href="%s" class="fw-semibold text-decoration-none">%s</a>',
@@ -99,6 +113,6 @@ class OrteDataTable extends AbstractDataTableHandler
             ? '<i class="fas fa-map-marker-alt text-success" title="' . e(sprintf('%.4f, %.4f', $ort->breitengrad, $ort->laengengrad)) . '"></i>'
             : '<span class="text-muted">&mdash;</span>';
 
-        return [$ortHtml, $ereignisseHtml, $koordinatenHtml];
+        return [$auswahlHtml, $ortHtml, $ereignisseHtml, $koordinatenHtml];
     }
 }

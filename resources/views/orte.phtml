@@ -10,8 +10,10 @@
 
 use Fisharebest\Webtrees\I18N;
 
-$ajaxUrl   = e(route('ortsregister.orte.data', ['tree' => $tree?->name()]));
-$kartenUrl = e(route('ortsregister.orte.karte', ['tree' => $tree?->name()]));
+$ajaxUrl       = e(route('ortsregister.orte.data', ['tree' => $tree?->name()]));
+$kartenUrl     = e(route('ortsregister.orte.karte', ['tree' => $tree?->name()]));
+$mergePreview  = e(route('ortsregister.merge.preview', ['tree' => $tree?->name()]));
+$mergeExecute  = e(route('ortsregister.merge.execute', ['tree' => $tree?->name()]));
 ?>
 
 <div class="container-lg mt-4 mb-5" id="ortsregister-orte">
@@ -35,12 +37,33 @@ $kartenUrl = e(route('ortsregister.orte.karte', ['tree' => $tree?->name()]));
         <div class="alert alert-warning"><?= I18N::translate('Bitte wählen Sie einen Stammbaum aus.') ?></div>
     <?php else : ?>
 
+        <!-- Merge-Selection-Bar -->
+        <div id="ortsregister-merge-bar" class="alert alert-info d-none mb-3 d-flex align-items-center justify-content-between">
+            <div class="small">
+                <i class="fas fa-info-circle me-1"></i>
+                <strong><?= I18N::translate('Merge-Auswahl:') ?></strong>
+                <span class="ms-2"><?= I18N::translate('Quelle') ?>: <code id="ortsregister-src-label">—</code></span>
+                <span class="ms-2"><?= I18N::translate('Ziel') ?>: <code id="ortsregister-dst-label">—</code></span>
+            </div>
+            <div>
+                <button type="button" class="btn btn-sm btn-outline-secondary me-2" id="ortsregister-clear-btn">
+                    <i class="fas fa-times me-1"></i><?= I18N::translate('Auswahl löschen') ?>
+                </button>
+                <button type="button" class="btn btn-sm btn-primary" id="ortsregister-open-merge-btn" disabled>
+                    <i class="fas fa-code-branch me-1"></i><?= I18N::translate('Mergen…') ?>
+                </button>
+            </div>
+        </div>
+
         <div class="table-responsive">
             <table id="orte-datatable"
                    class="table table-hover table-striped w-100"
-                   data-ajax="<?= $ajaxUrl ?>">
+                   data-ajax="<?= $ajaxUrl ?>"
+                   data-merge-preview="<?= $mergePreview ?>"
+                   data-merge-execute="<?= $mergeExecute ?>">
                 <thead class="table-light">
                     <tr>
+                        <th style="width:6%"><?= I18N::translate('Auswahl') ?></th>
                         <th><?= I18N::translate('Ort') ?></th>
                         <th style="width:10%"><?= I18N::translate('Ereignisse') ?></th>
                         <th style="width:8%"><?= I18N::translate('Koordinaten') ?></th>
@@ -48,6 +71,17 @@ $kartenUrl = e(route('ortsregister.orte.karte', ['tree' => $tree?->name()]));
                 </thead>
                 <tbody></tbody>
             </table>
+        </div>
+
+        <!-- Modal-Container für Merge-Vorschau (Inhalt wird per AJAX geladen) -->
+        <div class="modal fade" id="ortsregister-merge-modal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                <div class="modal-content" id="ortsregister-merge-modal-content">
+                    <div class="modal-body text-center py-5">
+                        <div class="spinner-border text-primary"></div>
+                    </div>
+                </div>
+            </div>
         </div>
 
     <?php endif ?>
@@ -60,7 +94,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const table = document.getElementById('orte-datatable');
     if (!table || typeof $.fn.dataTable === 'undefined') return;
 
-    $(table).dataTable({
+    const dt = $(table).dataTable({
         ajax:       { url: table.dataset.ajax, type: 'GET' },
         serverSide: true,
         processing: true,
@@ -74,14 +108,130 @@ document.addEventListener('DOMContentLoaded', function () {
             paginate: { first: '«', last: '»', next: '›', previous: '‹' },
         },
         columns: [
+            { orderable: false, searchable: false, className: 'text-center' },
             { orderable: true,  searchable: true  },
             { orderable: true,  searchable: false, className: 'text-end' },
             { orderable: false, searchable: false, className: 'text-center' },
         ],
-        order:      [[0, 'asc']],
+        order:      [[1, 'asc']],
         pageLength: 50,
         lengthMenu: [10, 25, 50, 100],
         dom: '<"d-flex justify-content-between mb-2"lf>rt<"d-flex justify-content-between mt-2"ip>',
+        drawCallback: function () {
+            // Nach jedem Render: Radios gemäß aktuellem State wieder anhaken
+            restoreSelectionRadios();
+        },
+    });
+
+    // ---- Merge-Selection State ----
+    const mergeState = { srcId: null, dstId: null };
+
+    function updateBar() {
+        const bar = document.getElementById('ortsregister-merge-bar');
+        const srcLbl = document.getElementById('ortsregister-src-label');
+        const dstLbl = document.getElementById('ortsregister-dst-label');
+        const btn = document.getElementById('ortsregister-open-merge-btn');
+
+        const hasAny = mergeState.srcId !== null || mergeState.dstId !== null;
+        bar.classList.toggle('d-none', !hasAny);
+
+        srcLbl.textContent = mergeState.srcId !== null ? mergeState.srcId : '—';
+        dstLbl.textContent = mergeState.dstId !== null ? mergeState.dstId : '—';
+
+        const bothSet = mergeState.srcId !== null && mergeState.dstId !== null;
+        const sameRow = mergeState.srcId === mergeState.dstId;
+        btn.disabled = !bothSet || sameRow;
+    }
+
+    function restoreSelectionRadios() {
+        document.querySelectorAll('.ortsregister-src').forEach(r => {
+            r.checked = (parseInt(r.value, 10) === mergeState.srcId);
+        });
+        document.querySelectorAll('.ortsregister-dst').forEach(r => {
+            r.checked = (parseInt(r.value, 10) === mergeState.dstId);
+        });
+    }
+
+    // Event-Delegation auf den Table-Body — überlebt Re-Renders durch DataTables
+    table.addEventListener('change', function (e) {
+        if (e.target.classList.contains('ortsregister-src')) {
+            mergeState.srcId = parseInt(e.target.value, 10);
+            updateBar();
+        } else if (e.target.classList.contains('ortsregister-dst')) {
+            mergeState.dstId = parseInt(e.target.value, 10);
+            updateBar();
+        }
+    });
+
+    document.getElementById('ortsregister-clear-btn').addEventListener('click', function () {
+        mergeState.srcId = null;
+        mergeState.dstId = null;
+        restoreSelectionRadios();
+        updateBar();
+    });
+
+    // ---- Modal öffnen + AJAX-Laden ----
+    document.getElementById('ortsregister-open-merge-btn').addEventListener('click', function () {
+        const url = table.dataset.mergePreview + '?src=' + mergeState.srcId + '&dst=' + mergeState.dstId;
+        const content = document.getElementById('ortsregister-merge-modal-content');
+        content.innerHTML = '<div class="modal-body text-center py-5"><div class="spinner-border text-primary"></div></div>';
+        const modal = new bootstrap.Modal(document.getElementById('ortsregister-merge-modal'));
+        modal.show();
+        fetch(url, { headers: { 'Accept': 'text/html' }})
+            .then(r => r.text())
+            .then(html => { content.innerHTML = html; })
+            .catch(err => {
+                content.innerHTML = '<div class="modal-body text-danger">Fehler beim Laden: ' + err + '</div>';
+            });
+    });
+
+    // ---- Confirm im Modal -> POST ----
+    document.addEventListener('click', function (e) {
+        if (e.target.id !== 'ortsregister-merge-confirm' && !e.target.closest?.('#ortsregister-merge-confirm')) {
+            return;
+        }
+        const btn = e.target.closest('#ortsregister-merge-confirm');
+        btn.disabled = true;
+
+        // Resolutions einsammeln (alle ortsregister-resolve-Radios)
+        const resolutions = {};
+        document.querySelectorAll('.ortsregister-resolve:checked').forEach(r => {
+            const tag = r.name.replace(/^res__/, '');
+            resolutions[tag] = r.value;
+        });
+
+        const formData = new FormData();
+        formData.append('src', btn.dataset.src);
+        formData.append('dst', btn.dataset.dst);
+        for (const k in resolutions) {
+            formData.append('resolutions[' + k + ']', resolutions[k]);
+        }
+
+        fetch(table.dataset.mergeExecute, {
+            method: 'POST',
+            body: formData,
+        })
+        .then(r => r.json())
+        .then(data => {
+            const content = document.getElementById('ortsregister-merge-modal-content');
+            if (data.success) {
+                content.innerHTML = '<div class="modal-header"><h5 class="modal-title text-success">'
+                    + '<i class="fas fa-check-circle me-2"></i>Merge erfolgreich</h5></div>'
+                    + '<div class="modal-body"><p>' + data.message + '</p></div>'
+                    + '<div class="modal-footer"><button class="btn btn-primary" onclick="location.reload()">Liste neu laden</button></div>';
+                // State zurücksetzen
+                mergeState.srcId = null; mergeState.dstId = null;
+            } else {
+                content.innerHTML = '<div class="modal-header"><h5 class="modal-title text-danger">'
+                    + '<i class="fas fa-times-circle me-2"></i>Merge fehlgeschlagen</h5></div>'
+                    + '<div class="modal-body"><div class="alert alert-danger">' + data.message + '</div></div>'
+                    + '<div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button></div>';
+            }
+        })
+        .catch(err => {
+            btn.disabled = false;
+            alert('Netzwerkfehler: ' + err);
+        });
     });
 });
 </script>
