@@ -7,6 +7,7 @@ namespace Ortsregister\Http\RequestHandlers;
 use Ortsregister\Service\PlaceOperationService;
 use Fisharebest\Webtrees\Auth;
 use Fisharebest\Webtrees\Contracts\UserInterface;
+use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\Tree;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -27,33 +28,39 @@ class MergeModalPage extends AbstractOrtsregisterHandler
         ServerRequestInterface $request,
         ?Tree                  $tree,
     ): ResponseInterface {
-        // AJAX-Fragment: kein Seiten-Layout drumherum, nur reines Modal-HTML.
-        // Muss in respond() gesetzt werden, nicht als Property (Pattern aus
-        // webtrees-Core BranchesListModule Z.169).
-        $this->layout = 'layouts/ajax';
-
         $params = $request->getQueryParams();
         $srcId  = (int) ($params['src'] ?? 0);
         $dstId  = (int) ($params['dst'] ?? 0);
 
         if ($tree === null || $srcId <= 0 || $dstId <= 0 || $srcId === $dstId) {
-            return \Fisharebest\Webtrees\Registry::responseFactory()->response(
+            return $this->fragment(
                 '<div class="modal-body"><div class="alert alert-danger">'
                 . 'Ungültige Place-IDs für Merge.</div></div>'
                 . '<div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button></div>',
                 400,
-                ['Content-Type' => 'text/html; charset=UTF-8'],
             );
         }
 
-        $analysis = $this->service->analyzeMerge($tree, $srcId, $dstId);
-
+        $analysis   = $this->service->analyzeMerge($tree, $srcId, $dstId);
         $autoAccept = Auth::user()->getPreference(UserInterface::PREF_AUTO_ACCEPT_EDITS) === '1';
 
-        return $this->viewResponse($this->viewName('merge-modal'), [
+        // Direktes view() — KEIN viewResponse(), damit kein Layout drumherum kommt.
+        // AJAX-Fragment für Bootstrap-Modal-Body.
+        $html = view($this->viewName('merge-modal'), [
             'analysis'              => $analysis,
             'tree'                  => $tree,
             'autoAcceptEditsActive' => $autoAccept,
         ]);
+
+        return $this->fragment($html, 200);
+    }
+
+    private function fragment(string $html, int $status): ResponseInterface
+    {
+        return Registry::responseFactory()->response(
+            $html,
+            $status,
+            ['Content-Type' => 'text/html; charset=UTF-8'],
+        );
     }
 }
