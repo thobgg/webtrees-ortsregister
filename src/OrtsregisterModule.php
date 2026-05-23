@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Ortsregister;
 
+use Ortsregister\Cache\ApcuCacheService;
 use Ortsregister\Http\RequestHandlers\OrteDataTable;
 use Ortsregister\Http\RequestHandlers\OrteDetailPage;
 use Ortsregister\Http\RequestHandlers\OrteKarte;
 use Ortsregister\Http\RequestHandlers\OrtePage;
+use Ortsregister\Service\GedcomPlaceManipulator;
+use Ortsregister\Service\PlaceOperationService;
 use Fisharebest\Webtrees\Auth;
 use Fisharebest\Webtrees\DB;
 use Fisharebest\Webtrees\I18N;
@@ -53,6 +56,7 @@ class OrtsregisterModule extends AbstractModule implements
     public function boot(): void
     {
         $this->migrateDatabase();
+        $this->registerServices();
         View::registerNamespace($this->name(), $this->resourcesFolder() . 'views/');
 
         $router = Registry::routeFactory()->routeMap();
@@ -61,6 +65,24 @@ class OrtsregisterModule extends AbstractModule implements
         $router->get('ortsregister.orte.data',   '/tree/{tree}/orte/data',               OrteDataTable::class);
         $router->get('ortsregister.orte.karte',  '/tree/{tree}/orte/karte',              OrteKarte::class);
         $router->get('ortsregister.orte.detail', '/tree/{tree}/orte/{place_id}',         OrteDetailPage::class);
+    }
+
+    /**
+     * Bindet Modul-Services in den webtrees-Container.
+     * Notwendig für PlaceOperationService, da dessen Konstruktor einen
+     * String-Parameter (backupDir) hat, den der Auto-Wirer nicht auflösen kann.
+     */
+    private function registerServices(): void
+    {
+        $container = Registry::container();
+        $container->set(
+            PlaceOperationService::class,
+            new PlaceOperationService(
+                $container->get(ApcuCacheService::class),
+                $container->get(GedcomPlaceManipulator::class),
+                __DIR__ . '/../backups',
+            ),
+        );
     }
 
     public function defaultMenuOrder(): int { return 99; }
@@ -112,12 +134,43 @@ class OrtsregisterModule extends AbstractModule implements
             . '</style>';
     }
 
-    /**
-     * Datenbank-Migrationen. Aktuell nichts – Tabellen `ortsregister_ort*`
-     * kommen mit Stufe 1 der Orte-Roadmap.
-     */
+    private const SCHEMA_VERSION = 1;
+
     private function migrateDatabase(): void
     {
-        // Schema-Migrationen folgen mit Stufe 1.
+        $current = (int) $this->getPreference('SCHEMA_VERSION', '0');
+
+        if ($current < 1) {
+            if (!DB::schema()->hasTable('ortsregister_place_meta')) {
+                DB::schema()->create('ortsregister_place_meta', function (Blueprint $table): void {
+                    $table->integer('place_id');
+                    $table->integer('tree_id');
+                    $table->text('meta_data');
+                    $table->timestamp('created_at')->useCurrent();
+                    $table->timestamp('updated_at')->useCurrent();
+                    $table->primary(['place_id', 'tree_id']);
+                    $table->index('tree_id');
+                });
+            }
+
+            if (!DB::schema()->hasTable('ortsregister_merge_log')) {
+                DB::schema()->create('ortsregister_merge_log', function (Blueprint $table): void {
+                    $table->bigIncrements('id');
+                    $table->integer('tree_id');
+                    $table->string('operation', 32);
+                    $table->integer('src_place_id')->nullable();
+                    $table->integer('dst_place_id')->nullable();
+                    $table->integer('user_id')->nullable();
+                    $table->string('backup_path', 255);
+                    $table->string('status', 16)->default('completed');
+                    $table->timestamp('created_at')->useCurrent();
+                    $table->index(['tree_id', 'created_at']);
+                });
+            }
+        }
+
+        if ($current !== self::SCHEMA_VERSION) {
+            $this->setPreference('SCHEMA_VERSION', (string) self::SCHEMA_VERSION);
+        }
     }
 }
