@@ -171,8 +171,15 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // ---- Modal öffnen + AJAX-Laden ----
+    // Korrekter Query-Separator: ? wenn URL bisher keinen hat, sonst &.
+    // Bei nicht-aktivierten Pretty-URLs enthaelt route() bereits 'index.php?route=...'.
+    function appendQuery(base, qs) {
+        return base + (base.indexOf('?') >= 0 ? '&' : '?') + qs;
+    }
+
     document.getElementById('ortsregister-open-merge-btn').addEventListener('click', function () {
-        const url = table.dataset.mergePreview + '?src=' + mergeState.srcId + '&dst=' + mergeState.dstId;
+        const url = appendQuery(table.dataset.mergePreview,
+            'src=' + mergeState.srcId + '&dst=' + mergeState.dstId);
         const content = document.getElementById('ortsregister-merge-modal-content');
         content.innerHTML = '<div class="modal-body text-center py-5"><div class="spinner-border text-primary"></div></div>';
         const modal = new bootstrap.Modal(document.getElementById('ortsregister-merge-modal'));
