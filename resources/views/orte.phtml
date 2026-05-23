@@ -16,6 +16,7 @@ $kartenUrl       = e(route('ortsregister.orte.karte', ['tree' => $tree?->name()]
 $mergePreview    = e(route('ortsregister.merge.preview', ['tree' => $tree?->name()]));
 $mergeExecute    = e(route('ortsregister.merge.execute', ['tree' => $tree?->name()]));
 $filterModeUrl   = e(route('ortsregister.filter-mode', ['tree' => $tree?->name()]));
+$coordImportUrl  = e(route('ortsregister.coord.import', ['tree' => $tree?->name()]));
 $filterMode      = $filterMode ?? 'all';
 ?>
 
@@ -56,6 +57,10 @@ $filterMode      = $filterMode ?? 'all';
             </button>
             <a href="<?= $kartenUrl ?>" class="btn btn-outline-primary btn-sm">
                 <i class="fas fa-map me-1"></i><?= I18N::translate('Kartenansicht') ?>
+            </a>
+            <a href="<?= $coordImportUrl ?>" class="btn btn-outline-secondary btn-sm"
+               title="<?= e(I18N::translate('Koordinaten aus PLAC-Subtags ins place_location übernehmen')) ?>">
+                <i class="fas fa-globe me-1"></i><?= I18N::translate('Koordinaten-Import') ?>
             </a>
         </div>
         <?php endif ?>

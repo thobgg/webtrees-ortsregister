@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Ortsregister;
 
 use Ortsregister\Cache\ApcuCacheService;
+use Ortsregister\Http\RequestHandlers\CoordinateImportPage;
 use Ortsregister\Http\RequestHandlers\MergeExecute;
 use Ortsregister\Http\RequestHandlers\MergeModalPage;
 use Ortsregister\Http\RequestHandlers\OrteDataTable;
@@ -12,6 +13,8 @@ use Ortsregister\Http\RequestHandlers\OrteDetailPage;
 use Ortsregister\Http\RequestHandlers\OrteKarte;
 use Ortsregister\Http\RequestHandlers\OrtePage;
 use Ortsregister\Http\RequestHandlers\SetPlaceFilterMode;
+use Ortsregister\Service\CoordinateImportService;
+use Ortsregister\Service\GedcomCoordinateExtractor;
 use Ortsregister\Service\GedcomPlaceManipulator;
 use Ortsregister\Service\PlaceOperationService;
 use Fisharebest\Webtrees\Auth;
@@ -72,6 +75,8 @@ class OrtsregisterModule extends AbstractModule implements
                ->allows('POST');
         $router->get('ortsregister.filter-mode',   '/tree/{tree}/orte/filter-mode',    SetPlaceFilterMode::class)
                ->allows('POST');
+        $router->get('ortsregister.coord.import',  '/tree/{tree}/orte/koordinaten-import', CoordinateImportPage::class)
+               ->allows('POST');
         $router->get('ortsregister.orte.detail',   '/tree/{tree}/orte/{place_id}',     OrteDetailPage::class);
     }
 
@@ -88,6 +93,14 @@ class OrtsregisterModule extends AbstractModule implements
             new PlaceOperationService(
                 $container->get(ApcuCacheService::class),
                 $container->get(GedcomPlaceManipulator::class),
+                __DIR__ . '/../backups',
+            ),
+        );
+        $container->set(
+            CoordinateImportService::class,
+            new CoordinateImportService(
+                $container->get(ApcuCacheService::class),
+                $container->get(GedcomCoordinateExtractor::class),
                 __DIR__ . '/../backups',
             ),
         );

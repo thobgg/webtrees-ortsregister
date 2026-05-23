@@ -1,0 +1,31 @@
+<?php
+
+/**
+ * View: ortsregister::coord-import-page
+ *
+ * @var string                              $title
+ * @var \Fisharebest\Webtrees\Tree          $tree
+ * @var string                              $body  Pre-rendered HTML
+ */
+
+use Fisharebest\Webtrees\I18N;
+
+?>
+
+<div class="container-lg mt-4 mb-5">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="<?= e(route('ortsregister.orte', ['tree' => $tree->name()])) ?>">
+                    <?= I18N::translate('Ortsregister') ?>
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">
+                <?= I18N::translate('Koordinaten-Import') ?>
+            </li>
+        </ol>
+    </nav>
+
+    <h1 class="mb-3"><?= e($title) ?></h1>
+    <?= $body ?>
+</div>

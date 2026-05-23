@@ -10,9 +10,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
   Backup-JSON pro Operation, Suffix-Match über mittlere Hierarchie-Ebenen.
 - **Hierarchie-Filter** in der Liste: „Alle Ebenen" vs. „Nur Endorte" (Blätter
   ohne Place-Kinder). Persistiert pro User. Default „Alle Ebenen".
+- **Koordinaten-Import**: `MAP/LATI/LONG`-Subtags aus PLAC-Strukturen werden
+  in die webtrees-Standardtabelle `place_location` übertragen. Adressiert
+  Ahnenblatt/Gramps/FTM/MyHeritage-Exporte, deren Koordinaten webtrees
+  sonst ignoriert. Idempotent — überschreibt keine vorhandenen Koordinaten.
+- **Merge-Spalte einklappbar** via „Merge-Modus"-Button. Standard-Ansicht
+  kompakt, Auswahl-Radios nur bei expliziter Aktivierung.
 - DB-Tabellen `ortsregister_place_meta` (leer, Vorbereitung Phase 4) und
   `ortsregister_merge_log` (Operations-Historie).
-- PHPUnit-11-Test-Suite mit Tests für `GedcomPlaceManipulator`.
+- PHPUnit-11-Test-Suite mit Tests für `GedcomPlaceManipulator` und
+  `GedcomCoordinateExtractor`.
 
 ## [0.1.0] – 2026-05-22
 
