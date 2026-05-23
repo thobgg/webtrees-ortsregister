@@ -222,19 +222,42 @@ class PlaceOperationService
     // Intern: Lade-Helfer
     // ---------------------------------------------------------------
 
-    /** @return array{0: string, 1: string} [srcValue, dstValue] */
+    /** @return array{0: string, 1: string} [srcValue, dstValue] — volle Komma-Pfade */
     private function loadPlaceValues(Tree $tree, int $srcId, int $dstId): array
     {
-        $rows = DB::table('places')
-            ->whereIn('p_id', [$srcId, $dstId])
-            ->where('p_file', '=', $tree->id())
-            ->pluck('p_place', 'p_id')
-            ->all();
-
-        if (!isset($rows[$srcId]) || !isset($rows[$dstId])) {
+        $src = $this->fullPlaceName($tree, $srcId);
+        $dst = $this->fullPlaceName($tree, $dstId);
+        if ($src === '' || $dst === '') {
             throw new RuntimeException('Quell- oder Ziel-Place nicht gefunden.');
         }
-        return [(string) $rows[$srcId], (string) $rows[$dstId]];
+        return [$src, $dst];
+    }
+
+    /**
+     * Baut den vollen Komma-Pfad eines Place-Records via rekursivem
+     * p_parent_id-Walk. webtrees speichert jede Hierarchie-Ebene als
+     * eigenen Record; PLAC im GEDCOM enthaelt aber den vollen Pfad.
+     */
+    private function fullPlaceName(Tree $tree, int $placeId): string
+    {
+        $parts     = [];
+        $currentId = $placeId;
+        $seen      = [];   // Schutz vor zyklischen Verweisen
+
+        while ($currentId > 0 && !isset($seen[$currentId])) {
+            $seen[$currentId] = true;
+            $row = DB::table('places')
+                ->where('p_id', '=', $currentId)
+                ->where('p_file', '=', $tree->id())
+                ->select(['p_place', 'p_parent_id'])
+                ->first();
+            if ($row === null) {
+                break;
+            }
+            $parts[]   = (string) $row->p_place;
+            $currentId = (int) $row->p_parent_id;
+        }
+        return implode(', ', $parts);
     }
 
     /**
