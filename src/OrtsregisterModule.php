@@ -63,12 +63,13 @@ class OrtsregisterModule extends AbstractModule implements
 
         $router = Registry::routeFactory()->routeMap();
 
-        $router->get ('ortsregister.orte',          '/tree/{tree}/orte',                OrtePage::class);
-        $router->get ('ortsregister.orte.data',     '/tree/{tree}/orte/data',           OrteDataTable::class);
-        $router->get ('ortsregister.orte.karte',    '/tree/{tree}/orte/karte',          OrteKarte::class);
-        $router->get ('ortsregister.merge.preview', '/tree/{tree}/orte/merge/preview',  MergeModalPage::class);
-        $router->post('ortsregister.merge.execute', '/tree/{tree}/orte/merge/execute',  MergeExecute::class);
-        $router->get ('ortsregister.orte.detail',   '/tree/{tree}/orte/{place_id}',     OrteDetailPage::class);
+        $router->get('ortsregister.orte',          '/tree/{tree}/orte',                OrtePage::class);
+        $router->get('ortsregister.orte.data',     '/tree/{tree}/orte/data',           OrteDataTable::class);
+        $router->get('ortsregister.orte.karte',    '/tree/{tree}/orte/karte',          OrteKarte::class);
+        $router->get('ortsregister.merge.preview', '/tree/{tree}/orte/merge/preview',  MergeModalPage::class);
+        $router->get('ortsregister.merge.execute', '/tree/{tree}/orte/merge/execute',  MergeExecute::class)
+               ->allows('POST');
+        $router->get('ortsregister.orte.detail',   '/tree/{tree}/orte/{place_id}',     OrteDetailPage::class);
     }
 
     /**
