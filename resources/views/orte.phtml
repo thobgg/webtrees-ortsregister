@@ -60,7 +60,8 @@ $mergeExecute  = e(route('ortsregister.merge.execute', ['tree' => $tree?->name()
                    class="table table-hover table-striped w-100"
                    data-ajax="<?= $ajaxUrl ?>"
                    data-merge-preview="<?= $mergePreview ?>"
-                   data-merge-execute="<?= $mergeExecute ?>">
+                   data-merge-execute="<?= $mergeExecute ?>"
+                   data-csrf="<?= e(csrf_token()) ?>">
                 <thead class="table-light">
                     <tr>
                         <th style="width:6%"><?= I18N::translate('Auswahl') ?></th>
@@ -208,6 +209,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         const formData = new FormData();
+        formData.append('_csrf', table.dataset.csrf);
         formData.append('src', btn.dataset.src);
         formData.append('dst', btn.dataset.dst);
         for (const k in resolutions) {
@@ -217,6 +219,7 @@ document.addEventListener('DOMContentLoaded', function () {
         fetch(table.dataset.mergeExecute, {
             method: 'POST',
             body: formData,
+            headers: { 'X-CSRF-TOKEN': table.dataset.csrf },
         })
         .then(r => r.json())
         .then(data => {
