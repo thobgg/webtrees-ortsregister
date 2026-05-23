@@ -50,7 +50,12 @@ class MergeExecute implements RequestHandlerInterface
         try {
             $result = $this->service->executeMerge($tree, $srcId, $dstId, $resolutions);
         } catch (Throwable $e) {
-            return $this->json(['success' => false, 'message' => $e->getMessage()], 500);
+            $this->logExceptionToFile($e, ['src' => $srcId, 'dst' => $dstId]);
+            return $this->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'file'    => basename($e->getFile()) . ':' . $e->getLine(),
+            ], 500);
         }
 
         return $this->json([
@@ -73,6 +78,32 @@ class MergeExecute implements RequestHandlerInterface
         } catch (Throwable) {
             return null;
         }
+    }
+
+    /**
+     * Schreibt Exception als Klartext in backups/exec_error.log.
+     * Diagnose-Hilfe falls webtrees-Middleware die Exception sonst abfängt.
+     *
+     * @param array<string, mixed> $context
+     */
+    private function logExceptionToFile(Throwable $e, array $context = []): void
+    {
+        $logDir = __DIR__ . '/../../../backups';
+        if (!is_dir($logDir)) {
+            @mkdir($logDir, 0775, true);
+        }
+        $entry = sprintf(
+            "[%s] %s: %s in %s:%d\nContext: %s\nTrace:\n%s\n%s\n",
+            date('c'),
+            get_class($e),
+            $e->getMessage(),
+            $e->getFile(),
+            $e->getLine(),
+            json_encode($context),
+            $e->getTraceAsString(),
+            str_repeat('-', 80),
+        );
+        @file_put_contents($logDir . '/exec_error.log', $entry, FILE_APPEND);
     }
 
     /**
