@@ -7,6 +7,7 @@ namespace Ortsregister\Http\RequestHandlers;
 use Ortsregister\Service\GovApiClient;
 use Ortsregister\Service\GovLinkingService;
 use Fisharebest\Webtrees\Auth;
+use Fisharebest\Webtrees\DB;
 use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\Tree;
 use Psr\Http\Message\ResponseInterface;
@@ -80,6 +81,10 @@ class GovLinkPage extends AbstractOrtsregisterHandler
         $csrf     = csrf_token();
         $action   = e(route('ortsregister.gov.link', ['tree' => $tree->name(), 'place_id' => $placeId]));
 
+        // Place-Name aus DB holen für vor-befüllte GOV-Suche
+        $placeName = $this->loadPlaceName($tree, $placeId);
+        $searchUrl = 'https://gov.genealogy.net/search/simple?placename=' . rawurlencode($placeName);
+
         $existingBlock = '';
         if ($obj !== null) {
             $coordsLine = $obj->hasCoordinates()
@@ -106,14 +111,31 @@ class GovLinkPage extends AbstractOrtsregisterHandler
             . '</div>'
             . '<div class="modal-body">'
             . '%s'
+            . '<div class="card bg-light mb-3">'
+            . '<div class="card-body py-2">'
+            . '<div class="d-flex align-items-center gap-2">'
+            . '<i class="fas fa-search text-muted"></i>'
+            . '<span class="small text-muted">Aktueller Ort:</span>'
+            . '<strong>%s</strong>'
+            . '<a href="%s" target="_blank" rel="noopener" '
+            . '   class="btn btn-sm btn-outline-primary ms-auto">'
+            . '<i class="fas fa-external-link-alt me-1"></i>Auf GOV suchen'
+            . '</a>'
+            . '</div>'
+            . '<div class="form-text mt-1">'
+            . 'Klick öffnet GOV-Suche in neuem Tab mit vor-befülltem Namen. '
+            . 'Passende ID kopieren und unten einfügen.'
+            . '</div>'
+            . '</div>'
+            . '</div>'
             . '<form id="ortsregister-gov-form" method="POST" action="%s">'
             . '<input type="hidden" name="_csrf" value="%s">'
             . '<div class="mb-3">'
             . '<label for="gov-id-input" class="form-label">GOV-ID</label>'
             . '<input type="text" class="form-control" id="gov-id-input" name="gov_id" '
             . 'placeholder="z.B. object_152487" value="%s" pattern="[a-z][a-z_0-9]*_[0-9]+" required>'
-            . '<div class="form-text">Format <code>object_NNNNNN</code> oder <code>adm_NNNNNN</code>. '
-            . 'GOV-ID findest du auf <a href="https://gov.genealogy.net" target="_blank">gov.genealogy.net</a>.</div>'
+            . '<div class="form-text">Format <code>object_NNNNNN</code> (Ortschaften) oder '
+            . '<code>adm_NNNNNN</code> (Verwaltungseinheiten).</div>'
             . '</div>'
             . '</form>'
             . '</div>'
@@ -124,6 +146,8 @@ class GovLinkPage extends AbstractOrtsregisterHandler
             . '<i class="fas fa-link me-1"></i>Verknüpfen</button>'
             . '</div>',
             $existingBlock,
+            e($placeName),
+            e($searchUrl),
             $action,
             e($csrf),
             e($existing ?? ''),
@@ -134,6 +158,19 @@ class GovLinkPage extends AbstractOrtsregisterHandler
         );
 
         return $this->fragment($html, 200);
+    }
+
+    /**
+     * Liefert den Place-Namen (unterste Hierarchie-Ebene) für die GOV-Suche.
+     */
+    private function loadPlaceName(Tree $tree, int $placeId): string
+    {
+        $row = DB::table('places')
+            ->where('p_id',   '=', $placeId)
+            ->where('p_file', '=', $tree->id())
+            ->select(['p_place'])
+            ->first();
+        return $row !== null ? (string) $row->p_place : '';
     }
 
     private function fragment(string $html, int $status): ResponseInterface
