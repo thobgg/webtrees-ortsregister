@@ -17,6 +17,7 @@ $mergePreview    = e(route('ortsregister.merge.preview', ['tree' => $tree?->name
 $mergeExecute    = e(route('ortsregister.merge.execute', ['tree' => $tree?->name()]));
 $filterModeUrl   = e(route('ortsregister.filter-mode', ['tree' => $tree?->name()]));
 $coordImportUrl  = e(route('ortsregister.coord.import', ['tree' => $tree?->name()]));
+$govLinkUrl      = $tree !== null ? e(route('ortsregister.gov.link', ['tree' => $tree->name()])) : '';
 $filterMode      = $filterMode ?? 'all';
 ?>
 
@@ -94,6 +95,7 @@ $filterMode      = $filterMode ?? 'all';
                    data-ajax="<?= $ajaxUrl ?>"
                    data-merge-preview="<?= $mergePreview ?>"
                    data-merge-execute="<?= $mergeExecute ?>"
+                   data-gov-link="<?= $govLinkUrl ?>"
                    data-csrf="<?= e(csrf_token()) ?>">
                 <thead class="table-light">
                     <tr>
@@ -155,6 +157,59 @@ document.addEventListener('DOMContentLoaded', function () {
             // Nach jedem Render: Radios gemäß aktuellem State wieder anhaken
             restoreSelectionRadios();
         },
+    });
+
+    // ---- GOV-Verknüpfen-Button (Event-Delegation, überlebt DT-Re-Render) ----
+    table.addEventListener('click', function (e) {
+        const btn = e.target.closest('.ortsregister-gov-btn');
+        if (!btn) return;
+        const placeId = btn.dataset.placeId;
+        const url = appendQuery(table.dataset.govLink, 'place_id=' + placeId);
+        const content = document.getElementById('ortsregister-merge-modal-content');
+        content.innerHTML = '<div class="modal-body text-center py-5"><div class="spinner-border text-primary"></div></div>';
+        new bootstrap.Modal(document.getElementById('ortsregister-merge-modal')).show();
+        fetch(url, { headers: { 'Accept': 'text/html' }})
+            .then(r => r.text())
+            .then(html => { content.innerHTML = html; })
+            .catch(err => { content.innerHTML = '<div class="modal-body text-danger">Fehler: ' + err + '</div>'; });
+    });
+
+    // ---- GOV-Form Submit + Unlink (Event-Delegation) ----
+    document.addEventListener('submit', function (e) {
+        if (e.target.id !== 'ortsregister-gov-form') return;
+        e.preventDefault();
+        const form = e.target;
+        fetch(form.action, {
+            method: 'POST',
+            body: new FormData(form),
+            headers: { 'X-CSRF-TOKEN': table.dataset.csrf },
+        })
+        .then(r => r.json())
+        .then(data => {
+            const content = document.getElementById('ortsregister-merge-modal-content');
+            if (data.success) {
+                content.innerHTML = '<div class="modal-header"><h5 class="modal-title text-success">'
+                    + '<i class="fas fa-check-circle me-2"></i>GOV verknüpft</h5></div>'
+                    + '<div class="modal-body"><p><strong>' + (data.name || data.gov_id) + '</strong></p>'
+                    + (data.lat ? '<p class="small text-muted">Koord.: ' + data.lat.toFixed(4) + ', ' + data.lng.toFixed(4) + '</p>' : '')
+                    + '</div><div class="modal-footer">'
+                    + '<button class="btn btn-primary" onclick="location.reload()">Liste neu laden</button></div>';
+            } else {
+                content.innerHTML = '<div class="modal-header"><h5 class="modal-title text-danger">Fehler</h5></div>'
+                    + '<div class="modal-body"><div class="alert alert-danger">' + data.message + '</div></div>'
+                    + '<div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button></div>';
+            }
+        })
+        .catch(err => alert('Netzwerkfehler: ' + err));
+    });
+    document.addEventListener('click', function (e) {
+        if (e.target.id !== 'ortsregister-gov-unlink' && !e.target.closest?.('#ortsregister-gov-unlink')) return;
+        const form = document.getElementById('ortsregister-gov-form');
+        const fd = new FormData(form);
+        fd.append('unlink', '1');
+        fetch(form.action, { method: 'POST', body: fd, headers: { 'X-CSRF-TOKEN': table.dataset.csrf }})
+            .then(r => r.json())
+            .then(_ => location.reload());
     });
 
     // ---- Merge-Modus-Toggle ----

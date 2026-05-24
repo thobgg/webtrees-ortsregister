@@ -20,6 +20,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
   `ortsregister_merge_log` (Operations-Historie).
 - PHPUnit-11-Test-Suite mit Tests für `GedcomPlaceManipulator` und
   `GedcomCoordinateExtractor`.
+- **GOV-Integration (Phase 3A)**: manuelles Linking von Places mit GOV-IDs
+  (gov.genealogy.net). `GovApiClient` mit Cache (7d TTL), `GovObject`-DTO,
+  `GovLinkingService`. Pro Ort ein Modal mit GOV-ID-Eingabe + Verifikation.
+  Neue Spalte `ortsregister_place_meta.gov_id` (Migration SCHEMA_VERSION 2).
 
 ## [0.1.0] – 2026-05-22
 

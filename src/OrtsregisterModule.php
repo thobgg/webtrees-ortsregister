@@ -6,6 +6,7 @@ namespace Ortsregister;
 
 use Ortsregister\Cache\ApcuCacheService;
 use Ortsregister\Http\RequestHandlers\CoordinateImportPage;
+use Ortsregister\Http\RequestHandlers\GovLinkPage;
 use Ortsregister\Http\RequestHandlers\MergeExecute;
 use Ortsregister\Http\RequestHandlers\MergeModalPage;
 use Ortsregister\Http\RequestHandlers\OrteDataTable;
@@ -16,6 +17,8 @@ use Ortsregister\Http\RequestHandlers\SetPlaceFilterMode;
 use Ortsregister\Service\CoordinateImportService;
 use Ortsregister\Service\GedcomCoordinateExtractor;
 use Ortsregister\Service\GedcomPlaceManipulator;
+use Ortsregister\Service\GovApiClient;
+use Ortsregister\Service\GovLinkingService;
 use Ortsregister\Service\PlaceOperationService;
 use Fisharebest\Webtrees\Auth;
 use Fisharebest\Webtrees\DB;
@@ -77,6 +80,8 @@ class OrtsregisterModule extends AbstractModule implements
                ->allows('POST');
         $router->get('ortsregister.coord.import',  '/tree/{tree}/orte/koordinaten-import', CoordinateImportPage::class)
                ->allows('POST');
+        $router->get('ortsregister.gov.link',      '/tree/{tree}/orte/gov',            GovLinkPage::class)
+               ->allows('POST');
         $router->get('ortsregister.orte.detail',   '/tree/{tree}/orte/{place_id}',     OrteDetailPage::class);
     }
 
@@ -103,6 +108,17 @@ class OrtsregisterModule extends AbstractModule implements
                 $container->get(GedcomCoordinateExtractor::class),
                 __DIR__ . '/../backups',
             ),
+        );
+        // GOV-Stack: API-Client + Linking-Service (Autowiring würde reichen,
+        // wir setzen explizit für Sichtbarkeit + um GovApiClient als Singleton
+        // mit demselben Cache zu pinnen).
+        $container->set(
+            GovApiClient::class,
+            new GovApiClient($container->get(ApcuCacheService::class)),
+        );
+        $container->set(
+            GovLinkingService::class,
+            new GovLinkingService($container->get(GovApiClient::class)),
         );
     }
 
@@ -155,7 +171,7 @@ class OrtsregisterModule extends AbstractModule implements
             . '</style>';
     }
 
-    private const SCHEMA_VERSION = 1;
+    private const SCHEMA_VERSION = 2;
 
     private function migrateDatabase(): void
     {
@@ -171,10 +187,22 @@ class OrtsregisterModule extends AbstractModule implements
                 $table->integer('place_id');
                 $table->integer('tree_id');
                 $table->text('meta_data');
+                $table->string('gov_id', 50)->nullable();
                 $table->timestamp('created_at')->useCurrent();
                 $table->timestamp('updated_at')->useCurrent();
                 $table->primary(['place_id', 'tree_id']);
                 $table->index('tree_id');
+                $table->index('gov_id');
+            });
+            $didDdl = true;
+        }
+
+        // SCHEMA_VERSION=2: gov_id-Spalte nachrüsten für Bestandstabellen
+        if ($schema->hasTable('ortsregister_place_meta')
+            && !$schema->hasColumn('ortsregister_place_meta', 'gov_id')) {
+            $schema->table('ortsregister_place_meta', function (Blueprint $table): void {
+                $table->string('gov_id', 50)->nullable()->after('meta_data');
+                $table->index('gov_id');
             });
             $didDdl = true;
         }
