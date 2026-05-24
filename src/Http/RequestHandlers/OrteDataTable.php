@@ -77,15 +77,18 @@ class OrteDataTable extends AbstractDataTableHandler
     /** @return list<string> */
     private function toRow(OrtDto $ort, string $treeName): array
     {
-        // Auswahl-Spalte: zwei Radios (Quelle / Ziel) für Merge-Selection
+        // Auswahl-Spalte: Q/Z-Radios für Merge + GOV-Verknüpfen-Button
         $auswahlHtml = sprintf(
-            '<div class="d-flex gap-1 ortsregister-select" data-place-id="%1$d">'
+            '<div class="d-flex gap-1 align-items-center ortsregister-select" data-place-id="%1$d">'
             . '<input type="radio" class="btn-check ortsregister-src" name="ortsregister-src" '
             .   'id="src-%1$d" value="%1$d" autocomplete="off">'
             . '<label class="btn btn-sm btn-outline-warning" for="src-%1$d" title="Als Quelle">Q</label>'
             . '<input type="radio" class="btn-check ortsregister-dst" name="ortsregister-dst" '
             .   'id="dst-%1$d" value="%1$d" autocomplete="off">'
             . '<label class="btn btn-sm btn-outline-success" for="dst-%1$d" title="Als Ziel">Z</label>'
+            . '<button type="button" class="btn btn-sm btn-outline-info ms-1 ortsregister-gov-btn" '
+            .   'data-place-id="%1$d" title="GOV-Verknüpfung">'
+            . '<i class="fas fa-globe"></i></button>'
             . '</div>',
             $ort->id,
         );
