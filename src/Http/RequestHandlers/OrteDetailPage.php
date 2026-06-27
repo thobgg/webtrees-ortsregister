@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Ortsregister\Http\RequestHandlers;
 
+use Ortsregister\Dto\DdbPlaceData;
 use Ortsregister\Dto\WikimediaPlaceData;
 use Ortsregister\OrtsregisterModule;
 use Ortsregister\Repository\OrteRepository;
+use Ortsregister\Service\DdbClient;
 use Ortsregister\Service\GovHierarchyResolver;
 use Ortsregister\Service\GovLinkingService;
 use Ortsregister\Service\PlaceEventCounter;
@@ -32,6 +34,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
         private readonly GovHierarchyResolver $govHierarchy,
         private readonly PlaceEventCounter    $eventCounter,
         private readonly WikimediaPlaceClient $wikimedia,
+        private readonly DdbClient            $ddb,
         private readonly OrtsregisterModule   $module,
     ) {}
 
@@ -41,6 +44,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
     ): ResponseInterface {
         $emptyCounts = ['BIRT' => 0, 'MARR' => 0, 'DEAT' => 0, 'OTHER' => 0, 'TOTAL' => 0];
         $emptyWiki   = WikimediaPlaceData::empty();
+        $emptyDdb    = DdbPlaceData::empty();
         $defaults    = [
             'personen_visible' => $this->module->personenVisible(),
             'medien_visible'   => $this->module->medienVisible(),
@@ -63,6 +67,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
                 'gov_chain'    => [],
                 'event_counts' => $emptyCounts,
                 'wiki'         => $emptyWiki,
+                'ddb'          => $emptyDdb,
             ], $defaults));
         }
 
@@ -81,6 +86,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
                 'gov_chain'    => [],
                 'event_counts' => $emptyCounts,
                 'wiki'         => $emptyWiki,
+                'ddb'          => $emptyDdb,
             ], $defaults));
         }
 
@@ -120,6 +126,14 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
             // Stiller Fallback — leerer DTO
         }
 
+        // DDB-Lookup (Treffer-Zahl + bis zu 6 Dokumente). Bei leerem API-Key → leer.
+        $ddb = $emptyDdb;
+        try {
+            $ddb = $this->ddb->lookup($ort->name);
+        } catch (Throwable) {
+            // Stiller Fallback
+        }
+
         return $this->viewResponse($this->viewName('ort-detail'), array_merge([
             'title'        => $ort->name,
             'tree'         => $tree,
@@ -131,6 +145,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
             'place_id'     => $placeId,
             'event_counts' => $eventCounts,
             'wiki'         => $wiki,
+            'ddb'          => $ddb,
         ], $defaults));
     }
 
