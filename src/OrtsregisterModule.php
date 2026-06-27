@@ -16,6 +16,7 @@ use Ortsregister\Http\RequestHandlers\OrteKarte;
 use Ortsregister\Http\RequestHandlers\OrtePage;
 use Ortsregister\Http\RequestHandlers\SetPlaceFilterMode;
 use Ortsregister\Service\CoordinateImportService;
+use Ortsregister\Service\DdbClient;
 use Ortsregister\Service\GedcomCoordinateExtractor;
 use Ortsregister\Service\GedcomPlaceManipulator;
 use Ortsregister\Service\GovApiClient;
@@ -175,6 +176,14 @@ class OrtsregisterModule extends AbstractModule implements
                 $this->wikiEnabled(),
             ),
         );
+        $container->set(
+            DdbClient::class,
+            new DdbClient(
+                $container->get(ApcuCacheService::class),
+                $this->ddbApiKey(),
+                $this->govCacheTtl(),
+            ),
+        );
         // AdminConfigPage: braucht das Modul selbst
         $container->set(
             AdminConfigPage::class,
@@ -189,6 +198,7 @@ class OrtsregisterModule extends AbstractModule implements
                 $container->get(GovHierarchyResolver::class),
                 $container->get(PlaceEventCounter::class),
                 $container->get(WikimediaPlaceClient::class),
+                $container->get(DdbClient::class),
                 $this,
             ),
         );

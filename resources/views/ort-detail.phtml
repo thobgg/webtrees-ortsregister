@@ -21,6 +21,7 @@ use Fisharebest\Webtrees\Media;
 /** @var bool $link_archion */
 /** @var bool $link_archivpdb */
 /** @var bool $link_ddb */
+/** @var \Ortsregister\Dto\DdbPlaceData $ddb */
 
 // Lokale Aliases — Settings kommen vom Handler, Defaults siehe OrtsregisterModule
 $PERSONEN_VISIBLE = $personen_visible ?? 10;
@@ -262,6 +263,49 @@ foreach ($bilder as $medium) {
             </div>
         </div>
 
+        <?php
+        // KIES-Style Quellen-Zeile: kompakte Inline-Box mit allen externen Refs.
+        // Pro Quelle ein Block "Label · Wert · Link ↗", getrennt durch · .
+        $govLinked   = $gov_id !== null && $gov_id !== '';
+        $govName     = $gov_chain !== [] ? ($gov_chain[0]['name'] ?? '') : '';
+        $quellen     = [];
+        if ($govLinked) {
+            $govSpan = '<strong>GOV</strong> · <code>' . e($gov_id) . '</code>'
+                . ($govName !== '' ? ' · ' . e($govName) : '')
+                . ' · <a href="https://gov.genealogy.net/item/show/' . e($gov_id) . '"'
+                . '   target="_blank" rel="noopener">Eintrag ↗</a>';
+            $quellen[] = $govSpan;
+        }
+        if (($link_archion ?? true)) {
+            $quellen[] = '<strong>Archion</strong> · <a href="https://www.archion.de/de/browse/?place='
+                . urlencode($ort->name) . '" target="_blank" rel="noopener">Pfarrbücher ↗</a>';
+        }
+        if (($link_wikipedia ?? true)) {
+            $quellen[] = '<strong>Wikipedia</strong> · <a href="https://de.wikipedia.org/wiki/'
+                . urlencode($ort->name) . '" target="_blank" rel="noopener">' . e($ort->name) . ' ↗</a>';
+        }
+        if (($link_matricula ?? true)) {
+            $quellen[] = '<strong>Matricula</strong> · <a href="https://www.matricula-online.eu/search/?q='
+                . urlencode($ort->name) . '" target="_blank" rel="noopener">Suche ↗</a>';
+        }
+        if (($link_archivpdb ?? true)) {
+            $quellen[] = '<strong>Archivportal-D</strong> · <a href="https://www.archivportal-d.de/search?query='
+                . urlencode($ort->name) . '" target="_blank" rel="noopener">Suche ↗</a>';
+        }
+        if (($link_ddb ?? true)) {
+            $ddbCount = $ddb->total > 0 ? number_format($ddb->total, 0, ',', '.') . ' Treffer' : 'Suche';
+            $quellen[] = '<strong>DDB</strong> · <a href="https://www.deutsche-digitale-bibliothek.de/searchresults?query='
+                . urlencode($ort->name) . '" target="_blank" rel="noopener">' . e($ddbCount) . ' ↗</a>';
+        }
+        ?>
+        <?php if ($quellen !== []) : ?>
+        <div class="card mb-4 bg-light">
+            <div class="card-body py-2 px-3 small">
+                <?= implode(' &nbsp;·&nbsp; ', $quellen) ?>
+            </div>
+        </div>
+        <?php endif ?>
+
         <?php if ($ort->hatKoordinaten()) : ?>
         <div class="card mb-4">
             <div class="card-header fw-semibold d-flex align-items-center">
@@ -339,6 +383,51 @@ foreach ($bilder as $medium) {
                 </div>
                 <div class="form-text mt-2">
                     <?= I18N::translate('Bilder aus Wikimedia Commons, geo-validiert gegen GOV-Koordinaten. Click öffnet die Commons-Beschreibungsseite mit Lizenz-Details.') ?>
+                </div>
+            </div>
+        </div>
+        <?php endif ?>
+
+        <?php if ($ddb->items !== []) : ?>
+        <div class="card mb-4">
+            <div class="card-header fw-semibold d-flex align-items-center">
+                <?= I18N::translate('Aus Deutscher Digitaler Bibliothek') ?>
+                <span class="badge bg-secondary ms-2"><?= count($ddb->items) ?></span>
+                <?php if ($ddb->total > 0) : ?>
+                    <a href="https://www.deutsche-digitale-bibliothek.de/searchresults?query=<?= urlencode($ort->name) ?>"
+                       target="_blank" rel="noopener"
+                       class="ms-auto small text-muted text-decoration-none">
+                        <?= I18N::translate('%s Treffer insgesamt ↗', number_format($ddb->total, 0, ',', '.')) ?>
+                    </a>
+                <?php endif ?>
+            </div>
+            <div class="card-body">
+                <div class="row row-cols-2 row-cols-sm-3 row-cols-lg-4 g-3">
+                    <?php foreach ($ddb->items as $item) : ?>
+                        <div class="col">
+                            <a href="<?= e($item->pageUrl()) ?>" target="_blank" rel="noopener"
+                               class="d-block text-decoration-none text-reset border rounded overflow-hidden h-100">
+                                <?php if ($item->thumbnailUrl !== null) : ?>
+                                    <img src="<?= e($item->thumbnailUrl) ?>" alt="<?= e($item->label) ?>"
+                                         loading="lazy"
+                                         style="width:100%;height:140px;object-fit:cover;display:block;background:#f5f0e8">
+                                <?php else : ?>
+                                    <div style="height:140px;background:#f5f0e8;display:flex;align-items:center;justify-content:center;color:#aaa">
+                                        <span style="font-size:.75rem;text-transform:uppercase"><?= e($item->media ?: 'DDB') ?></span>
+                                    </div>
+                                <?php endif ?>
+                                <div class="p-2">
+                                    <div class="fw-semibold small text-truncate" title="<?= e($item->label) ?>"><?= e($item->label) ?></div>
+                                    <?php if ($item->subtitle !== '') : ?>
+                                        <div class="text-muted" style="font-size:.7rem;line-height:1.3"><?= e(mb_strimwidth($item->subtitle, 0, 80, '…')) ?></div>
+                                    <?php endif ?>
+                                </div>
+                            </a>
+                        </div>
+                    <?php endforeach ?>
+                </div>
+                <div class="form-text mt-2">
+                    <?= I18N::translate('Treffer aus der Deutschen Digitalen Bibliothek — Suchstaffel „Pfarrbericht" → „Pfarr" → „<Ortsname>". Click öffnet den DDB-Eintrag.') ?>
                 </div>
             </div>
         </div>
@@ -441,28 +530,6 @@ foreach ($bilder as $medium) {
         </div>
         <?php endif ?>
 
-        <div class="card mb-4">
-            <div class="card-header fw-semibold">
-<?= I18N::translate('Externe Ressourcen') ?>
-            </div>
-            <div class="card-body d-flex flex-wrap gap-2">
-                <?php if (($link_wikipedia ?? true)) : ?>
-                    <a href="https://de.wikipedia.org/wiki/<?= urlencode($ort->name) ?>" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-sm">Wikipedia</a>
-                <?php endif ?>
-                <?php if (($link_matricula ?? true)) : ?>
-                    <a href="https://www.matricula-online.eu/search/?q=<?= urlencode($ort->name) ?>" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-sm">Matricula</a>
-                <?php endif ?>
-                <?php if (($link_archion ?? true)) : ?>
-                    <a href="https://www.archion.de/de/browse/?place=<?= urlencode($ort->name) ?>" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-sm">Archion</a>
-                <?php endif ?>
-                <?php if (($link_archivpdb ?? true)) : ?>
-                    <a href="https://www.archivportal-d.de/search?query=<?= urlencode($ort->name) ?>" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-sm">Archivportal-D</a>
-                <?php endif ?>
-                <?php if (($link_ddb ?? true)) : ?>
-                    <a href="https://www.deutsche-digitale-bibliothek.de/searchresults?query=<?= urlencode($ort->name) ?>" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-sm">DDB</a>
-                <?php endif ?>
-            </div>
-        </div>
     <?php endif ?>
 </div>
 
