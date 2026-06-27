@@ -4,13 +4,20 @@ declare(strict_types=1);
 
 namespace Ortsregister\Http\RequestHandlers;
 
+use Ortsregister\Dto\WikimediaPlaceData;
+use Ortsregister\OrtsregisterModule;
 use Ortsregister\Repository\OrteRepository;
+use Ortsregister\Service\GovHierarchyResolver;
+use Ortsregister\Service\GovLinkingService;
+use Ortsregister\Service\PlaceEventCounter;
+use Ortsregister\Service\WikimediaPlaceClient;
 use Fisharebest\Webtrees\DB;
 use Fisharebest\Webtrees\I18N;
 use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\Tree;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Throwable;
 
 /**
  * GET /tree/{tree}/orte/{place_id}
@@ -20,21 +27,38 @@ use Psr\Http\Message\ServerRequestInterface;
 class OrteDetailPage extends AbstractOrtsregisterHandler
 {
     public function __construct(
-        private readonly OrteRepository $orteRepository
+        private readonly OrteRepository       $orteRepository,
+        private readonly GovLinkingService    $govLinking,
+        private readonly GovHierarchyResolver $govHierarchy,
+        private readonly PlaceEventCounter    $eventCounter,
+        private readonly WikimediaPlaceClient $wikimedia,
+        private readonly OrtsregisterModule   $module,
     ) {}
 
     protected function respond(
         ServerRequestInterface $request,
         ?Tree $tree
     ): ResponseInterface {
+        $emptyCounts = ['BIRT' => 0, 'MARR' => 0, 'DEAT' => 0, 'OTHER' => 0, 'TOTAL' => 0];
+        $emptyWiki   = WikimediaPlaceData::empty();
+        $defaults    = [
+            'personen_visible' => $this->module->personenVisible(),
+            'medien_visible'   => $this->module->medienVisible(),
+            'bilder_visible'   => $this->module->bilderVisible(),
+        ];
+
         if ($tree === null) {
-            return $this->viewResponse($this->viewName('ort-detail'), [
-                'title' => I18N::translate('Ort'),
-                'tree'  => null,
-                'ort'   => null,
-                'personen' => [],
-                'medien'   => [],
-            ]);
+            return $this->viewResponse($this->viewName('ort-detail'), array_merge([
+                'title'        => I18N::translate('Ort'),
+                'tree'         => null,
+                'ort'          => null,
+                'personen'     => [],
+                'medien'       => [],
+                'gov_id'       => null,
+                'gov_chain'    => [],
+                'event_counts' => $emptyCounts,
+                'wiki'         => $emptyWiki,
+            ], $defaults));
         }
 
         $placeId = (int) ($request->getAttribute('place_id') ?? 0);
@@ -42,13 +66,17 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
         $ort = $this->orteRepository->findeOrtById($tree, $placeId);
 
         if ($ort === null) {
-            return $this->viewResponse($this->viewName('ort-detail'), [
-                'title'    => I18N::translate('Ort nicht gefunden'),
-                'tree'     => $tree,
-                'ort'      => null,
-                'personen' => [],
-                'medien'   => [],
-            ]);
+            return $this->viewResponse($this->viewName('ort-detail'), array_merge([
+                'title'        => I18N::translate('Ort nicht gefunden'),
+                'tree'         => $tree,
+                'ort'          => null,
+                'personen'     => [],
+                'medien'       => [],
+                'gov_id'       => null,
+                'gov_chain'    => [],
+                'event_counts' => $emptyCounts,
+                'wiki'         => $emptyWiki,
+            ], $defaults));
         }
 
         // Personen mit Ereignissen an diesem Ort
@@ -57,12 +85,50 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
         // Medien die an diesem Ort hängen
         $medien = $this->ladeMedien($tree, $placeId);
 
+        // GOV-Hierarchie: nur wenn verknüpft. API-Fehler dürfen die Seite nicht killen.
+        $govId    = $this->govLinking->getLinkedGovId($tree, $placeId);
+        $govChain = [];
+        if ($govId !== null) {
+            try {
+                foreach ($this->govHierarchy->resolveWithEdges($govId) as $step) {
+                    $govChain[] = [
+                        'gov_id' => $step['obj']->govId,
+                        'name'   => $this->govHierarchy->germanNameOf($step['obj']),
+                        'begin'  => $step['begin'],
+                        'end'    => $step['end'],
+                    ];
+                }
+            } catch (Throwable) {
+                $govChain = []; // Stiller Fallback — View zeigt dann nur die ID
+            }
+        }
+
+        // Ereignisse pro Tag (BIRT/MARR/DEAT/OTHER) — Mini-Parser über GEDCOM-Blobs.
+        $eventCounts = $this->eventCounter->countFor($tree, $placeId, $ort->name);
+
+        // Wikimedia-Lookup (Hauptbild + Galerie). 7d-Cache, Geo-Validation via GOV-Koord.
+        // Niemals Page-killend — Service liefert immer einen DTO.
+        $wiki = $emptyWiki;
+        try {
+            $wiki = $this->wikimedia->lookup($ort->name, $ort->breitengrad, $ort->laengengrad);
+        } catch (Throwable) {
+            // Stiller Fallback — leerer DTO
+        }
+
         return $this->viewResponse($this->viewName('ort-detail'), [
-            'title'    => $ort->name,
-            'tree'     => $tree,
-            'ort'      => $ort,
-            'personen' => $personen,
-            'medien'   => $medien,
+            'title'            => $ort->name,
+            'tree'             => $tree,
+            'ort'              => $ort,
+            'personen'         => $personen,
+            'medien'           => $medien,
+            'gov_id'           => $govId,
+            'gov_chain'        => $govChain,
+            'place_id'         => $placeId,
+            'event_counts'     => $eventCounts,
+            'wiki'             => $wiki,
+            'personen_visible' => $this->module->personenVisible(),
+            'medien_visible'   => $this->module->medienVisible(),
+            'bilder_visible'   => $this->module->bilderVisible(),
         ]);
     }
 

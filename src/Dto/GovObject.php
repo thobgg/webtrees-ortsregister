@@ -17,16 +17,17 @@ namespace Ortsregister\Dto;
 final class GovObject
 {
     /**
-     * @param string                    $govId              z.B. "object_152487"
-     * @param string                    $primaryName        Primärer Name (oft deutsch, ggf. mehrere Sprachen)
-     * @param array<string, string>     $namesByLang        Lang-Code → Name (z.B. ['de' => 'Tuttlingen', 'en' => 'Tuttlingen'])
-     * @param list<string>              $typeIds            GOV-Type-IDs (z.B. ['j.1:9'] = Stadt)
-     * @param float|null                $latitude
-     * @param float|null                $longitude
-     * @param list<string>              $partOfIds          Hierarchie: GOV-IDs der Eltern (Kreis, Land, etc.)
-     * @param list<string>              $locatedInIds       Räumliche Zugehörigkeit
-     * @param list<string>              $externalUrls       URLs zu Wikipedia, OSM, Wikidata, etc.
-     * @param array<string, mixed>      $rawJson            Original-Antwort für Roh-Anzeige
+     * @param string                                                                $govId              z.B. "object_152487"
+     * @param string                                                                $primaryName        Primärer Name (oft deutsch, ggf. mehrere Sprachen)
+     * @param array<string, string>                                                 $namesByLang        Lang-Code → Name (z.B. ['de' => 'Tuttlingen', 'en' => 'Tuttlingen'])
+     * @param list<string>                                                          $typeIds            GOV-Type-IDs (z.B. ['j.1:9'] = Stadt)
+     * @param float|null                                                            $latitude
+     * @param float|null                                                            $longitude
+     * @param list<string>                                                          $partOfIds          Hierarchie: GOV-IDs der Eltern (Kreis, Land, etc.)
+     * @param list<string>                                                          $locatedInIds       Räumliche Zugehörigkeit
+     * @param list<string>                                                          $externalUrls       URLs zu Wikipedia, OSM, Wikidata, etc.
+     * @param array<string, mixed>                                                  $rawJson            Original-Antwort für Roh-Anzeige
+     * @param array<string, array{begin: string|null, end: string|null}>            $partOfMeta         Pro partOf-Ref-ID die Zeitspanne (begin/end Strings wie GOV sie liefert, oft Jahreszahlen)
      */
     public function __construct(
         public readonly string $govId,
@@ -39,6 +40,7 @@ final class GovObject
         public readonly array  $locatedInIds,
         public readonly array  $externalUrls,
         public readonly array  $rawJson,
+        public readonly array  $partOfMeta = [],
     ) {}
 
     public function hasCoordinates(): bool

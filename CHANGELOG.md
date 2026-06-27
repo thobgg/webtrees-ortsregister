@@ -24,6 +24,61 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
   (gov.genealogy.net). `GovApiClient` mit Cache (7d TTL), `GovObject`-DTO,
   `GovLinkingService`. Pro Ort ein Modal mit GOV-ID-Eingabe + Verifikation.
   Neue Spalte `ortsregister_place_meta.gov_id` (Migration SCHEMA_VERSION 2).
+- **GOV-Hierarchie auf Detailseite (Phase 3E)**: bei verknüpftem Ort wird
+  die `part-of`-Kette aus GOV rekursiv aufgelöst (max. 10 Stufen, Cycle-Safe,
+  via gecachtem `GovApiClient`) und als Breadcrumb angezeigt — verlinkt direkt
+  auf gov.genealogy.net. Bei nicht-verknüpften Orten zeigt der Block die
+  PLAC-Komma-Hierarchie + „Jetzt mit GOV verknüpfen"-Button (öffnet das
+  bestehende GOV-Modal direkt auf der Detailseite).
+- **Detailseite kompakter + aussagekräftiger (Phase 3F)**:
+  - Statistik-Karten splitten Ereignisse nach Typ (Geburten / Heiraten /
+    Todesfälle / Weitere) statt aggregiert. `PlaceEventCounter` parsiert
+    die GEDCOM-Blobs der verknüpften INDI/FAM-Records.
+  - Lange Listen werden gekappt: Personen 10, Medien 5, Bilder-Grid 12 —
+    Rest in Bootstrap-Collapse mit „Alle N anzeigen"-Button.
+- **Admin-Konfiguration (Phase 3L)**: neuer Bereich
+  `Verwaltung → Module → Ortsregister`. Konfigurierbar:
+  - Wikimedia-Lookup an/aus
+  - Max. Distanz Wikidata ↔ GOV-Koordinaten (default 30 km)
+  - Cache-TTLs für Wikimedia + GOV separat
+  - Sichtbare Listen-Längen (Personen / Medien / Bilder)
+  Implementiert `ModuleConfigInterface`. Defaults bleiben bei
+  ungesetzten Werten erhalten — Update bricht nichts.
+- **Wikimedia-Integration (Phase 3J-1)**: zu jedem Ort wird Wikidata
+  nach dem Ortsnamen durchsucht (max. 5 Kandidaten), gegen die GOV-
+  Koordinaten geo-validiert (max. 30 km Abstand — verwirft Namensgleiche
+  in fremden Regionen). Bei Treffer wird Wikidata-P18 als Hauptbild
+  geladen (Fallback wenn kein webtrees-Headerbild gepflegt ist) und
+  zusätzlich eine Commons-Galerie aus passenden File-Treffern (max. 6,
+  ohne SVG/PNG). Lizenz-Hinweise pro Bild. Neue Services:
+  `WikimediaPlaceClient`, DTOs `WikiImage` und `WikimediaPlaceData`.
+  Cache 7 Tage, vier API-Calls pro Ort beim ersten Aufruf.
+- **GOV-Hierarchie mit Zeitspannen (Phase 3H-1)**: pro Hierarchie-Stufe
+  wird die Zeitspanne der part-of-Zugehörigkeit angezeigt
+  („Württemberg (1806–1813)"). Lead-Hinweis oben im Block zeigt die
+  Epoche der unmittelbaren Elternstufe, damit klar wird, dass die
+  Hierarchie historisch ist und für andere Epochen abweichen kann.
+  `GovHierarchyResolver::resolveWithEdges()` liefert pro Stufe begin/end
+  der Edge zur vorherigen Stufe; `GovObject.partOfMeta` cached die
+  Zeitspannen je Ref-ID aus der GOV-API.
+- **Detailseite visuell aufgewertet (Phase 3G)** — Patterns aus Nachbar-Modul
+  „Sammlungen" adaptiert:
+  - Medien-Liste mit farbigen Format-Badges (PDF rot, Video/Audio,
+    Word/Excel etc.) statt nur Text-Link.
+  - Bilder-Galerie: dichter Grid (3/4/5/6 Cols responsive), Tiles
+    streng quadratisch (`aspect-ratio: 1/1`) mit Hover-Overlay
+    (Caption + Lift-Schatten).
+  - **Lightbox** für Galerie-Bilder: Click → großes Modal mit
+    Prev/Next-Navigation, Pfeiltasten-Support, Position-Indikator,
+    Link „In webtrees öffnen". Vanilla JS, ~80 Zeilen inline.
+
+### Geändert
+- GOV-ID-Format: kompakte IDs wie `HABCHTJN49MC` werden zusätzlich zum
+  Legacy-Format `object_NNN` akzeptiert (Regex `[A-Za-z0-9_]{3,40}`).
+- GOV-Externsuche-URL: `/search/name?name=` statt veraltetem
+  `/search/simple?placename=` (404 seit Juni 2026).
+- Help-Text zu GOV-ID-Format: keine falschen Typ-Behauptungen mehr
+  am ID-Prefix (GOV-Typ steht im `type`-Feld der API-Antwort).
 
 ## [0.1.0] – 2026-05-22
 

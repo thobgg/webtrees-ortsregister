@@ -83,7 +83,7 @@ class GovLinkPage extends AbstractOrtsregisterHandler
 
         // Place-Name aus DB holen für vor-befüllte GOV-Suche
         $placeName = $this->loadPlaceName($tree, $placeId);
-        $searchUrl = 'https://gov.genealogy.net/search/simple?placename=' . rawurlencode($placeName);
+        $searchUrl = 'https://gov.genealogy.net/search/name?name=' . rawurlencode($placeName);
 
         $existingBlock = '';
         if ($obj !== null) {
@@ -133,9 +133,12 @@ class GovLinkPage extends AbstractOrtsregisterHandler
             . '<div class="mb-3">'
             . '<label for="gov-id-input" class="form-label">GOV-ID</label>'
             . '<input type="text" class="form-control" id="gov-id-input" name="gov_id" '
-            . 'placeholder="z.B. object_152487" value="%s" pattern="[a-z][a-z_0-9]*_[0-9]+" required>'
-            . '<div class="form-text">Format <code>object_NNNNNN</code> (Ortschaften) oder '
-            . '<code>adm_NNNNNN</code> (Verwaltungseinheiten).</div>'
+            . 'placeholder="z.B. HABCHTJN49MC oder object_152487" value="%s" '
+            . 'pattern="[A-Za-z0-9_]{3,40}" required>'
+            . '<div class="form-text">GOV-ID aus der Trefferliste kopieren. '
+            . 'Formate: kompakte Hash-ID (z.B. <code>HABCHTJN49MC</code>) oder '
+            . 'Legacy-Form mit Underscore (<code>object_NNN</code>, <code>adm_NNN</code>). '
+            . 'Den Objekttyp zeigt GOV nach dem Verknüpfen an, nicht das Prefix.</div>'
             . '</div>'
             . '</form>'
             . '</div>'
