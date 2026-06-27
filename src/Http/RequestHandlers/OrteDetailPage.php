@@ -12,6 +12,7 @@ use Ortsregister\Service\DdbClient;
 use Ortsregister\Service\GovHierarchyResolver;
 use Ortsregister\Service\GovLinkingService;
 use Ortsregister\Service\PlaceEventCounter;
+use Ortsregister\Service\PlaceFolderScanner;
 use Ortsregister\Service\WikimediaPlaceClient;
 use Fisharebest\Webtrees\DB;
 use Fisharebest\Webtrees\I18N;
@@ -35,6 +36,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
         private readonly PlaceEventCounter    $eventCounter,
         private readonly WikimediaPlaceClient $wikimedia,
         private readonly DdbClient            $ddb,
+        private readonly PlaceFolderScanner   $folderScanner,
         private readonly OrtsregisterModule   $module,
     ) {}
 
@@ -68,6 +70,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
                 'event_counts' => $emptyCounts,
                 'wiki'         => $emptyWiki,
                 'ddb'          => $emptyDdb,
+                'folder_files' => [],
             ], $defaults));
         }
 
@@ -87,6 +90,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
                 'event_counts' => $emptyCounts,
                 'wiki'         => $emptyWiki,
                 'ddb'          => $emptyDdb,
+                'folder_files' => [],
             ], $defaults));
         }
 
@@ -134,6 +138,14 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
             // Stiller Fallback
         }
 
+        // Filesystem-Ortsbilder/-Dateien aus media/<root>/<ortsname>/
+        $folderFiles = [];
+        try {
+            $folderFiles = $this->folderScanner->scan($tree, $ort->name);
+        } catch (Throwable) {
+            // Stiller Fallback (z.B. Permission-Error)
+        }
+
         return $this->viewResponse($this->viewName('ort-detail'), array_merge([
             'title'        => $ort->name,
             'tree'         => $tree,
@@ -146,6 +158,8 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
             'event_counts' => $eventCounts,
             'wiki'         => $wiki,
             'ddb'          => $ddb,
+            'folder_files' => $folderFiles,
+            'module'       => $this->module,
         ], $defaults));
     }
 
