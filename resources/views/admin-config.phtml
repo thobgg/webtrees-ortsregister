@@ -12,6 +12,12 @@ use Ortsregister\OrtsregisterModule;
 /** @var int    $personen_visible */
 /** @var int    $medien_visible */
 /** @var int    $bilder_visible */
+/** @var string $ddb_api_key */
+/** @var bool   $link_wikipedia */
+/** @var bool   $link_matricula */
+/** @var bool   $link_archion */
+/** @var bool   $link_archivpdb */
+/** @var bool   $link_ddb */
 
 $secondsToDays = static fn(int $s): string => $s >= 86400
     ? round($s / 86400, 1) . ' Tage'
@@ -111,6 +117,79 @@ $secondsToDays = static fn(int $s): string => $s >= 86400
             </div>
             <div class="form-text mt-2">
                 <?= I18N::translate('Rest jeder Liste wird in einem Klapper „Alle N anzeigen" versteckt. Default Personen 10, Medien 5, Bilder 12.') ?>
+            </div>
+        </div>
+    </fieldset>
+
+    <fieldset class="card mb-4">
+        <legend class="card-header h6 mb-0"><?= I18N::translate('Externe Ressourcen-Links auf Detailseiten') ?></legend>
+        <div class="card-body">
+            <p class="text-muted small mb-3">
+                <?= I18N::translate('Welche Buttons in der „Externe Ressourcen"-Box auf der Ort-Detailseite angezeigt werden. Alle nutzen den Ortsnamen als Suchparameter.') ?>
+            </p>
+            <div class="row g-2">
+                <div class="col-md-6">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox"
+                               id="link_wikipedia" name="<?= e(OrtsregisterModule::SETTING_LINK_WIKIPEDIA) ?>"
+                               <?= $link_wikipedia ? 'checked' : '' ?>>
+                        <label class="form-check-label" for="link_wikipedia">Wikipedia</label>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox"
+                               id="link_matricula" name="<?= e(OrtsregisterModule::SETTING_LINK_MATRICULA) ?>"
+                               <?= $link_matricula ? 'checked' : '' ?>>
+                        <label class="form-check-label" for="link_matricula">Matricula</label>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox"
+                               id="link_archion" name="<?= e(OrtsregisterModule::SETTING_LINK_ARCHION) ?>"
+                               <?= $link_archion ? 'checked' : '' ?>>
+                        <label class="form-check-label" for="link_archion">Archion (Generische Suche)</label>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox"
+                               id="link_archivpdb" name="<?= e(OrtsregisterModule::SETTING_LINK_ARCHIVPDB) ?>"
+                               <?= $link_archivpdb ? 'checked' : '' ?>>
+                        <label class="form-check-label" for="link_archivpdb">Archivportal-D</label>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox"
+                               id="link_ddb" name="<?= e(OrtsregisterModule::SETTING_LINK_DDB) ?>"
+                               <?= $link_ddb ? 'checked' : '' ?>>
+                        <label class="form-check-label" for="link_ddb">Deutsche Digitale Bibliothek (DDB)</label>
+                    </div>
+                </div>
+            </div>
+            <div class="form-text mt-3">
+                <?= I18N::translate('Hinweis: Archion-Deep-Links (auf spezifisches Dekanat/Parochie) werden separat pro Ort gepflegt — geplant in Phase 3I-0.') ?>
+            </div>
+        </div>
+    </fieldset>
+
+    <fieldset class="card mb-4">
+        <legend class="card-header h6 mb-0"><?= I18N::translate('API-Zugangsdaten') ?></legend>
+        <div class="card-body">
+            <div class="mb-3">
+                <label for="ddb_api_key" class="form-label">
+                    <?= I18N::translate('DDB-API-Key (Deutsche Digitale Bibliothek)') ?>
+                </label>
+                <input type="text" class="form-control"
+                       id="ddb_api_key" name="<?= e(OrtsregisterModule::SETTING_DDB_API_KEY) ?>"
+                       value="<?= e($ddb_api_key) ?>"
+                       placeholder="z.B. 40-stelliger Hex-String"
+                       autocomplete="off">
+                <div class="form-text">
+                    <?= I18N::translate('Optional. Kostenlos beantragbar unter %s. Wird benötigt sobald DDB-API-Integration (Treffer + Dokumenten-Galerie) aktiv ist — aktuell nur Vorbereitung.', '<a href="https://api.deutsche-digitale-bibliothek.de/doku/" target="_blank" rel="noopener">api.deutsche-digitale-bibliothek.de</a>') ?>
+                </div>
             </div>
         </div>
     </fieldset>

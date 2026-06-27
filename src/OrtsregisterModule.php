@@ -71,6 +71,12 @@ class OrtsregisterModule extends AbstractModule implements
     public const SETTING_PERSONEN_VISIBLE = 'personen_visible';
     public const SETTING_MEDIEN_VISIBLE   = 'medien_visible';
     public const SETTING_BILDER_VISIBLE   = 'bilder_visible';
+    public const SETTING_DDB_API_KEY      = 'ddb_api_key';
+    public const SETTING_LINK_WIKIPEDIA   = 'link_wikipedia';
+    public const SETTING_LINK_MATRICULA   = 'link_matricula';
+    public const SETTING_LINK_ARCHION     = 'link_archion';
+    public const SETTING_LINK_ARCHIVPDB   = 'link_archivpdb';
+    public const SETTING_LINK_DDB         = 'link_ddb';
 
     public const DEFAULT_WIKI_ENABLED     = true;
     public const DEFAULT_WIKI_DIST_KM     = 30;
@@ -79,6 +85,11 @@ class OrtsregisterModule extends AbstractModule implements
     public const DEFAULT_PERSONEN_VISIBLE = 10;
     public const DEFAULT_MEDIEN_VISIBLE   = 5;
     public const DEFAULT_BILDER_VISIBLE   = 12;
+    public const DEFAULT_LINK_WIKIPEDIA   = true;
+    public const DEFAULT_LINK_MATRICULA   = true;
+    public const DEFAULT_LINK_ARCHION     = true;
+    public const DEFAULT_LINK_ARCHIVPDB   = true;
+    public const DEFAULT_LINK_DDB         = true;
 
     public function title(): string { return 'Ortsregister'; }
     public function description(): string { return 'Ortsregister mit visueller Landing-Page, Medien-Verknüpfung und (geplant) GOV-Integration.'; }
@@ -219,6 +230,30 @@ class OrtsregisterModule extends AbstractModule implements
     public function bilderVisible(): int
     {
         return max(1, min(200, (int) $this->getPreference(self::SETTING_BILDER_VISIBLE, (string) self::DEFAULT_BILDER_VISIBLE)));
+    }
+    public function ddbApiKey(): string
+    {
+        return trim($this->getPreference(self::SETTING_DDB_API_KEY, ''));
+    }
+    public function linkWikipedia(): bool
+    {
+        return $this->getPreference(self::SETTING_LINK_WIKIPEDIA, self::DEFAULT_LINK_WIKIPEDIA ? '1' : '0') === '1';
+    }
+    public function linkMatricula(): bool
+    {
+        return $this->getPreference(self::SETTING_LINK_MATRICULA, self::DEFAULT_LINK_MATRICULA ? '1' : '0') === '1';
+    }
+    public function linkArchion(): bool
+    {
+        return $this->getPreference(self::SETTING_LINK_ARCHION, self::DEFAULT_LINK_ARCHION ? '1' : '0') === '1';
+    }
+    public function linkArchivportalD(): bool
+    {
+        return $this->getPreference(self::SETTING_LINK_ARCHIVPDB, self::DEFAULT_LINK_ARCHIVPDB ? '1' : '0') === '1';
+    }
+    public function linkDdb(): bool
+    {
+        return $this->getPreference(self::SETTING_LINK_DDB, self::DEFAULT_LINK_DDB ? '1' : '0') === '1';
     }
 
     public function getMenu(Tree $tree): ?Menu

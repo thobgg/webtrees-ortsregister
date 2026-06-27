@@ -68,6 +68,12 @@ class AdminConfigPage implements RequestHandlerInterface
                 'personen_visible' => $this->module->personenVisible(),
                 'medien_visible'   => $this->module->medienVisible(),
                 'bilder_visible'   => $this->module->bilderVisible(),
+                'ddb_api_key'      => $this->module->ddbApiKey(),
+                'link_wikipedia'   => $this->module->linkWikipedia(),
+                'link_matricula'   => $this->module->linkMatricula(),
+                'link_archion'     => $this->module->linkArchion(),
+                'link_archivpdb'   => $this->module->linkArchivportalD(),
+                'link_ddb'         => $this->module->linkDdb(),
             ]
         );
     }
@@ -91,6 +97,21 @@ class AdminConfigPage implements RequestHandlerInterface
         $this->module->setPreference(OrtsregisterModule::SETTING_PERSONEN_VISIBLE, (string) $personenVis);
         $this->module->setPreference(OrtsregisterModule::SETTING_MEDIEN_VISIBLE,   (string) $medienVis);
         $this->module->setPreference(OrtsregisterModule::SETTING_BILDER_VISIBLE,   (string) $bilderVis);
+
+        // API-Key (raw string, ohne Längen-Limit — DDB-Keys sind ~40 Zeichen)
+        $ddbKey = trim((string) ($params[OrtsregisterModule::SETTING_DDB_API_KEY] ?? ''));
+        $this->module->setPreference(OrtsregisterModule::SETTING_DDB_API_KEY, $ddbKey);
+
+        // Externe-Link-Toggles (Checkbox: vorhanden = '1', fehlt = '0')
+        foreach ([
+            OrtsregisterModule::SETTING_LINK_WIKIPEDIA,
+            OrtsregisterModule::SETTING_LINK_MATRICULA,
+            OrtsregisterModule::SETTING_LINK_ARCHION,
+            OrtsregisterModule::SETTING_LINK_ARCHIVPDB,
+            OrtsregisterModule::SETTING_LINK_DDB,
+        ] as $key) {
+            $this->module->setPreference($key, isset($params[$key]) ? '1' : '0');
+        }
 
         return redirect(route('ortsregister.admin.config'));
     }

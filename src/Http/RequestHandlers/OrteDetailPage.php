@@ -45,6 +45,11 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
             'personen_visible' => $this->module->personenVisible(),
             'medien_visible'   => $this->module->medienVisible(),
             'bilder_visible'   => $this->module->bilderVisible(),
+            'link_wikipedia'   => $this->module->linkWikipedia(),
+            'link_matricula'   => $this->module->linkMatricula(),
+            'link_archion'     => $this->module->linkArchion(),
+            'link_archivpdb'   => $this->module->linkArchivportalD(),
+            'link_ddb'         => $this->module->linkDdb(),
         ];
 
         if ($tree === null) {
@@ -115,21 +120,18 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
             // Stiller Fallback — leerer DTO
         }
 
-        return $this->viewResponse($this->viewName('ort-detail'), [
-            'title'            => $ort->name,
-            'tree'             => $tree,
-            'ort'              => $ort,
-            'personen'         => $personen,
-            'medien'           => $medien,
-            'gov_id'           => $govId,
-            'gov_chain'        => $govChain,
-            'place_id'         => $placeId,
-            'event_counts'     => $eventCounts,
-            'wiki'             => $wiki,
-            'personen_visible' => $this->module->personenVisible(),
-            'medien_visible'   => $this->module->medienVisible(),
-            'bilder_visible'   => $this->module->bilderVisible(),
-        ]);
+        return $this->viewResponse($this->viewName('ort-detail'), array_merge([
+            'title'        => $ort->name,
+            'tree'         => $tree,
+            'ort'          => $ort,
+            'personen'     => $personen,
+            'medien'       => $medien,
+            'gov_id'       => $govId,
+            'gov_chain'    => $govChain,
+            'place_id'     => $placeId,
+            'event_counts' => $eventCounts,
+            'wiki'         => $wiki,
+        ], $defaults));
     }
 
     /**
