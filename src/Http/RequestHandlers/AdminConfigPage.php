@@ -74,6 +74,7 @@ class AdminConfigPage implements RequestHandlerInterface
                 'link_archion'     => $this->module->linkArchion(),
                 'link_archivpdb'   => $this->module->linkArchivportalD(),
                 'link_ddb'         => $this->module->linkDdb(),
+                'folder_root'      => $this->module->folderRoot(),
             ]
         );
     }
@@ -101,6 +102,13 @@ class AdminConfigPage implements RequestHandlerInterface
         // API-Key (raw string, ohne Längen-Limit — DDB-Keys sind ~40 Zeichen)
         $ddbKey = trim((string) ($params[OrtsregisterModule::SETTING_DDB_API_KEY] ?? ''));
         $this->module->setPreference(OrtsregisterModule::SETTING_DDB_API_KEY, $ddbKey);
+
+        // Folder-Root (path-safe: nur a-z0-9_- erlaubt, sonst Default zurueck)
+        $folderRoot = trim((string) ($params[OrtsregisterModule::SETTING_FOLDER_ROOT] ?? ''));
+        if (preg_match('#^[A-Za-z0-9_-]+(/[A-Za-z0-9_-]+)*$#', $folderRoot) !== 1) {
+            $folderRoot = OrtsregisterModule::DEFAULT_FOLDER_ROOT;
+        }
+        $this->module->setPreference(OrtsregisterModule::SETTING_FOLDER_ROOT, $folderRoot);
 
         // Externe-Link-Toggles (Checkbox: vorhanden = '1', fehlt = '0')
         foreach ([

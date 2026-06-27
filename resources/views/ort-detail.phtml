@@ -22,6 +22,8 @@ use Fisharebest\Webtrees\Media;
 /** @var bool $link_archivpdb */
 /** @var bool $link_ddb */
 /** @var \Ortsregister\Dto\DdbPlaceData $ddb */
+/** @var list<\Ortsregister\Dto\PlaceFile> $folder_files */
+/** @var \Ortsregister\OrtsregisterModule $module */
 
 // Lokale Aliases — Settings kommen vom Handler, Defaults siehe OrtsregisterModule
 $PERSONEN_VISIBLE = $personen_visible ?? 10;
@@ -302,6 +304,65 @@ foreach ($bilder as $medium) {
         <div class="card mb-4 bg-light">
             <div class="card-body py-2 px-3 small">
                 <?= implode(' &nbsp;·&nbsp; ', $quellen) ?>
+            </div>
+        </div>
+        <?php endif ?>
+
+        <?php if ($folder_files !== []) : ?>
+        <?php
+        $folderBilder = array_values(array_filter($folder_files, fn($f) => $f->isImage()));
+        $folderDocs   = array_values(array_filter($folder_files, fn($f) => !$f->isImage()));
+        $serveUrl = static fn(\Ortsregister\Dto\PlaceFile $f) =>
+            route('ortsregister.file', ['tree' => $tree->name(), 'pfad' => $f->relativePath]);
+        ?>
+        <div class="card mb-4">
+            <div class="card-header fw-semibold d-flex align-items-center">
+                <?= I18N::translate('Eigene Digitalisate') ?>
+                <span class="badge bg-secondary ms-2"><?= count($folder_files) ?></span>
+                <small class="text-muted ms-auto" style="font-size:.7rem">
+                    <code><?= e($module->folderRoot()) ?>/<?= e($ort->name) ?>/</code>
+                </small>
+            </div>
+            <div class="card-body">
+                <?php if ($folderBilder !== []) : ?>
+                <div class="row row-cols-3 row-cols-sm-4 row-cols-lg-5 row-cols-xl-6 g-2 mb-3">
+                    <?php foreach ($folderBilder as $img) : ?>
+                        <div class="col">
+                            <a href="<?= e($serveUrl($img)) ?>" target="_blank" rel="noopener"
+                               class="d-block position-relative overflow-hidden rounded text-decoration-none ortsregister-thumb"
+                               title="<?= e($img->filename) ?>">
+                                <img src="<?= e($serveUrl($img)) ?>" alt="<?= e($img->filename) ?>" loading="lazy">
+                                <div class="ortsregister-hover-overlay"><?= e(mb_strimwidth($img->filename, 0, 60, '…')) ?></div>
+                            </a>
+                        </div>
+                    <?php endforeach ?>
+                </div>
+                <?php endif ?>
+
+                <?php if ($folderDocs !== []) : ?>
+                <div class="list-group list-group-flush">
+                    <?php foreach ($folderDocs as $doc) : ?>
+                        <?php [$farbe, $icon, $text] = $medienKategorie($doc->extension); ?>
+                        <a href="<?= e($serveUrl($doc)) ?>" target="_blank" rel="noopener"
+                           class="list-group-item list-group-item-action d-flex align-items-center gap-3 py-2">
+                            <span class="flex-shrink-0 d-inline-flex align-items-center justify-content-center text-white rounded"
+                                  style="width:2rem;height:2rem;background:<?= e($farbe) ?>">
+                                <?php if ($text !== null) : ?>
+                                    <span class="fw-bold" style="font-size:.6rem"><?= e($text) ?></span>
+                                <?php else : ?>
+                                    <i class="fas <?= e($icon) ?>"></i>
+                                <?php endif ?>
+                            </span>
+                            <div class="flex-grow-1 min-w-0">
+                                <div class="fw-semibold text-truncate"><?= e($doc->filename) ?></div>
+                                <?php if ($doc->extension !== '') : ?>
+                                    <small class="text-muted text-uppercase"><?= e($doc->extension) ?></small>
+                                <?php endif ?>
+                            </div>
+                        </a>
+                    <?php endforeach ?>
+                </div>
+                <?php endif ?>
             </div>
         </div>
         <?php endif ?>

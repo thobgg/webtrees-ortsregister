@@ -7,6 +7,7 @@ namespace Ortsregister;
 use Ortsregister\Cache\ApcuCacheService;
 use Ortsregister\Http\RequestHandlers\AdminConfigPage;
 use Ortsregister\Http\RequestHandlers\CoordinateImportPage;
+use Ortsregister\Http\RequestHandlers\PlaceFileServe;
 use Ortsregister\Http\RequestHandlers\GovLinkPage;
 use Ortsregister\Http\RequestHandlers\MergeExecute;
 use Ortsregister\Http\RequestHandlers\MergeModalPage;
@@ -23,6 +24,7 @@ use Ortsregister\Service\GovApiClient;
 use Ortsregister\Service\GovHierarchyResolver;
 use Ortsregister\Service\GovLinkingService;
 use Ortsregister\Service\PlaceEventCounter;
+use Ortsregister\Service\PlaceFolderScanner;
 use Ortsregister\Service\PlaceOperationService;
 use Ortsregister\Service\WikimediaPlaceClient;
 use Fisharebest\Webtrees\Auth;
@@ -78,6 +80,7 @@ class OrtsregisterModule extends AbstractModule implements
     public const SETTING_LINK_ARCHION     = 'link_archion';
     public const SETTING_LINK_ARCHIVPDB   = 'link_archivpdb';
     public const SETTING_LINK_DDB         = 'link_ddb';
+    public const SETTING_FOLDER_ROOT      = 'folder_root';
 
     public const DEFAULT_WIKI_ENABLED     = true;
     public const DEFAULT_WIKI_DIST_KM     = 30;
@@ -91,6 +94,7 @@ class OrtsregisterModule extends AbstractModule implements
     public const DEFAULT_LINK_ARCHION     = true;
     public const DEFAULT_LINK_ARCHIVPDB   = true;
     public const DEFAULT_LINK_DDB         = true;
+    public const DEFAULT_FOLDER_ROOT      = 'orte';
 
     public function title(): string { return 'Ortsregister'; }
     public function description(): string { return 'Ortsregister mit visueller Landing-Page, Medien-Verknüpfung und (geplant) GOV-Integration.'; }
@@ -122,6 +126,7 @@ class OrtsregisterModule extends AbstractModule implements
         $router->get('ortsregister.orte.detail',   '/tree/{tree}/orte/{place_id}',     OrteDetailPage::class);
         $router->get('ortsregister.admin.config',  '/ortsregister/admin/config',       AdminConfigPage::class)
                ->allows('POST');
+        $router->get('ortsregister.file',          '/tree/{tree}/orte/datei',          PlaceFileServe::class);
     }
 
     /**
@@ -184,6 +189,10 @@ class OrtsregisterModule extends AbstractModule implements
                 $this->govCacheTtl(),
             ),
         );
+        $container->set(
+            PlaceFolderScanner::class,
+            new PlaceFolderScanner($this->folderRoot()),
+        );
         // AdminConfigPage: braucht das Modul selbst
         $container->set(
             AdminConfigPage::class,
@@ -199,6 +208,7 @@ class OrtsregisterModule extends AbstractModule implements
                 $container->get(PlaceEventCounter::class),
                 $container->get(WikimediaPlaceClient::class),
                 $container->get(DdbClient::class),
+                $container->get(PlaceFolderScanner::class),
                 $this,
             ),
         );
@@ -264,6 +274,12 @@ class OrtsregisterModule extends AbstractModule implements
     public function linkDdb(): bool
     {
         return $this->getPreference(self::SETTING_LINK_DDB, self::DEFAULT_LINK_DDB ? '1' : '0') === '1';
+    }
+    public function folderRoot(): string
+    {
+        $raw = trim($this->getPreference(self::SETTING_FOLDER_ROOT, self::DEFAULT_FOLDER_ROOT));
+        // Path-traversal-defensiv: nur a-z0-9_- erlauben, sonst Default
+        return preg_match('#^[A-Za-z0-9_-]+(/[A-Za-z0-9_-]+)*$#', $raw) === 1 ? $raw : self::DEFAULT_FOLDER_ROOT;
     }
 
     public function getMenu(Tree $tree): ?Menu

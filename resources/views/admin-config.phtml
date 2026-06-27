@@ -18,6 +18,7 @@ use Ortsregister\OrtsregisterModule;
 /** @var bool   $link_archion */
 /** @var bool   $link_archivpdb */
 /** @var bool   $link_ddb */
+/** @var string $folder_root */
 
 $secondsToDays = static fn(int $s): string => $s >= 86400
     ? round($s / 86400, 1) . ' Tage'
@@ -171,6 +172,27 @@ $secondsToDays = static fn(int $s): string => $s >= 86400
             </div>
             <div class="form-text mt-3">
                 <?= I18N::translate('Hinweis: Archion-Deep-Links (auf spezifisches Dekanat/Parochie) werden separat pro Ort gepflegt — geplant in Phase 3I-0.') ?>
+            </div>
+        </div>
+    </fieldset>
+
+    <fieldset class="card mb-4">
+        <legend class="card-header h6 mb-0"><?= I18N::translate('Eigene Digitalisate (Filesystem-Folder)') ?></legend>
+        <div class="card-body">
+            <div class="mb-3">
+                <label for="folder_root" class="form-label">
+                    <?= I18N::translate('Folder-Root unter dem Medien-Verzeichnis') ?>
+                </label>
+                <div class="input-group" style="max-width:30rem">
+                    <span class="input-group-text"><code>media/</code></span>
+                    <input type="text" class="form-control"
+                           id="folder_root" name="<?= e(OrtsregisterModule::SETTING_FOLDER_ROOT) ?>"
+                           value="<?= e($folder_root) ?>" pattern="[A-Za-z0-9_/-]+">
+                    <span class="input-group-text"><code>/&lt;ortsname&gt;/</code></span>
+                </div>
+                <div class="form-text">
+                    <?= I18N::translate('Konvention: Dateien (Bilder, PDFs, Dokumente) im Ordner <code>media/%1$s/&lt;Ortsname&gt;/</code> erscheinen automatisch auf der Detailseite des Orts — KEIN webtrees-OBJE-Record nötig. Default: <code>orte</code>.', e($folder_root)) ?>
+                </div>
             </div>
         </div>
     </fieldset>
