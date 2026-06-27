@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Ortsregister;
 
 use Ortsregister\Cache\ApcuCacheService;
+use Ortsregister\Http\RequestHandlers\AdminConfigPage;
 use Ortsregister\Http\RequestHandlers\CoordinateImportPage;
 use Ortsregister\Http\RequestHandlers\GovLinkPage;
 use Ortsregister\Http\RequestHandlers\MergeExecute;
@@ -18,13 +19,18 @@ use Ortsregister\Service\CoordinateImportService;
 use Ortsregister\Service\GedcomCoordinateExtractor;
 use Ortsregister\Service\GedcomPlaceManipulator;
 use Ortsregister\Service\GovApiClient;
+use Ortsregister\Service\GovHierarchyResolver;
 use Ortsregister\Service\GovLinkingService;
+use Ortsregister\Service\PlaceEventCounter;
 use Ortsregister\Service\PlaceOperationService;
+use Ortsregister\Service\WikimediaPlaceClient;
 use Fisharebest\Webtrees\Auth;
 use Fisharebest\Webtrees\DB;
 use Fisharebest\Webtrees\I18N;
 use Fisharebest\Webtrees\Menu;
 use Fisharebest\Webtrees\Module\AbstractModule;
+use Fisharebest\Webtrees\Module\ModuleConfigInterface;
+use Fisharebest\Webtrees\Module\ModuleConfigTrait;
 use Fisharebest\Webtrees\Module\ModuleCustomInterface;
 use Fisharebest\Webtrees\Module\ModuleCustomTrait;
 use Fisharebest\Webtrees\Module\ModuleGlobalInterface;
@@ -47,13 +53,32 @@ use Illuminate\Database\Schema\Blueprint;
 class OrtsregisterModule extends AbstractModule implements
     ModuleCustomInterface,
     ModuleMenuInterface,
-    ModuleGlobalInterface
+    ModuleGlobalInterface,
+    ModuleConfigInterface
 {
     use ModuleCustomTrait;
     use ModuleMenuTrait;
     use ModuleGlobalTrait;
+    use ModuleConfigTrait;
 
     public const MODULE_NAME = '_ortsregister_';
+
+    // ----- Settings-Konstanten + Defaults --------------------------------
+    public const SETTING_WIKI_ENABLED     = 'wiki_enabled';
+    public const SETTING_WIKI_DIST_KM     = 'wiki_dist_km';
+    public const SETTING_WIKI_CACHE_TTL   = 'wiki_cache_ttl';
+    public const SETTING_GOV_CACHE_TTL    = 'gov_cache_ttl';
+    public const SETTING_PERSONEN_VISIBLE = 'personen_visible';
+    public const SETTING_MEDIEN_VISIBLE   = 'medien_visible';
+    public const SETTING_BILDER_VISIBLE   = 'bilder_visible';
+
+    public const DEFAULT_WIKI_ENABLED     = true;
+    public const DEFAULT_WIKI_DIST_KM     = 30;
+    public const DEFAULT_WIKI_CACHE_TTL   = 604800; // 7 Tage
+    public const DEFAULT_GOV_CACHE_TTL    = 604800;
+    public const DEFAULT_PERSONEN_VISIBLE = 10;
+    public const DEFAULT_MEDIEN_VISIBLE   = 5;
+    public const DEFAULT_BILDER_VISIBLE   = 12;
 
     public function title(): string { return 'Ortsregister'; }
     public function description(): string { return 'Ortsregister mit visueller Landing-Page, Medien-Verknüpfung und (geplant) GOV-Integration.'; }
@@ -66,7 +91,7 @@ class OrtsregisterModule extends AbstractModule implements
     {
         $this->migrateDatabase();
         $this->registerServices();
-        View::registerNamespace($this->name(), $this->resourcesFolder() . 'views/');
+        View::registerNamespace(self::MODULE_NAME, $this->resourcesFolder() . 'views/');
 
         $router = Registry::routeFactory()->routeMap();
 
@@ -83,6 +108,8 @@ class OrtsregisterModule extends AbstractModule implements
         $router->get('ortsregister.gov.link',      '/tree/{tree}/orte/gov',            GovLinkPage::class)
                ->allows('POST');
         $router->get('ortsregister.orte.detail',   '/tree/{tree}/orte/{place_id}',     OrteDetailPage::class);
+        $router->get('ortsregister.admin.config',  '/ortsregister/admin/config',       AdminConfigPage::class)
+               ->allows('POST');
     }
 
     /**
@@ -114,15 +141,85 @@ class OrtsregisterModule extends AbstractModule implements
         // mit demselben Cache zu pinnen).
         $container->set(
             GovApiClient::class,
-            new GovApiClient($container->get(ApcuCacheService::class)),
+            new GovApiClient($container->get(ApcuCacheService::class), $this->govCacheTtl()),
         );
         $container->set(
             GovLinkingService::class,
             new GovLinkingService($container->get(GovApiClient::class)),
         );
+        $container->set(
+            GovHierarchyResolver::class,
+            new GovHierarchyResolver($container->get(GovApiClient::class)),
+        );
+        $container->set(
+            PlaceEventCounter::class,
+            new PlaceEventCounter(),
+        );
+        $container->set(
+            WikimediaPlaceClient::class,
+            new WikimediaPlaceClient(
+                $container->get(ApcuCacheService::class),
+                $this->wikiDistanceKm(),
+                $this->wikiCacheTtl(),
+                $this->wikiEnabled(),
+            ),
+        );
+        // AdminConfigPage: braucht das Modul selbst
+        $container->set(
+            AdminConfigPage::class,
+            new AdminConfigPage($this),
+        );
+        // OrteDetailPage: braucht ebenfalls das Modul (für Listen-Längen)
+        $container->set(
+            OrteDetailPage::class,
+            new OrteDetailPage(
+                $container->get(\Ortsregister\Repository\OrteRepository::class),
+                $container->get(GovLinkingService::class),
+                $container->get(GovHierarchyResolver::class),
+                $container->get(PlaceEventCounter::class),
+                $container->get(WikimediaPlaceClient::class),
+                $this,
+            ),
+        );
     }
 
     public function defaultMenuOrder(): int { return 99; }
+
+    // ----- ModuleConfigInterface ----------------------------------------
+    public function getConfigLink(): string
+    {
+        return route('ortsregister.admin.config');
+    }
+
+    // ----- Typed Pref-Helpers (Defaults + Klammern) ---------------------
+    public function wikiEnabled(): bool
+    {
+        return $this->getPreference(self::SETTING_WIKI_ENABLED, self::DEFAULT_WIKI_ENABLED ? '1' : '0') === '1';
+    }
+    public function wikiDistanceKm(): int
+    {
+        return max(1, min(2000, (int) $this->getPreference(self::SETTING_WIKI_DIST_KM, (string) self::DEFAULT_WIKI_DIST_KM)));
+    }
+    public function wikiCacheTtl(): int
+    {
+        return max(60, (int) $this->getPreference(self::SETTING_WIKI_CACHE_TTL, (string) self::DEFAULT_WIKI_CACHE_TTL));
+    }
+    public function govCacheTtl(): int
+    {
+        return max(60, (int) $this->getPreference(self::SETTING_GOV_CACHE_TTL, (string) self::DEFAULT_GOV_CACHE_TTL));
+    }
+    public function personenVisible(): int
+    {
+        return max(1, min(200, (int) $this->getPreference(self::SETTING_PERSONEN_VISIBLE, (string) self::DEFAULT_PERSONEN_VISIBLE)));
+    }
+    public function medienVisible(): int
+    {
+        return max(1, min(200, (int) $this->getPreference(self::SETTING_MEDIEN_VISIBLE, (string) self::DEFAULT_MEDIEN_VISIBLE)));
+    }
+    public function bilderVisible(): int
+    {
+        return max(1, min(200, (int) $this->getPreference(self::SETTING_BILDER_VISIBLE, (string) self::DEFAULT_BILDER_VISIBLE)));
+    }
 
     public function getMenu(Tree $tree): ?Menu
     {

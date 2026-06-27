@@ -1,0 +1,123 @@
+<?php
+
+use Fisharebest\Webtrees\I18N;
+use Ortsregister\OrtsregisterModule;
+
+/** @var \Ortsregister\OrtsregisterModule $module */
+/** @var string $title */
+/** @var bool   $wiki_enabled */
+/** @var int    $wiki_dist_km */
+/** @var int    $wiki_cache_ttl */
+/** @var int    $gov_cache_ttl */
+/** @var int    $personen_visible */
+/** @var int    $medien_visible */
+/** @var int    $bilder_visible */
+
+$secondsToDays = static fn(int $s): string => $s >= 86400
+    ? round($s / 86400, 1) . ' Tage'
+    : round($s / 3600, 1) . ' h';
+?>
+<div class="container-lg mt-4 mb-5">
+
+<h1><?= e($title) ?></h1>
+
+<p class="text-muted">
+    <?= I18N::translate('Konfiguration des Ortsregister-Moduls. Änderungen wirken sofort. Vorhandene Cache-Einträge bleiben aktiv bis sie ablaufen.') ?>
+</p>
+
+<form method="POST" action="<?= e(route('ortsregister.admin.config')) ?>">
+    <?= csrf_field() ?>
+
+    <fieldset class="card mb-4">
+        <legend class="card-header h6 mb-0"><?= I18N::translate('Wikimedia / Wikipedia') ?></legend>
+        <div class="card-body">
+            <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" role="switch"
+                       id="wiki_enabled" name="<?= e(OrtsregisterModule::SETTING_WIKI_ENABLED) ?>"
+                       <?= $wiki_enabled ? 'checked' : '' ?>>
+                <label class="form-check-label" for="wiki_enabled">
+                    <?= I18N::translate('Wikimedia-Lookup aktivieren (Hauptbild + Commons-Galerie auf Detailseiten)') ?>
+                </label>
+                <div class="form-text">
+                    <?= I18N::translate('Bei Deaktivierung werden keine externen API-Calls zu Wikidata/Commons gemacht.') ?>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="wiki_dist_km" class="form-label">
+                    <?= I18N::translate('Max. Distanz Wikidata ↔ GOV-Koordinaten (km)') ?>
+                </label>
+                <input type="number" class="form-control" style="max-width:10rem"
+                       id="wiki_dist_km" name="<?= e(OrtsregisterModule::SETTING_WIKI_DIST_KM) ?>"
+                       value="<?= $wiki_dist_km ?>" min="1" max="2000" step="1">
+                <div class="form-text">
+                    <?= I18N::translate('Wikidata-Kandidaten mit größerer Entfernung werden verworfen — verhindert falsche Treffer bei Namensgleichheit (z.B. „Brackenheim, Indiana"). Default 30.') ?>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="wiki_cache_ttl" class="form-label">
+                    <?= I18N::translate('Cache-Dauer für Wikimedia-Daten (Sekunden)') ?>
+                </label>
+                <input type="number" class="form-control" style="max-width:10rem"
+                       id="wiki_cache_ttl" name="<?= e(OrtsregisterModule::SETTING_WIKI_CACHE_TTL) ?>"
+                       value="<?= $wiki_cache_ttl ?>" min="60" max="2592000" step="60">
+                <div class="form-text">
+                    <?= I18N::translate('Aktuell: %s. Default 604800 (7 Tage).', e($secondsToDays($wiki_cache_ttl))) ?>
+                </div>
+            </div>
+        </div>
+    </fieldset>
+
+    <fieldset class="card mb-4">
+        <legend class="card-header h6 mb-0"><?= I18N::translate('GOV (Genealogisches Ortsverzeichnis)') ?></legend>
+        <div class="card-body">
+            <div class="mb-3">
+                <label for="gov_cache_ttl" class="form-label">
+                    <?= I18N::translate('Cache-Dauer für GOV-Daten (Sekunden)') ?>
+                </label>
+                <input type="number" class="form-control" style="max-width:10rem"
+                       id="gov_cache_ttl" name="<?= e(OrtsregisterModule::SETTING_GOV_CACHE_TTL) ?>"
+                       value="<?= $gov_cache_ttl ?>" min="60" max="2592000" step="60">
+                <div class="form-text">
+                    <?= I18N::translate('Aktuell: %s. Default 604800 (7 Tage). GOV-Daten ändern sich selten.', e($secondsToDays($gov_cache_ttl))) ?>
+                </div>
+            </div>
+        </div>
+    </fieldset>
+
+    <fieldset class="card mb-4">
+        <legend class="card-header h6 mb-0"><?= I18N::translate('Detailseiten – Listen-Längen') ?></legend>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label for="personen_visible" class="form-label"><?= I18N::translate('Personen sichtbar') ?></label>
+                    <input type="number" class="form-control"
+                           id="personen_visible" name="<?= e(OrtsregisterModule::SETTING_PERSONEN_VISIBLE) ?>"
+                           value="<?= $personen_visible ?>" min="1" max="200">
+                </div>
+                <div class="col-md-4">
+                    <label for="medien_visible" class="form-label"><?= I18N::translate('Weitere Medien sichtbar') ?></label>
+                    <input type="number" class="form-control"
+                           id="medien_visible" name="<?= e(OrtsregisterModule::SETTING_MEDIEN_VISIBLE) ?>"
+                           value="<?= $medien_visible ?>" min="1" max="200">
+                </div>
+                <div class="col-md-4">
+                    <label for="bilder_visible" class="form-label"><?= I18N::translate('Bilder-Grid sichtbar') ?></label>
+                    <input type="number" class="form-control"
+                           id="bilder_visible" name="<?= e(OrtsregisterModule::SETTING_BILDER_VISIBLE) ?>"
+                           value="<?= $bilder_visible ?>" min="1" max="200">
+                </div>
+            </div>
+            <div class="form-text mt-2">
+                <?= I18N::translate('Rest jeder Liste wird in einem Klapper „Alle N anzeigen" versteckt. Default Personen 10, Medien 5, Bilder 12.') ?>
+            </div>
+        </div>
+    </fieldset>
+
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary"><?= I18N::translate('Speichern') ?></button>
+    </div>
+</form>
+
+</div>

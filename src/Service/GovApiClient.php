@@ -21,11 +21,11 @@ class GovApiClient
 {
     private const BASE_URL    = 'https://gov.genealogy.net/api';
     private const TIMEOUT     = 10;     // Sekunden
-    private const CACHE_TTL   = 604800; // 7 Tage
     private const USER_AGENT  = 'webtrees-ortsregister/0.1 (+https://github.com/thobgg/webtrees-ortsregister)';
 
     public function __construct(
         private readonly ApcuCacheService $cache,
+        private readonly int              $cacheTtl = 604800,
     ) {}
 
     /**
@@ -46,7 +46,7 @@ class GovApiClient
                 return null;
             }
             return $this->parseObject($govId, $json);
-        }, self::CACHE_TTL);
+        }, $this->cacheTtl);
     }
 
     /**
@@ -63,7 +63,7 @@ class GovApiClient
         return (bool) $this->cache->remember($cacheKey, function () use ($govId): bool {
             $status = $this->httpStatus('/checkObjectId?itemId=' . rawurlencode($govId));
             return $status === 200 || $status === 302;
-        }, self::CACHE_TTL);
+        }, $this->cacheTtl);
     }
 
     // ---------------------------------------------------------------
@@ -128,8 +128,13 @@ class GovApiClient
         if ($raw === '') {
             return '';
         }
-        // Erlaubte Form: 'object_NNNNNN' oder 'adm_NNNNNN' (oder andere GOV-Prefixe)
-        if (preg_match('/^[a-z][a-z_0-9]*_[0-9]+$/i', $raw) !== 1) {
+        // GOV-IDs gibt es in zwei Formaten:
+        //   - kompakt: alphanumerisch ohne Underscore (z.B. "HABCHTJN49MC")
+        //   - legacy:  Prefix_NNNNNN (z.B. "object_152487", "adm_…")
+        // ID-Prefix sagt NICHTS über den Typ aus — der Typ steht im
+        // type-Feld der API-Antwort.
+        // Wir erlauben Buchstaben/Ziffern/Underscore, 3–40 Zeichen.
+        if (preg_match('/^[A-Za-z0-9_]{3,40}$/', $raw) !== 1) {
             return '';
         }
         return $raw;
@@ -190,8 +195,17 @@ class GovApiClient
         }
 
         // Hierarchie + Räumliche Zugehörigkeit
-        $partOfIds    = $this->extractRefIds($json['part-of']    ?? $json['partOf']    ?? []);
-        $locatedInIds = $this->extractRefIds($json['located-in'] ?? $json['locatedIn'] ?? []);
+        $partOfEntries = $this->extractRefEntries($json['part-of']    ?? $json['partOf']    ?? []);
+        $locatedInIds  = $this->extractRefIds(    $json['located-in'] ?? $json['locatedIn'] ?? []);
+        $partOfIds  = array_map(static fn(array $e) => $e['ref'], $partOfEntries);
+        $partOfMeta = [];
+        foreach ($partOfEntries as $e) {
+            // Bei Mehrfach-Einträgen für dieselbe Ref-ID: erste Zeitspanne gewinnt
+            // (deterministisch und meist die historisch früheste).
+            if (!isset($partOfMeta[$e['ref']])) {
+                $partOfMeta[$e['ref']] = ['begin' => $e['begin'], 'end' => $e['end']];
+            }
+        }
 
         // Externe URLs
         $externalUrls = [];
@@ -214,6 +228,7 @@ class GovApiClient
             locatedInIds: $locatedInIds,
             externalUrls: $externalUrls,
             rawJson:      $json,
+            partOfMeta:   $partOfMeta,
         );
     }
 
@@ -255,5 +270,46 @@ class GovApiClient
             }
         }
         return $out;
+    }
+
+    /**
+     * Wie extractRefIds, aber liefert zusätzlich Zeitspannen je Eintrag.
+     * GOV-Felder für Zeit: `timeBegin`/`timeEnd` (bevorzugt) oder `begin`/`end`.
+     *
+     * @return list<array{ref: string, begin: string|null, end: string|null}>
+     */
+    private function extractRefEntries(mixed $val): array
+    {
+        $out = [];
+        foreach ($this->ensureList($val) as $item) {
+            if (is_array($item)) {
+                $ref = $item['ref'] ?? $item['value'] ?? null;
+                if (is_string($ref) && $ref !== '') {
+                    $out[] = [
+                        'ref'   => $ref,
+                        'begin' => $this->stringOrNull($item['timeBegin'] ?? $item['begin'] ?? null),
+                        'end'   => $this->stringOrNull($item['timeEnd']   ?? $item['end']   ?? null),
+                    ];
+                }
+            } elseif (is_string($item) && $item !== '') {
+                $out[] = ['ref' => $item, 'begin' => null, 'end' => null];
+            }
+        }
+        return $out;
+    }
+
+    private function stringOrNull(mixed $v): ?string
+    {
+        if ($v === null || $v === '' || $v === false) {
+            return null;
+        }
+        if (is_array($v)) {
+            // GOV liefert Datums-Objekte gelegentlich als {year: 1806, ...}
+            $v = $v['value'] ?? $v['year'] ?? $v['date'] ?? null;
+            if (!is_scalar($v)) {
+                return null;
+            }
+        }
+        return (string) $v;
     }
 }

@@ -8,6 +8,76 @@ use Fisharebest\Webtrees\Media;
 /** @var array<int,\Fisharebest\Webtrees\Individual> $personen */
 /** @var array<int,Media> $medien */
 /** @var string $title */
+/** @var string|null $gov_id */
+/** @var list<array{gov_id:string,name:string,begin:string|null,end:string|null}> $gov_chain */
+/** @var int|null $place_id */
+/** @var array{BIRT:int, MARR:int, DEAT:int, OTHER:int, TOTAL:int} $event_counts */
+/** @var \Ortsregister\Dto\WikimediaPlaceData $wiki */
+/** @var int $personen_visible */
+/** @var int $medien_visible */
+/** @var int $bilder_visible */
+
+// Lokale Aliases — Settings kommen vom Handler, Defaults siehe OrtsregisterModule
+$PERSONEN_VISIBLE = $personen_visible ?? 10;
+$MEDIEN_VISIBLE   = $medien_visible   ?? 5;
+$BILDER_VISIBLE   = $bilder_visible   ?? 12;
+?>
+<style>
+.ortsregister-thumb {
+    aspect-ratio: 1 / 1;
+    background: #f8f9fa;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    transition: box-shadow .15s, transform .15s;
+}
+.ortsregister-thumb:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,.18);
+    transform: translateY(-2px);
+}
+.ortsregister-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ortsregister-hover-overlay {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: linear-gradient(transparent, rgba(0,0,0,.82));
+    color: #fff; padding: 1.2rem .5rem .4rem;
+    opacity: 0; transition: opacity .2s;
+    pointer-events: none;
+    font-size: .75rem; line-height: 1.25;
+}
+.ortsregister-thumb:hover .ortsregister-hover-overlay { opacity: 1; }
+</style>
+<?php
+
+/**
+ * Format-Klassifikation für Medien-Badges. Übernommen aus
+ * sammlungen/_weitere-medien.phtml. Liefert [Badge-Hintergrundfarbe,
+ * FA-Icon-Klasse oder null, Kurztext oder null].
+ *
+ * Hinweis: webtrees bündelt nur ein FA-Subset — sicher sind fa-play,
+ * fa-file-lines, fa-file. Andere Icons würden als ?/!-Platzhalter erscheinen.
+ */
+$medienKategorie = static function (string $ext): array {
+    $video = ['mp4', 'avi', 'mov', 'webm', 'mkv', 'm4v', 'mpg', 'mpeg', 'wmv'];
+    $audio = ['mp3', 'wav', 'ogg', 'm4a', 'flac', 'aac', 'wma'];
+    $word  = ['doc', 'docx', 'odt', 'rtf'];
+    $excel = ['xls', 'xlsx', 'ods', 'csv'];
+    return match (true) {
+        $ext === 'pdf'                => ['#CC0000', null, 'PDF'],
+        in_array($ext, $video, true)  => ['#6f42c1', 'fa-play', null],
+        in_array($ext, $audio, true)  => ['#0d6efd', 'fa-play', null],
+        in_array($ext, $word, true)   => ['#2b579a', 'fa-file-lines', null],
+        in_array($ext, $excel, true)  => ['#217346', 'fa-file-lines', null],
+        default                       => ['#6c757d', 'fa-file', null],
+    };
+};
+
+/** Extrahiert die Dateiendung des ersten MediaFile eines webtrees-Mediums. */
+$medienEndung = static function (Media $medium): string {
+    $files = $medium->mediaFiles();
+    $first = $files->first();
+    if ($first === null) {
+        return '';
+    }
+    return strtolower(pathinfo((string) $first->filename(), PATHINFO_EXTENSION));
+};
 
 // Bilder von Nicht-Bildern trennen
 $bilder  = [];
@@ -53,6 +123,17 @@ if ($headerbild === null && $bilder !== []) {
                     <?= $headerbild->displayImage(1200, 380, 'crop', ['class' => 'w-100 d-block', 'style' => 'object-fit: cover;']) ?>
                 </a>
             </div>
+        <?php elseif ($wiki->hauptbild !== null) : ?>
+            <div class="mb-4 rounded overflow-hidden shadow-sm position-relative" style="max-height: 380px;">
+                <a href="<?= e($wiki->hauptbild->descriptionUrl) ?>" target="_blank" rel="noopener" class="d-block">
+                    <img src="<?= e($wiki->hauptbild->thumbUrl) ?>" alt="<?= e($ort->name) ?>"
+                         class="w-100 d-block" style="object-fit: cover; max-height: 380px;">
+                </a>
+                <div class="position-absolute bottom-0 end-0 text-white px-2 py-1"
+                     style="background:rgba(0,0,0,.55); font-size:.7rem;">
+                    © Wikimedia Commons · <?= e($wiki->hauptbild->license ?: 'siehe Quelle') ?>
+                </div>
+            </div>
         <?php endif ?>
 
         <h1 class="mb-1"><?= e($ort->name) ?></h1>
@@ -60,67 +141,275 @@ if ($headerbild === null && $bilder !== []) {
             <p class="text-muted mb-4"><?= e($ort->vollstaendigerPfad) ?></p>
         <?php endif ?>
 
+        <div class="card mb-4">
+            <div class="card-header fw-semibold d-flex align-items-center">
+                <span class="me-2" aria-hidden="true">🌍</span><?= I18N::translate('Hierarchie') ?>
+                <?php if ($gov_id !== null && $gov_chain !== []) : ?>
+                    <span class="badge bg-success ms-2">GOV</span>
+                <?php elseif ($gov_id !== null) : ?>
+                    <span class="badge bg-warning text-dark ms-2"><?= I18N::translate('GOV nicht erreichbar') ?></span>
+                <?php else : ?>
+                    <span class="badge bg-secondary ms-2"><?= I18N::translate('aus PLAC-String') ?></span>
+                <?php endif ?>
+            </div>
+            <div class="card-body">
+                <?php if ($gov_id !== null && $gov_chain !== []) : ?>
+                    <?php
+                    // Zeitspanne als "1806–1813" / "ab 1806" / "bis 1813" / "" formatieren
+                    $formatSpan = static function (?string $begin, ?string $end): string {
+                        $b = $begin !== null && $begin !== '' ? trim($begin) : '';
+                        $e = $end   !== null && $end   !== '' ? trim($end)   : '';
+                        if ($b === '' && $e === '') return '';
+                        if ($b !== '' && $e !== '') return $b . '–' . $e;
+                        if ($b !== '')              return 'ab ' . $b;
+                        return 'bis ' . $e;
+                    };
+                    // Wenn die UNMITTELBARE Elternstufe eine Zeitspanne hat,
+                    // ist sie der prägnanteste Epochen-Hinweis fürs Lead.
+                    $leadEpoch = '';
+                    if (isset($gov_chain[1])) {
+                        $leadEpoch = $formatSpan($gov_chain[1]['begin'], $gov_chain[1]['end']);
+                    }
+                    ?>
+                    <?php if ($leadEpoch !== '') : ?>
+                        <div class="alert alert-info py-2 mb-3 small">
+                            <?= I18N::translate('Verwaltungs-Zugehörigkeit zur Zeit %s — kann zu anderen Epochen abweichen.', '<strong>' . e($leadEpoch) . '</strong>') ?>
+                        </div>
+                    <?php endif ?>
+                    <ol class="breadcrumb mb-2" style="font-size: 1.05em;">
+                        <?php foreach (array_reverse($gov_chain) as $i => $node) : ?>
+                            <?php
+                            $span = $formatSpan($node['begin'], $node['end']);
+                            $isLast = $i === count($gov_chain) - 1;
+                            ?>
+                            <li class="breadcrumb-item<?= $isLast ? ' active' : '' ?>">
+                                <a href="https://gov.genealogy.net/item/show/<?= e($node['gov_id']) ?>"
+                                   target="_blank" rel="noopener"
+                                   title="<?= e($node['gov_id']) ?>">
+                                    <?= e($node['name']) ?>
+                                </a>
+                                <?php if ($span !== '') : ?>
+                                    <small class="text-muted ms-1" title="<?= e(I18N::translate('Zeitspanne der Zugehörigkeit zur Eltern-Verwaltungseinheit')) ?>">
+                                        (<?= e($span) ?>)
+                                    </small>
+                                <?php endif ?>
+                            </li>
+                        <?php endforeach ?>
+                    </ol>
+                    <div class="form-text">
+                        <?= I18N::translate('Aufgelöste Hierarchie aus GOV (part-of). Verknüpfung: %s', '<code>' . e($gov_id) . '</code>') ?>
+                    </div>
+                <?php elseif ($gov_id !== null) : ?>
+                    <div class="text-muted">
+                        <?= I18N::translate('GOV-ID %s verknüpft, aber Hierarchie konnte gerade nicht geladen werden (API-Fehler oder Cache leer).', '<code>' . e($gov_id) . '</code>') ?>
+                    </div>
+                <?php else : ?>
+                    <p class="mb-2"><?= e($ort->vollstaendigerPfad ?: $ort->name) ?></p>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted small">
+                            <?= I18N::translate('Diese Hierarchie stammt aus dem PLAC-String und ist nicht durch GOV verifiziert.') ?>
+                        </span>
+                        <?php if ($place_id !== null) : ?>
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-primary ms-auto ortsregister-gov-btn"
+                                    data-place-id="<?= $place_id ?>"
+                                    data-place-name="<?= e($ort->name) ?>">
+                                <?= I18N::translate('Jetzt mit GOV verknüpfen') ?>
+                            </button>
+                        <?php endif ?>
+                    </div>
+                <?php endif ?>
+            </div>
+        </div>
+
         <div class="row g-3 mb-4">
-            <div class="col-sm-3">
-                <div class="card text-center">
+            <div class="col-6 col-sm-3">
+                <div class="card text-center h-100">
                     <div class="card-body">
-                        <div class="fs-2 fw-bold text-primary"><?= $ort->anzahlEreignisse ?></div>
-                        <div class="text-muted small"><?= I18N::translate('Ereignisse') ?></div>
+                        <div class="fs-2 fw-bold text-primary"><?= $event_counts['BIRT'] ?></div>
+                        <div class="text-muted small"><span class="fw-bold me-1" aria-hidden="true">✱</span><?= I18N::translate('Geburten') ?></div>
                     </div>
                 </div>
             </div>
-            <div class="col-sm-3">
-                <div class="card text-center">
+            <div class="col-6 col-sm-3">
+                <div class="card text-center h-100">
                     <div class="card-body">
-                        <div class="fs-2 fw-bold text-primary"><?= count($personen) ?></div>
-                        <div class="text-muted small"><?= I18N::translate('Personen') ?></div>
+                        <div class="fs-2 fw-bold text-primary"><?= $event_counts['MARR'] ?></div>
+                        <div class="text-muted small"><span class="fw-bold me-1" aria-hidden="true">⚭</span><?= I18N::translate('Heiraten') ?></div>
                     </div>
                 </div>
             </div>
-            <div class="col-sm-3">
-                <div class="card text-center">
+            <div class="col-6 col-sm-3">
+                <div class="card text-center h-100">
                     <div class="card-body">
-                        <div class="fs-2 fw-bold text-primary"><?= count($medien) ?></div>
-                        <div class="text-muted small"><?= I18N::translate('Medien') ?></div>
+                        <div class="fs-2 fw-bold text-primary"><?= $event_counts['DEAT'] ?></div>
+                        <div class="text-muted small"><span class="fw-bold me-1" aria-hidden="true">†</span><?= I18N::translate('Todesfälle') ?></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-sm-3">
+                <div class="card text-center h-100">
+                    <div class="card-body">
+                        <div class="fs-2 fw-bold text-secondary"><?= $event_counts['OTHER'] ?></div>
+                        <div class="text-muted small"><span class="me-1" aria-hidden="true">⋯</span><?= I18N::translate('Weitere Ereignisse') ?></div>
                     </div>
                 </div>
             </div>
         </div>
 
         <?php if (count($bilder) > 0) : ?>
+        <?php
+        // Render-Helper für eine Bilder-Tile mit Hover-Overlay.
+        // data-full / data-caption / data-mediaurl werden von der Lightbox-JS gelesen.
+        $renderBildTile = static function (Media $medium): string {
+            $caption      = strip_tags((string) $medium->fullName());
+            $captionShort = $caption !== '' ? mb_strimwidth($caption, 0, 80, '…') : '';
+            $file         = $medium->firstImageFile();
+            $fullUrl      = $file !== null ? $file->imageUrl(1600, 1200, 'contain') : '';
+            ob_start(); ?>
+            <div class="col">
+                <a href="<?= e($medium->url()) ?>"
+                   class="d-block position-relative overflow-hidden rounded text-decoration-none ortsregister-thumb ortsregister-gallery-item"
+                   title="<?= e($caption) ?>"
+                   data-full="<?= e($fullUrl) ?>"
+                   data-caption="<?= e($caption) ?>"
+                   data-mediaurl="<?= e($medium->url()) ?>">
+                    <?= $medium->displayImage(300, 300, 'crop', ['loading' => 'lazy']) ?>
+                    <?php if ($captionShort !== '') : ?>
+                        <div class="ortsregister-hover-overlay"><?= e($captionShort) ?></div>
+                    <?php endif ?>
+                </a>
+            </div>
+            <?php
+            return (string) ob_get_clean();
+        };
+        ?>
         <div class="card mb-4">
             <div class="card-header fw-semibold">
-                <i class="fas fa-images me-2"></i><?= I18N::translate('Bilder zu diesem Ort') ?>
+                <?= I18N::translate('Bilder zu diesem Ort') ?>
                 <span class="badge bg-secondary ms-2"><?= count($bilder) ?></span>
             </div>
             <div class="card-body">
-                <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-6 g-3">
-                    <?php foreach ($bilder as $medium) : ?>
+                <div class="row row-cols-3 row-cols-sm-4 row-cols-lg-5 row-cols-xl-6 g-2">
+                    <?php foreach (array_slice($bilder, 0, $BILDER_VISIBLE) as $medium) : ?>
+                        <?= $renderBildTile($medium) ?>
+                    <?php endforeach ?>
+                </div>
+                <?php if (count($bilder) > $BILDER_VISIBLE) : ?>
+                    <div class="collapse" id="bilder-rest">
+                        <div class="row row-cols-3 row-cols-sm-4 row-cols-lg-5 row-cols-xl-6 g-2 mt-1">
+                            <?php foreach (array_slice($bilder, $BILDER_VISIBLE) as $medium) : ?>
+                                <?= $renderBildTile($medium) ?>
+                            <?php endforeach ?>
+                        </div>
+                    </div>
+                    <button class="btn btn-sm btn-outline-secondary mt-3" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#bilder-rest">
+                        <?= I18N::translate('Alle %d Bilder anzeigen', count($bilder)) ?>
+                    </button>
+                <?php endif ?>
+            </div>
+        </div>
+        <?php endif ?>
+
+        <?php if ($wiki->galerie !== []) : ?>
+        <div class="card mb-4">
+            <div class="card-header fw-semibold d-flex align-items-center">
+                <?= I18N::translate('Aus Wikimedia Commons') ?>
+                <span class="badge bg-secondary ms-2"><?= count($wiki->galerie) ?></span>
+                <?php if ($wiki->qid !== null) : ?>
+                    <a href="https://www.wikidata.org/wiki/<?= e($wiki->qid) ?>"
+                       target="_blank" rel="noopener"
+                       class="ms-auto small text-muted text-decoration-none"
+                       title="<?= e(I18N::translate('Wikidata-Eintrag')) ?>">
+                        <?= e($wiki->qid) ?> ↗
+                    </a>
+                <?php endif ?>
+            </div>
+            <div class="card-body">
+                <div class="row row-cols-3 row-cols-sm-4 row-cols-lg-5 row-cols-xl-6 g-2">
+                    <?php foreach ($wiki->galerie as $img) : ?>
                         <div class="col">
-                            <a href="<?= e($medium->url()) ?>" class="d-block text-decoration-none" title="<?= e(strip_tags($medium->fullName())) ?>">
-                                <?= $medium->displayImage(200, 200, 'crop', ['class' => 'img-fluid rounded shadow-sm', 'loading' => 'lazy']) ?>
+                            <a href="<?= e($img->descriptionUrl) ?>" target="_blank" rel="noopener"
+                               class="d-block position-relative overflow-hidden rounded text-decoration-none ortsregister-thumb"
+                               title="<?= e($img->title . ($img->license !== '' ? ' · ' . $img->license : '')) ?>">
+                                <img src="<?= e($img->thumbUrl) ?>" alt="<?= e($img->title) ?>"
+                                     loading="lazy" style="width:100%;height:100%;object-fit:cover">
+                                <div class="ortsregister-hover-overlay">
+                                    <?= e(mb_strimwidth($img->title, 0, 60, '…')) ?>
+                                    <?php if ($img->license !== '') : ?>
+                                        <br><span style="opacity:.7">© <?= e($img->license) ?></span>
+                                    <?php endif ?>
+                                </div>
                             </a>
                         </div>
                     <?php endforeach ?>
+                </div>
+                <div class="form-text mt-2">
+                    <?= I18N::translate('Bilder aus Wikimedia Commons, geo-validiert gegen GOV-Koordinaten. Click öffnet die Commons-Beschreibungsseite mit Lizenz-Details.') ?>
                 </div>
             </div>
         </div>
         <?php endif ?>
 
         <?php if (count($sonstige) > 0) : ?>
+        <?php
+        // Render-Helper für einen Medien-Listeneintrag mit farbigem Format-Badge.
+        $renderMediumZeile = static function ($medium) use ($medienKategorie, $medienEndung): string {
+            $ext = $medienEndung($medium);
+            [$farbe, $icon, $text] = $medienKategorie($ext);
+            $titel = strip_tags((string) $medium->fullName());
+            if ($titel === '') {
+                $titel = $ext !== '' ? '(' . strtoupper($ext) . ')' : '(unbekannt)';
+            }
+            ob_start(); ?>
+            <a href="<?= e($medium->url()) ?>" target="_blank"
+               class="list-group-item list-group-item-action d-flex align-items-center gap-3 py-2">
+                <span class="flex-shrink-0 d-inline-flex align-items-center justify-content-center text-white rounded"
+                      style="width:2rem;height:2rem;background:<?= e($farbe) ?>">
+                    <?php if ($text !== null) : ?>
+                        <span class="fw-bold" style="font-size:.6rem"><?= e($text) ?></span>
+                    <?php else : ?>
+                        <i class="fas <?= e($icon) ?>"></i>
+                    <?php endif ?>
+                </span>
+                <div class="flex-grow-1 min-w-0">
+                    <div class="fw-semibold text-truncate"><?= e($titel) ?></div>
+                    <?php if ($ext !== '') : ?>
+                        <small class="text-muted text-uppercase"><?= e($ext) ?></small>
+                    <?php endif ?>
+                </div>
+            </a>
+            <?php
+            return (string) ob_get_clean();
+        };
+        ?>
         <div class="card mb-4">
             <div class="card-header fw-semibold">
-                <i class="fas fa-file me-2"></i><?= I18N::translate('Weitere Medien') ?>
+                <?= I18N::translate('Weitere Medien') ?>
                 <span class="badge bg-secondary ms-2"><?= count($sonstige) ?></span>
             </div>
             <div class="card-body p-0">
-                <ul class="list-group list-group-flush">
-                    <?php foreach ($sonstige as $medium) : ?>
-                    <li class="list-group-item">
-                        <a href="<?= e($medium->url()) ?>"><?= $medium->fullName() ?></a>
-                    </li>
+                <div class="list-group list-group-flush">
+                    <?php foreach (array_slice($sonstige, 0, $MEDIEN_VISIBLE) as $medium) : ?>
+                        <?= $renderMediumZeile($medium) ?>
                     <?php endforeach ?>
-                </ul>
+                </div>
+                <?php if (count($sonstige) > $MEDIEN_VISIBLE) : ?>
+                    <div class="collapse" id="medien-rest">
+                        <div class="list-group list-group-flush">
+                            <?php foreach (array_slice($sonstige, $MEDIEN_VISIBLE) as $medium) : ?>
+                                <?= $renderMediumZeile($medium) ?>
+                            <?php endforeach ?>
+                        </div>
+                    </div>
+                    <div class="p-2 border-top">
+                        <button class="btn btn-sm btn-outline-secondary" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#medien-rest">
+                            <?= I18N::translate('Alle %d Medien anzeigen', count($sonstige)) ?>
+                        </button>
+                    </div>
+                <?php endif ?>
             </div>
         </div>
         <?php endif ?>
@@ -133,19 +422,36 @@ if ($headerbild === null && $bilder !== []) {
             </div>
             <div class="card-body p-0">
                 <ul class="list-group list-group-flush">
-                    <?php foreach ($personen as $person) : ?>
+                    <?php foreach (array_slice($personen, 0, $PERSONEN_VISIBLE) as $person) : ?>
                     <li class="list-group-item">
                         <a href="<?= e($person->url()) ?>"><?= $person->fullName() ?></a>
                     </li>
                     <?php endforeach ?>
                 </ul>
+                <?php if (count($personen) > $PERSONEN_VISIBLE) : ?>
+                    <div class="collapse" id="personen-rest">
+                        <ul class="list-group list-group-flush">
+                            <?php foreach (array_slice($personen, $PERSONEN_VISIBLE) as $person) : ?>
+                            <li class="list-group-item">
+                                <a href="<?= e($person->url()) ?>"><?= $person->fullName() ?></a>
+                            </li>
+                            <?php endforeach ?>
+                        </ul>
+                    </div>
+                    <div class="p-2 border-top">
+                        <button class="btn btn-sm btn-outline-secondary" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#personen-rest">
+                            <?= I18N::translate('Alle %d Personen anzeigen', count($personen)) ?>
+                        </button>
+                    </div>
+                <?php endif ?>
             </div>
         </div>
         <?php endif ?>
 
         <div class="card mb-4">
             <div class="card-header fw-semibold">
-                <i class="fas fa-external-link-alt me-2"></i><?= I18N::translate('Externe Ressourcen') ?>
+<?= I18N::translate('Externe Ressourcen') ?>
             </div>
             <div class="card-body d-flex flex-wrap gap-2">
                 <a href="https://de.wikipedia.org/wiki/<?= urlencode($ort->name) ?>" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-sm">Wikipedia</a>
@@ -156,3 +462,151 @@ if ($headerbild === null && $bilder !== []) {
         </div>
     <?php endif ?>
 </div>
+
+<?php if ($ort !== null && $tree !== null && !empty($bilder)) : ?>
+<div class="modal fade" id="ortsregister-lightbox" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content bg-black border-0">
+            <div class="modal-body p-0 d-flex flex-column" style="min-height:70vh;max-height:92vh">
+                <div class="d-flex align-items-center gap-2 px-3 py-2 border-bottom border-secondary flex-shrink-0">
+                    <div class="flex-grow-1 min-w-0">
+                        <div id="ortsregister-lb-caption" class="text-white small fw-semibold text-truncate"></div>
+                        <div id="ortsregister-lb-position" class="text-white-50" style="font-size:.7rem"></div>
+                    </div>
+                    <a id="ortsregister-lb-mediaurl" href="#" class="btn btn-sm btn-outline-light"><?= I18N::translate('In webtrees öffnen') ?></a>
+                    <button type="button" class="btn-close btn-close-white ms-1" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="flex-grow-1 d-flex align-items-center justify-content-center position-relative" style="min-height:0;overflow:hidden;background:#000">
+                    <img id="ortsregister-lb-img" src="" alt="" style="max-height:80vh;max-width:100%;object-fit:contain">
+                    <button id="ortsregister-lb-prev" type="button"
+                            class="btn btn-dark bg-opacity-50 position-absolute start-0 top-50 translate-middle-y ms-2 fs-3 px-3">&#8249;</button>
+                    <button id="ortsregister-lb-next" type="button"
+                            class="btn btn-dark bg-opacity-50 position-absolute end-0 top-50 translate-middle-y me-2 fs-3 px-3">&#8250;</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+(function () {
+    const modalEl = document.getElementById('ortsregister-lightbox');
+    if (!modalEl) return;
+    const bsModal  = new bootstrap.Modal(modalEl);
+    const img      = document.getElementById('ortsregister-lb-img');
+    const caption  = document.getElementById('ortsregister-lb-caption');
+    const position = document.getElementById('ortsregister-lb-position');
+    const link     = document.getElementById('ortsregister-lb-mediaurl');
+    const prevBtn  = document.getElementById('ortsregister-lb-prev');
+    const nextBtn  = document.getElementById('ortsregister-lb-next');
+
+    let items   = [];
+    let current = 0;
+
+    function show(idx) {
+        if (!items.length) return;
+        current = (idx + items.length) % items.length;
+        const it = items[current];
+        img.src = it.full;
+        img.alt = it.caption;
+        caption.textContent  = it.caption;
+        position.textContent = (current + 1) + ' / ' + items.length;
+        link.href = it.mediaUrl;
+    }
+
+    document.addEventListener('click', function (e) {
+        const tile = e.target.closest('.ortsregister-gallery-item');
+        if (!tile || !tile.dataset.full) return;
+        e.preventDefault();
+        // Sammle alle Bilder im Card (visible + im collapse)
+        const card = tile.closest('.card');
+        items = Array.from(card.querySelectorAll('.ortsregister-gallery-item'))
+            .filter(el => el.dataset.full)
+            .map(el => ({
+                full:     el.dataset.full,
+                caption:  el.dataset.caption || '',
+                mediaUrl: el.dataset.mediaurl || '#',
+            }));
+        const realIdx = items.findIndex(x => x.full === tile.dataset.full);
+        show(realIdx >= 0 ? realIdx : 0);
+        bsModal.show();
+    });
+
+    prevBtn.addEventListener('click', () => show(current - 1));
+    nextBtn.addEventListener('click', () => show(current + 1));
+
+    document.addEventListener('keydown', function (e) {
+        if (!modalEl.classList.contains('show')) return;
+        if (e.key === 'ArrowLeft')  show(current - 1);
+        if (e.key === 'ArrowRight') show(current + 1);
+    });
+
+    modalEl.addEventListener('hidden.bs.modal', () => { img.src = ''; });
+})();
+</script>
+<?php endif ?>
+
+<?php if ($ort !== null && $tree !== null) : ?>
+<div class="modal fade" id="ortsregister-gov-modal" tabindex="-1" aria-hidden="true"
+     data-gov-link="<?= e(route('ortsregister.gov.link', ['tree' => $tree->name()])) ?>"
+     data-csrf="<?= e(csrf_token()) ?>">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content" id="ortsregister-gov-modal-content">
+            <div class="modal-body text-center py-5"><div class="spinner-border text-primary"></div></div>
+        </div>
+    </div>
+</div>
+<script>
+(function () {
+    const modalEl = document.getElementById('ortsregister-gov-modal');
+    if (!modalEl) return;
+    const govLinkUrl = modalEl.dataset.govLink;
+    const csrf       = modalEl.dataset.csrf;
+
+    const appendQuery = (url, q) => url + (url.includes('?') ? '&' : '?') + q;
+
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.ortsregister-gov-btn');
+        if (!btn) return;
+        const placeId = btn.dataset.placeId;
+        const url     = appendQuery(govLinkUrl, 'place_id=' + placeId);
+        const content = document.getElementById('ortsregister-gov-modal-content');
+        content.innerHTML = '<div class="modal-body text-center py-5"><div class="spinner-border text-primary"></div></div>';
+        new bootstrap.Modal(modalEl).show();
+        fetch(url, { headers: { 'Accept': 'text/html' }})
+            .then(r => r.text())
+            .then(html => { content.innerHTML = html; })
+            .catch(err => { content.innerHTML = '<div class="modal-body text-danger">Fehler: ' + err + '</div>'; });
+    });
+
+    document.addEventListener('submit', function (e) {
+        if (e.target.id !== 'ortsregister-gov-form') return;
+        e.preventDefault();
+        fetch(e.target.action, {
+            method: 'POST',
+            body: new FormData(e.target),
+            headers: { 'X-CSRF-TOKEN': csrf },
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('GOV-Verknüpfung fehlgeschlagen: ' + (data.message || 'unbekannter Fehler'));
+            }
+        })
+        .catch(err => alert('Netzwerkfehler: ' + err));
+    });
+
+    document.addEventListener('click', function (e) {
+        if (e.target.id !== 'ortsregister-gov-unlink' && !e.target.closest?.('#ortsregister-gov-unlink')) return;
+        const form = document.getElementById('ortsregister-gov-form');
+        if (!form) return;
+        const fd = new FormData(form);
+        fd.append('unlink', '1');
+        fetch(form.action, { method: 'POST', body: fd, headers: { 'X-CSRF-TOKEN': csrf }})
+            .then(r => r.json())
+            .then(_ => location.reload());
+    });
+})();
+</script>
+<?php endif ?>
