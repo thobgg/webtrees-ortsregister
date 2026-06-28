@@ -10,6 +10,7 @@ use Ortsregister\Http\RequestHandlers\CoordinateImportPage;
 use Ortsregister\Http\RequestHandlers\PlaceFileServe;
 use Ortsregister\Http\RequestHandlers\PlaceNotesSave;
 use Ortsregister\Http\RequestHandlers\PlaceNotesToggleTask;
+use Ortsregister\Http\RequestHandlers\PlaceTasksUpdate;
 use Ortsregister\Http\RequestHandlers\GovLinkPage;
 use Ortsregister\Http\RequestHandlers\MergeExecute;
 use Ortsregister\Http\RequestHandlers\MergeModalPage;
@@ -29,6 +30,7 @@ use Ortsregister\Service\PlaceEventCounter;
 use Ortsregister\Service\ArchionLinker;
 use Ortsregister\Service\PlaceFolderScanner;
 use Ortsregister\Service\PlaceNotesService;
+use Ortsregister\Service\PlaceTasksService;
 use Ortsregister\Service\PlaceOperationService;
 use Ortsregister\Service\WikimediaPlaceClient;
 use Fisharebest\Webtrees\Auth;
@@ -138,6 +140,7 @@ class OrtsregisterModule extends AbstractModule implements
         $router->get('ortsregister.file',          '/tree/{tree}/orte/datei',          PlaceFileServe::class);
         $router->post('ortsregister.notes.save',         '/tree/{tree}/orte/{place_id}/notizen',        PlaceNotesSave::class);
         $router->post('ortsregister.notes.toggle-task',  '/tree/{tree}/orte/{place_id}/notizen/toggle', PlaceNotesToggleTask::class);
+        $router->post('ortsregister.tasks.update',       '/tree/{tree}/orte/{place_id}/aufgaben',       PlaceTasksUpdate::class);
         $router->get('ortsregister.orte.detail',   '/tree/{tree}/orte/{place_id}',     OrteDetailPage::class);
         $router->get('ortsregister.admin.config',  '/ortsregister/admin/config',       AdminConfigPage::class)
                ->allows('POST');
@@ -215,6 +218,10 @@ class OrtsregisterModule extends AbstractModule implements
             ArchionLinker::class,
             new ArchionLinker($this->folderRoot()),
         );
+        $container->set(
+            PlaceTasksService::class,
+            new PlaceTasksService($this->folderRoot()),
+        );
         // AdminConfigPage: braucht das Modul selbst
         $container->set(
             AdminConfigPage::class,
@@ -233,6 +240,7 @@ class OrtsregisterModule extends AbstractModule implements
                 $container->get(PlaceFolderScanner::class),
                 $container->get(PlaceNotesService::class),
                 $container->get(ArchionLinker::class),
+                $container->get(PlaceTasksService::class),
                 $this,
             ),
         );

@@ -15,6 +15,7 @@ use Ortsregister\Service\PlaceEventCounter;
 use Ortsregister\Service\ArchionLinker;
 use Ortsregister\Service\PlaceFolderScanner;
 use Ortsregister\Service\PlaceNotesService;
+use Ortsregister\Service\PlaceTasksService;
 use Ortsregister\Service\WikimediaPlaceClient;
 use Fisharebest\Webtrees\DB;
 use Fisharebest\Webtrees\I18N;
@@ -41,6 +42,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
         private readonly PlaceFolderScanner   $folderScanner,
         private readonly PlaceNotesService    $notesService,
         private readonly ArchionLinker        $archionLinker,
+        private readonly PlaceTasksService    $tasksService,
         private readonly OrtsregisterModule   $module,
     ) {}
 
@@ -79,6 +81,8 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
                 'folder_files' => [],
                 'note_slots'   => [],
                 'archion_url'  => null,
+                'tasks'        => [],
+                'task_counts'  => ['open' => 0, 'done' => 0],
                 'can_edit'     => false,
                 'module'       => $this->module,
             ], $defaults));
@@ -105,6 +109,8 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
                 'folder_files' => [],
                 'note_slots'   => [],
                 'archion_url'  => null,
+                'tasks'        => [],
+                'task_counts'  => ['open' => 0, 'done' => 0],
                 'can_edit'     => false,
                 'module'       => $this->module,
             ], $defaults));
@@ -181,8 +187,8 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
                 'person_picker' => false,
             ],
             'recherche.md' => [
-                'title'       => \Fisharebest\Webtrees\I18N::translate('Recherche'),
-                'placeholder' => "## Kirchenbücher gesichtet\n\n- [ ] Taufen JJJJ–JJJJ\n- [ ] Heiraten JJJJ–JJJJ\n- [ ] Beerdigungen JJJJ–JJJJ\n\n## Offene Punkte\n\n- [ ] \n\n## Relevante Personen\n\n- [Hans Müller](indi:I123) — *Vater unklar, KB Taufe 1715 prüfen*\n",
+                'title'       => \Fisharebest\Webtrees\I18N::translate('Forschungs-Notizen'),
+                'placeholder' => "## Was ich gefunden / gemacht habe\n\n- Hans Müller [I123] gefunden in KB Taufen 1715\n- Friedhof besucht 2026-06-28\n\n## Hinweise / Fragen\n\n- *Warum heißt das Dorf eigentlich so?*\n",
                 'person_picker' => true,
             ],
         ];
@@ -231,6 +237,16 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
             $archionUrl = null;
         }
 
+        // Strukturierte Aufgaben aus _tasks.json
+        $tasks      = [];
+        $taskCounts = ['open' => 0, 'done' => 0];
+        try {
+            foreach ($this->tasksService->read($tree, $ort->name) as $t) {
+                $tasks[] = $t;
+                $t->isOpen() ? $taskCounts['open']++ : $taskCounts['done']++;
+            }
+        } catch (Throwable) {}
+
         return $this->viewResponse($this->viewName('ort-detail'), array_merge([
             'title'        => $ort->name,
             'tree'         => $tree,
@@ -248,6 +264,8 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
             'folder_files' => $folderFiles,
             'note_slots'   => $noteSlots,
             'archion_url'  => $archionUrl,
+            'tasks'        => $tasks,
+            'task_counts'  => $taskCounts,
             'can_edit'     => \Fisharebest\Webtrees\Auth::isEditor($tree),
             'module'       => $this->module,
         ], $defaults));

@@ -28,6 +28,8 @@ use Fisharebest\Webtrees\Media;
 /** @var list<array{filename:string,title:string,placeholder:string,markdown:string,html:string,mtime:int}> $note_slots */
 /** @var bool $can_edit */
 /** @var string|null $archion_url */
+/** @var list<\Ortsregister\Dto\PlaceTask> $tasks */
+/** @var array{open:int,done:int} $task_counts */
 /** @var \Ortsregister\OrtsregisterModule $module */
 
 // Lokale Aliases — Settings kommen vom Handler, Defaults siehe OrtsregisterModule
@@ -234,8 +236,10 @@ foreach ($bilder as $medium) {
                     <?php
                     return (string) ob_get_clean();
                 };
-                $hasHistorical = $gov_chain         !== [];
-                $hasCurrent    = $gov_chain_current !== [];
+                // Kette gilt nur als "brauchbar" wenn sie mehr als 1 Element hat
+                // (1 Element = nur das Blatt selbst, keine Eltern — zeigt keine Hierarchie).
+                $hasHistorical = count($gov_chain)         > 1;
+                $hasCurrent    = count($gov_chain_current) > 1;
                 ?>
                 <?php if ($gov_id !== null && ($hasHistorical || $hasCurrent)) : ?>
                     <?php
@@ -393,11 +397,20 @@ foreach ($bilder as $medium) {
         <?php endif ?>
 
         <?php
-        $visibleSlots = array_filter($note_slots, fn($s) => $s['html'] !== '' || $can_edit);
+        // Forschung-Card kombiniert recherche.md + _tasks.json visuell in einer Card.
+        // Den recherche.md-Slot aus dem normalen Cards-Loop ausnehmen, separat rendern.
+        $rechercheSlot = null;
+        foreach ($note_slots as $s) {
+            if ($s['filename'] === 'recherche.md') { $rechercheSlot = $s; break; }
+        }
+        $regularSlots = array_filter($note_slots, fn($s) => $s['filename'] !== 'recherche.md' && ($s['html'] !== '' || $can_edit));
+        $showForschungCard = $can_edit
+            || $tasks !== []
+            || ($rechercheSlot !== null && $rechercheSlot['html'] !== '');
         ?>
-        <?php if ($visibleSlots !== []) : ?>
+        <?php if ($regularSlots !== [] || $showForschungCard) : ?>
         <div class="row g-3 mb-4">
-            <?php foreach ($visibleSlots as $slot) : ?>
+            <?php foreach ($regularSlots as $slot) : ?>
                 <div class="col-12 col-md-6">
                     <div class="card h-100">
                         <div class="card-header fw-semibold d-flex align-items-center">
@@ -427,8 +440,103 @@ foreach ($bilder as $medium) {
                     </div>
                 </div>
             <?php endforeach ?>
+
+<?php if ($showForschungCard) : ?>
+                <div class="col-12 col-md-6">
+                    <div class="card h-100 ortsregister-tasks-card"
+                         data-tasks-url="<?= e(route('ortsregister.tasks.update', ['tree' => $tree->name(), 'place_id' => $place_id])) ?>"
+                         data-csrf="<?= e(csrf_token()) ?>">
+                        <div class="card-header fw-semibold d-flex align-items-center">
+                            <?= I18N::translate('Forschung') ?>
+                            <small class="text-muted ms-2" style="font-size:.7rem">
+                                <code>recherche.md</code> + <code>_tasks.json</code>
+                            </small>
+                            <span class="badge bg-secondary ms-auto ortsregister-tasks-counter">
+                                <?= (int) $task_counts['open'] ?> <?= I18N::translate('offen') ?>
+                                <?php if ((int) $task_counts['done'] > 0) : ?> / <?= (int) $task_counts['done'] ?> <?= I18N::translate('erl.') ?><?php endif ?>
+                            </span>
+                        </div>
+                        <div class="card-body p-0">
+                            <?php /* Oben: Recherche-Notizen (Markdown) */ ?>
+                            <?php if ($rechercheSlot !== null) : ?>
+                                <div class="p-3 border-bottom">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <small class="text-muted text-uppercase fw-semibold" style="font-size:.7rem;letter-spacing:.05em">
+                                            <?= I18N::translate('Notizen') ?>
+                                        </small>
+                                        <?php if ($can_edit) : ?>
+                                            <button type="button" class="btn btn-sm btn-link p-0 ms-auto ortsregister-notes-edit-btn"
+                                                    data-filename="<?= e($rechercheSlot['filename']) ?>"
+                                                    data-title="<?= e($rechercheSlot['title']) ?>"
+                                                    data-placeholder="<?= e($rechercheSlot['placeholder']) ?>"
+                                                    data-markdown="<?= e($rechercheSlot['markdown']) ?>"
+                                                    data-mtime="<?= $rechercheSlot['mtime'] ?>"
+                                                    data-person-picker="<?= $rechercheSlot['person_picker'] ? '1' : '0' ?>"
+                                                    style="font-size:.8rem">
+                                                ✎ <?= I18N::translate('Bearbeiten') ?>
+                                            </button>
+                                        <?php endif ?>
+                                    </div>
+                                    <div class="ortsregister-prose" data-notes-display="<?= e($rechercheSlot['filename']) ?>" style="font-size:.92rem">
+                                        <?php if ($rechercheSlot['html'] !== '') : ?>
+                                            <?= $rechercheSlot['html'] ?>
+                                        <?php else : ?>
+                                            <p class="text-muted mb-0 fst-italic small">
+                                                <?= I18N::translate('Noch leer. „Bearbeiten" für Recherche-Notizen — Markdown, Personen via Picker.') ?>
+                                            </p>
+                                        <?php endif ?>
+                                    </div>
+                                </div>
+                            <?php endif ?>
+
+                            <?php /* Unten: strukturierte Aufgaben */ ?>
+                            <div class="px-3 pt-2 pb-1">
+                                <small class="text-muted text-uppercase fw-semibold" style="font-size:.7rem;letter-spacing:.05em">
+                                    <?= I18N::translate('Aufgaben') ?>
+                                </small>
+                            </div>
+                            <ul class="list-group list-group-flush ortsregister-tasks-list mb-0">
+                                <?php foreach ($tasks as $t) : ?>
+                                    <li class="list-group-item d-flex align-items-center gap-2 ortsregister-task" data-id="<?= e($t->id) ?>">
+                                        <input type="checkbox" class="form-check-input mt-0 ortsregister-task-toggle"
+                                               <?= $t->isOpen() ? '' : 'checked' ?>
+                                               <?= $can_edit ? '' : 'disabled' ?>>
+                                        <span class="ortsregister-task-text flex-grow-1<?= $t->isOpen() ? '' : ' text-muted text-decoration-line-through' ?>"
+                                              <?= $can_edit ? 'role="button" title="' . e(I18N::translate('Click zum Bearbeiten')) . '"' : '' ?>><?= e($t->text) ?></span>
+                                        <?php if ($can_edit) : ?>
+                                            <button type="button" class="btn btn-sm btn-link text-danger p-0 ortsregister-task-delete"
+                                                    style="opacity:.0; transition:opacity .15s" title="<?= e(I18N::translate('Löschen')) ?>">×</button>
+                                        <?php endif ?>
+                                    </li>
+                                <?php endforeach ?>
+                                <?php if ($tasks === []) : ?>
+                                    <li class="list-group-item text-muted fst-italic small">
+                                        <?= I18N::translate('Noch keine Aufgaben.') ?>
+                                    </li>
+                                <?php endif ?>
+                            </ul>
+                            <?php if ($can_edit) : ?>
+                                <div class="p-2 border-top">
+                                    <form class="d-flex gap-2 ortsregister-task-add-form" onsubmit="return false">
+                                        <input type="text"
+                                               class="form-control form-control-sm ortsregister-task-add-input"
+                                               placeholder="<?= e(I18N::translate('Neue Aufgabe — Enter zum Hinzufügen')) ?>">
+                                        <button type="submit" class="btn btn-sm btn-primary px-3">+</button>
+                                    </form>
+                                </div>
+                            <?php endif ?>
+                        </div>
+                    </div>
+                </div>
+            <?php endif ?>
         </div>
         <?php endif ?>
+
+        <style>
+        .ortsregister-task:hover .ortsregister-task-delete { opacity: .7 !important; }
+        .ortsregister-task .ortsregister-task-delete:hover { opacity: 1 !important; }
+        .ortsregister-task-text[role="button"]:hover { background: rgba(0,0,0,.04); border-radius: 3px; padding: 0 .25rem; margin: 0 -.25rem; }
+        </style>
 
         <?php if ($folder_files !== []) : ?>
         <?php
@@ -1126,6 +1234,135 @@ foreach ($bilder as $medium) {
                 );
             } catch (e) { /* still egal */ }
         });
+    });
+})();
+</script>
+<?php endif ?>
+
+<?php if ($ort !== null && $tree !== null) : ?>
+<script>
+// Tasks-Card Interaktion (Add / Toggle / Edit / Delete)
+(function () {
+    const card = document.querySelector('.ortsregister-tasks-card');
+    if (!card) return;
+    const tasksUrl = card.dataset.tasksUrl;
+    const csrf     = card.dataset.csrf;
+    const list     = card.querySelector('.ortsregister-tasks-list');
+    const counter  = card.querySelector('.ortsregister-tasks-counter');
+    const addForm  = card.querySelector('.ortsregister-task-add-form');
+    const addInput = card.querySelector('.ortsregister-task-add-input');
+
+    async function send(action, params) {
+        const fd = new FormData();
+        fd.append('action', action);
+        for (const k in params) fd.append(k, params[k]);
+        const r = await fetch(tasksUrl, { method: 'POST', body: fd, headers: { 'X-CSRF-TOKEN': csrf }});
+        return r.json();
+    }
+
+    function renderTasks(tasks, counts) {
+        list.innerHTML = '';
+        if (tasks.length === 0) {
+            const empty = document.createElement('li');
+            empty.className = 'list-group-item text-muted fst-italic small';
+            empty.textContent = 'Noch keine Aufgaben.';
+            list.appendChild(empty);
+        } else {
+            tasks.forEach(t => {
+                const open = t.status === 'open';
+                const li = document.createElement('li');
+                li.className = 'list-group-item d-flex align-items-center gap-2 ortsregister-task';
+                li.dataset.id = t.id;
+
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.className = 'form-check-input mt-0 ortsregister-task-toggle';
+                if (!open) cb.checked = true;
+                li.appendChild(cb);
+
+                const span = document.createElement('span');
+                span.className = 'ortsregister-task-text flex-grow-1' + (open ? '' : ' text-muted text-decoration-line-through');
+                span.setAttribute('role', 'button');
+                span.title = 'Click zum Bearbeiten';
+                span.textContent = t.text;
+                li.appendChild(span);
+
+                const del = document.createElement('button');
+                del.type = 'button';
+                del.className = 'btn btn-sm btn-link text-danger p-0 ortsregister-task-delete';
+                del.style.opacity = '0';
+                del.style.transition = 'opacity .15s';
+                del.title = 'Löschen';
+                del.textContent = '×';
+                li.appendChild(del);
+
+                list.appendChild(li);
+            });
+        }
+        counter.textContent = counts.open + ' offen' + (counts.done > 0 ? ' / ' + counts.done + ' erl.' : '');
+    }
+
+    async function handleResponse(data) {
+        if (!data.success) {
+            alert(data.message || 'Fehler');
+            return;
+        }
+        renderTasks(data.tasks, data.counts);
+    }
+
+    if (addForm) {
+        addForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const text = addInput.value.trim();
+            if (text === '') return;
+            await handleResponse(await send('add', { text }));
+            addInput.value = '';
+            addInput.focus();
+        });
+    }
+
+    list.addEventListener('change', async (e) => {
+        const cb = e.target.closest('.ortsregister-task-toggle');
+        if (!cb) return;
+        const li = cb.closest('.ortsregister-task');
+        await handleResponse(await send('toggle', { id: li.dataset.id }));
+    });
+
+    list.addEventListener('click', async (e) => {
+        const del = e.target.closest('.ortsregister-task-delete');
+        if (del) {
+            const li = del.closest('.ortsregister-task');
+            if (!confirm('Aufgabe wirklich löschen?')) return;
+            await handleResponse(await send('delete', { id: li.dataset.id }));
+            return;
+        }
+        const span = e.target.closest('.ortsregister-task-text[role="button"]');
+        if (span && !span.dataset.editing) {
+            const li = span.closest('.ortsregister-task');
+            const oldText = span.textContent;
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'form-control form-control-sm flex-grow-1';
+            input.value = oldText;
+            span.dataset.editing = '1';
+            span.replaceWith(input);
+            input.focus();
+            input.select();
+            const commit = async (save) => {
+                const newText = input.value.trim();
+                if (save && newText !== '' && newText !== oldText) {
+                    await handleResponse(await send('edit', { id: li.dataset.id, text: newText }));
+                } else {
+                    input.replaceWith(span);
+                    delete span.dataset.editing;
+                }
+            };
+            input.addEventListener('keydown', (ev) => {
+                if (ev.key === 'Enter')  { ev.preventDefault(); commit(true); }
+                if (ev.key === 'Escape') { commit(false); }
+            });
+            input.addEventListener('blur', () => commit(true));
+        }
     });
 })();
 </script>
