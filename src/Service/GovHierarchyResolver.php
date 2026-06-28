@@ -26,26 +26,37 @@ class GovHierarchyResolver
         private readonly GovApiClient $client,
     ) {}
 
+    public const MODE_HISTORICAL = 'historical';
+    public const MODE_CURRENT    = 'current';
+
     /**
-     * Liefert die part-of-Kette von Blatt bis Wurzel.
+     * Liefert die Hierarchie-Kette von Blatt bis Wurzel.
      * Index 0 = Start-Objekt, danach jeweils Eltern.
      *
+     * @param string $mode self::MODE_HISTORICAL (partOfIds, mit Zeitspannen)
+     *                     oder self::MODE_CURRENT (locatedInIds, ohne Zeit)
      * @return list<GovObject>
      */
-    public function resolve(string $govId, int $maxDepth = self::MAX_DEPTH_DEFAULT): array
-    {
-        return array_map(static fn(array $step) => $step['obj'], $this->resolveWithEdges($govId, $maxDepth));
+    public function resolve(
+        string $govId,
+        string $mode = self::MODE_HISTORICAL,
+        int $maxDepth = self::MAX_DEPTH_DEFAULT,
+    ): array {
+        return array_map(static fn(array $step) => $step['obj'], $this->resolveWithEdges($govId, $mode, $maxDepth));
     }
 
     /**
      * Wie resolve(), aber liefert pro Stufe zusätzlich die Zeitspanne der
-     * part-of-Beziehung VON DER VORHERIGEN STUFE ZU DIESER. Für Index 0
-     * (Start-Objekt) sind begin/end null.
+     * Beziehung VON DER VORHERIGEN STUFE ZU DIESER (nur im MODE_HISTORICAL
+     * sinnvoll — locatedIn-Beziehungen haben keine Zeit).
      *
      * @return list<array{obj: GovObject, begin: string|null, end: string|null}>
      */
-    public function resolveWithEdges(string $govId, int $maxDepth = self::MAX_DEPTH_DEFAULT): array
-    {
+    public function resolveWithEdges(
+        string $govId,
+        string $mode = self::MODE_HISTORICAL,
+        int $maxDepth = self::MAX_DEPTH_DEFAULT,
+    ): array {
         $chain         = [];
         $visited       = [];
         $currentId     = $govId;
@@ -65,10 +76,17 @@ class GovHierarchyResolver
             }
             $chain[] = ['obj' => $obj, 'begin' => $pendingBegin, 'end' => $pendingEnd];
 
-            $nextId       = $obj->partOfIds[0] ?? '';
-            $meta         = $obj->partOfMeta[$nextId] ?? null;
-            $pendingBegin = $meta['begin'] ?? null;
-            $pendingEnd   = $meta['end']   ?? null;
+            // Modus entscheidet welche Eltern-Beziehung gewählt wird
+            if ($mode === self::MODE_CURRENT) {
+                $nextId       = $obj->locatedInIds[0] ?? '';
+                $pendingBegin = null;
+                $pendingEnd   = null;
+            } else {
+                $nextId       = $obj->partOfIds[0] ?? '';
+                $meta         = $obj->partOfMeta[$nextId] ?? null;
+                $pendingBegin = $meta['begin'] ?? null;
+                $pendingEnd   = $meta['end']   ?? null;
+            }
             $currentId    = $nextId;
             $steps++;
         }

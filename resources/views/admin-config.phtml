@@ -19,6 +19,7 @@ use Ortsregister\OrtsregisterModule;
 /** @var bool   $link_archivpdb */
 /** @var bool   $link_ddb */
 /** @var string $folder_root */
+/** @var string $hierarchy_mode */
 
 $secondsToDays = static fn(int $s): string => $s >= 86400
     ? round($s / 86400, 1) . ' Tage'
@@ -88,6 +89,38 @@ $secondsToDays = static fn(int $s): string => $s >= 86400
                        value="<?= $gov_cache_ttl ?>" min="60" max="2592000" step="60">
                 <div class="form-text">
                     <?= I18N::translate('Aktuell: %s. Default 604800 (7 Tage). GOV-Daten ändern sich selten.', e($secondsToDays($gov_cache_ttl))) ?>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label"><?= I18N::translate('Hierarchie-Modus auf Detailseite') ?></label>
+                <?php foreach ([
+                    OrtsregisterModule::HIERARCHY_MODE_HISTORICAL => [
+                        'label' => I18N::translate('Historisch (part-of)'),
+                        'help'  => I18N::translate('Verwaltungs-Hierarchie mit Zeitspannen (z.B. „Württemberg 1806–1813"). Genealogisch sinnvoll.'),
+                    ],
+                    OrtsregisterModule::HIERARCHY_MODE_CURRENT    => [
+                        'label' => I18N::translate('Aktuell (located-in)'),
+                        'help'  => I18N::translate('Heutige geografische Lage (z.B. „Baden-Württemberg"). Klar für Orientierung.'),
+                    ],
+                    OrtsregisterModule::HIERARCHY_MODE_BOTH       => [
+                        'label' => I18N::translate('Beide nebeneinander'),
+                        'help'  => I18N::translate('Zeigt beide Ketten — historisch oben, aktuell darunter.'),
+                    ],
+                ] as $modeVal => $modeMeta) : ?>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio"
+                               id="hierarchy_mode_<?= e($modeVal) ?>"
+                               name="<?= e(OrtsregisterModule::SETTING_HIERARCHY_MODE) ?>"
+                               value="<?= e($modeVal) ?>"
+                               <?= $hierarchy_mode === $modeVal ? 'checked' : '' ?>>
+                        <label class="form-check-label" for="hierarchy_mode_<?= e($modeVal) ?>">
+                            <strong><?= e($modeMeta['label']) ?></strong> — <span class="text-muted small"><?= e($modeMeta['help']) ?></span>
+                        </label>
+                    </div>
+                <?php endforeach ?>
+                <div class="form-text mt-2">
+                    <?= I18N::translate('Default: Historisch. Bei „Beide" wird die Hierarchie-Card etwas größer.') ?>
                 </div>
             </div>
         </div>

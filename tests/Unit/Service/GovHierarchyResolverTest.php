@@ -164,6 +164,32 @@ final class GovHierarchyResolverTest extends TestCase
         self::assertSame('1806', $edges[2]['end']);
     }
 
+    public function testResolveCurrentModeWalksLocatedInIdsNotPartOf(): void
+    {
+        // Leaf: partOf zeigt nach 'historical', locatedIn nach 'modern'
+        $leaf = new GovObject(
+            govId: 'object_leaf', primaryName: 'Weiler', namesByLang: ['deu' => 'Weiler'],
+            typeIds: [], latitude: null, longitude: null,
+            partOfIds: ['object_historical'], locatedInIds: ['object_modern'],
+            externalUrls: [], rawJson: [], partOfMeta: [],
+        );
+        $historical = $this->makeObj('object_historical', 'Rheinbund', []);
+        $modern     = $this->makeObj('object_modern',     'Baden-Württemberg', []);
+        $resolver = new GovHierarchyResolver($this->stubClient([
+            'object_leaf'       => $leaf,
+            'object_historical' => $historical,
+            'object_modern'     => $modern,
+        ]));
+
+        $current = $resolver->resolve('object_leaf', GovHierarchyResolver::MODE_CURRENT);
+        self::assertCount(2, $current);
+        self::assertSame('object_modern', $current[1]->govId);
+
+        $hist = $resolver->resolve('object_leaf', GovHierarchyResolver::MODE_HISTORICAL);
+        self::assertCount(2, $hist);
+        self::assertSame('object_historical', $hist[1]->govId);
+    }
+
     public function testResolveWithEdgesHandlesMissingPartOfMeta(): void
     {
         $leaf = new GovObject('object_leaf', 'Weiler', ['deu' => 'Weiler'], [], null, null,
