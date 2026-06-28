@@ -141,6 +141,42 @@ class PlaceNotesService
             $html = $this->resolveIndiLinks($html, $tree);
         }
         $html = $this->instrumentCheckboxes($html);
+        $html = $this->markPriorityAndDates($html);
+        return $html;
+    }
+
+    /**
+     * Post-Processor für Task-Listen-Konventionen:
+     *   `!!`  am Anfang des Task-Texts → Prio HIGH (rot)
+     *   `!`   am Anfang → Prio MEDIUM (orange)
+     *   `@YYYY-MM-DD` / `@YYYY-MM` / `@YYYY` → Datum-Badge
+     *
+     * Die `!`/`@`-Marker werden aus dem sichtbaren Text entfernt und durch
+     * Badges ersetzt. CSS in der View kümmert sich um Farben.
+     */
+    private function markPriorityAndDates(string $html): string
+    {
+        // Datum-Badges (vor Prio, damit die Marker beim Prio-Parse nicht stören)
+        $html = (string) preg_replace_callback(
+            '/@(\d{4}(?:-\d{2}(?:-\d{2})?)?)\b/',
+            static fn(array $m) => '<span class="ortsregister-task-date">📅 ' . htmlspecialchars($m[1], ENT_QUOTES) . '</span>',
+            $html,
+        );
+
+        // Prio-Marker: nur in <li>-Elementen die Checkboxen enthalten (Task-Lists)
+        // Pattern: <li> ... <input type="checkbox" ...> (whitespace) (!!? text...)</li>
+        $html = (string) preg_replace_callback(
+            '#(<li[^>]*>\s*<input[^>]*type="checkbox"[^>]*>)(\s*)(!!?)(\s+)#',
+            static function (array $m): string {
+                $marks = $m[3]; // "!" oder "!!"
+                $cls   = strlen($marks) === 2 ? 'ortsregister-task-prio-high' : 'ortsregister-task-prio-med';
+                $label = strlen($marks) === 2 ? 'hoch' : 'mittel';
+                return $m[1] . $m[2]
+                    . '<span class="' . $cls . '" title="Priorität ' . $label . '">' . $marks . '</span>'
+                    . $m[4];
+            },
+            $html,
+        );
         return $html;
     }
 

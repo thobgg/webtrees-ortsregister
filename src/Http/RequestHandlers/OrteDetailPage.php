@@ -69,8 +69,10 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
                 'ort'          => null,
                 'personen'     => [],
                 'medien'       => [],
-                'gov_id'       => null,
-                'gov_chain'    => [],
+                'gov_id'             => null,
+                'gov_chain'          => [],
+                'gov_chain_current'  => [],
+                'gov_hierarchy_mode' => OrtsregisterModule::DEFAULT_HIERARCHY_MODE,
                 'event_counts' => $emptyCounts,
                 'wiki'         => $emptyWiki,
                 'ddb'          => $emptyDdb,
@@ -93,8 +95,10 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
                 'ort'          => null,
                 'personen'     => [],
                 'medien'       => [],
-                'gov_id'       => null,
-                'gov_chain'    => [],
+                'gov_id'             => null,
+                'gov_chain'          => [],
+                'gov_chain_current'  => [],
+                'gov_hierarchy_mode' => OrtsregisterModule::DEFAULT_HIERARCHY_MODE,
                 'event_counts' => $emptyCounts,
                 'wiki'         => $emptyWiki,
                 'ddb'          => $emptyDdb,
@@ -113,21 +117,31 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
         $medien = $this->ladeMedien($tree, $placeId);
 
         // GOV-Hierarchie: nur wenn verknüpft. API-Fehler dürfen die Seite nicht killen.
-        $govId    = $this->govLinking->getLinkedGovId($tree, $placeId);
-        $govChain = [];
+        // Modus aus Setting (historisch/aktuell/beide).
+        $govId            = $this->govLinking->getLinkedGovId($tree, $placeId);
+        $govChain         = [];          // historisch (partOfIds)
+        $govChainCurrent  = [];          // aktuell    (locatedInIds)
+        $hierarchyMode = $this->module->hierarchyMode();
+        // IMMER beide Ketten laden — GOV liefert nicht für alle Orte locatedInIds,
+        // dann muss die View graceful auf historische Kette zurückfallen können.
+        // Cache (7d) sorgt dafür dass das nur beim ersten Request kostet.
         if ($govId !== null) {
+            $mapStep = fn(array $step) => [
+                'gov_id' => $step['obj']->govId,
+                'name'   => $this->govHierarchy->germanNameOf($step['obj']),
+                'begin'  => $step['begin'],
+                'end'    => $step['end'],
+            ];
             try {
-                foreach ($this->govHierarchy->resolveWithEdges($govId) as $step) {
-                    $govChain[] = [
-                        'gov_id' => $step['obj']->govId,
-                        'name'   => $this->govHierarchy->germanNameOf($step['obj']),
-                        'begin'  => $step['begin'],
-                        'end'    => $step['end'],
-                    ];
+                foreach ($this->govHierarchy->resolveWithEdges($govId, \Ortsregister\Service\GovHierarchyResolver::MODE_HISTORICAL) as $step) {
+                    $govChain[] = $mapStep($step);
                 }
-            } catch (Throwable) {
-                $govChain = []; // Stiller Fallback — View zeigt dann nur die ID
-            }
+            } catch (Throwable) {}
+            try {
+                foreach ($this->govHierarchy->resolveWithEdges($govId, \Ortsregister\Service\GovHierarchyResolver::MODE_CURRENT) as $step) {
+                    $govChainCurrent[] = $mapStep($step);
+                }
+            } catch (Throwable) {}
         }
 
         // Ereignisse pro Tag (BIRT/MARR/DEAT/OTHER) — Mini-Parser über GEDCOM-Blobs.
@@ -223,9 +237,11 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
             'ort'          => $ort,
             'personen'     => $personen,
             'medien'       => $medien,
-            'gov_id'       => $govId,
-            'gov_chain'    => $govChain,
-            'place_id'     => $placeId,
+            'gov_id'             => $govId,
+            'gov_chain'          => $govChain,
+            'gov_chain_current'  => $govChainCurrent,
+            'gov_hierarchy_mode' => $hierarchyMode,
+            'place_id'           => $placeId,
             'event_counts' => $eventCounts,
             'wiki'         => $wiki,
             'ddb'          => $ddb,

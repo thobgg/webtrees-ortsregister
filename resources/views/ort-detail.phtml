@@ -10,6 +10,8 @@ use Fisharebest\Webtrees\Media;
 /** @var string $title */
 /** @var string|null $gov_id */
 /** @var list<array{gov_id:string,name:string,begin:string|null,end:string|null}> $gov_chain */
+/** @var list<array{gov_id:string,name:string,begin:string|null,end:string|null}> $gov_chain_current */
+/** @var string $gov_hierarchy_mode */
 /** @var int|null $place_id */
 /** @var array{BIRT:int, MARR:int, DEAT:int, OTHER:int, TOTAL:int} $event_counts */
 /** @var \Ortsregister\Dto\WikimediaPlaceData $wiki */
@@ -61,6 +63,20 @@ $BILDER_VISIBLE   = $bilder_visible   ?? 12;
 .ortsregister-prose p:last-child { margin-bottom: 0; }
 .ortsregister-prose img { max-width: 100%; height: auto; border-radius: .375rem; }
 .ortsregister-prose blockquote { border-left: 3px solid #dee2e6; padding-left: 1rem; color: #6c757d; }
+/* Task-Konventionen: Prio + Datum */
+.ortsregister-task-prio-high {
+    display: inline-block; color: #b02a37; font-weight: 700; margin-right: .25rem;
+    background: #f8d7da; border-radius: .2rem; padding: 0 .35rem; font-size: .8rem;
+}
+.ortsregister-task-prio-med {
+    display: inline-block; color: #856404; font-weight: 700; margin-right: .25rem;
+    background: #fff3cd; border-radius: .2rem; padding: 0 .35rem; font-size: .8rem;
+}
+.ortsregister-task-date {
+    display: inline-block; background: #cfe2ff; color: #084298;
+    border-radius: .2rem; padding: 0 .35rem; font-size: .75rem; margin: 0 .15rem;
+    font-variant-numeric: tabular-nums;
+}
 
 /* Collapsible-Cards: Chevron + Hover-Affordance */
 [data-collapsible] > .card-header { cursor: pointer; user-select: none; }
@@ -187,51 +203,85 @@ foreach ($bilder as $medium) {
                 <?php endif ?>
             </div>
             <div class="card-body">
-                <?php if ($gov_id !== null && $gov_chain !== []) : ?>
-                    <?php
-                    // Zeitspanne als "1806–1813" / "ab 1806" / "bis 1813" / "" formatieren
-                    $formatSpan = static function (?string $begin, ?string $end): string {
-                        $b = $begin !== null && $begin !== '' ? trim($begin) : '';
-                        $e = $end   !== null && $end   !== '' ? trim($end)   : '';
-                        if ($b === '' && $e === '') return '';
-                        if ($b !== '' && $e !== '') return $b . '–' . $e;
-                        if ($b !== '')              return 'ab ' . $b;
-                        return 'bis ' . $e;
-                    };
-                    // Wenn die UNMITTELBARE Elternstufe eine Zeitspanne hat,
-                    // ist sie der prägnanteste Epochen-Hinweis fürs Lead.
-                    $leadEpoch = '';
-                    if (isset($gov_chain[1])) {
-                        $leadEpoch = $formatSpan($gov_chain[1]['begin'], $gov_chain[1]['end']);
-                    }
-                    ?>
-                    <?php if ($leadEpoch !== '') : ?>
-                        <div class="alert alert-info py-2 mb-3 small">
-                            <?= I18N::translate('Verwaltungs-Zugehörigkeit zur Zeit %s — kann zu anderen Epochen abweichen.', '<strong>' . e($leadEpoch) . '</strong>') ?>
-                        </div>
-                    <?php endif ?>
+                <?php
+                $formatSpan = static function (?string $begin, ?string $end): string {
+                    $b = $begin !== null && $begin !== '' ? trim($begin) : '';
+                    $e = $end   !== null && $end   !== '' ? trim($end)   : '';
+                    if ($b === '' && $e === '') return '';
+                    if ($b !== '' && $e !== '') return $b . '–' . $e;
+                    if ($b !== '')              return 'ab ' . $b;
+                    return 'bis ' . $e;
+                };
+                $renderChain = function (array $chain, bool $showSpans) use ($formatSpan): string {
+                    ob_start(); ?>
                     <ol class="breadcrumb mb-2" style="font-size: 1.05em;">
-                        <?php foreach (array_reverse($gov_chain) as $i => $node) : ?>
+                        <?php foreach (array_reverse($chain) as $i => $node) : ?>
                             <?php
-                            $span = $formatSpan($node['begin'], $node['end']);
-                            $isLast = $i === count($gov_chain) - 1;
+                            $span = $showSpans ? $formatSpan($node['begin'], $node['end']) : '';
+                            $isLast = $i === count($chain) - 1;
                             ?>
                             <li class="breadcrumb-item<?= $isLast ? ' active' : '' ?>">
                                 <a href="https://gov.genealogy.net/item/show/<?= e($node['gov_id']) ?>"
-                                   target="_blank" rel="noopener"
-                                   title="<?= e($node['gov_id']) ?>">
+                                   target="_blank" rel="noopener" title="<?= e($node['gov_id']) ?>">
                                     <?= e($node['name']) ?>
                                 </a>
                                 <?php if ($span !== '') : ?>
-                                    <small class="text-muted ms-1" title="<?= e(I18N::translate('Zeitspanne der Zugehörigkeit zur Eltern-Verwaltungseinheit')) ?>">
-                                        (<?= e($span) ?>)
-                                    </small>
+                                    <small class="text-muted ms-1">(<?= e($span) ?>)</small>
                                 <?php endif ?>
                             </li>
                         <?php endforeach ?>
                     </ol>
+                    <?php
+                    return (string) ob_get_clean();
+                };
+                $hasHistorical = $gov_chain         !== [];
+                $hasCurrent    = $gov_chain_current !== [];
+                ?>
+                <?php if ($gov_id !== null && ($hasHistorical || $hasCurrent)) : ?>
+                    <?php
+                    // Lead-Epoch nur wenn historische Kette gezeigt wird und Zeitfenster da ist
+                    $leadEpoch = '';
+                    if ($hasHistorical && isset($gov_chain[1])) {
+                        $leadEpoch = $formatSpan($gov_chain[1]['begin'], $gov_chain[1]['end']);
+                    }
+                    ?>
+                    <?php if ($gov_hierarchy_mode === \Ortsregister\OrtsregisterModule::HIERARCHY_MODE_BOTH) : ?>
+                        <?php if ($hasHistorical) : ?>
+                            <div class="mb-2"><small class="text-uppercase text-muted fw-semibold"><?= I18N::translate('Historisch (part-of, Zeitspannen)') ?></small></div>
+                            <?php if ($leadEpoch !== '') : ?>
+                                <div class="alert alert-info py-2 mb-2 small">
+                                    <?= I18N::translate('Zur Zeit %s — kann zu anderen Epochen abweichen.', '<strong>' . e($leadEpoch) . '</strong>') ?>
+                                </div>
+                            <?php endif ?>
+                            <?= $renderChain($gov_chain, true) ?>
+                        <?php endif ?>
+                        <?php if ($hasCurrent) : ?>
+                            <div class="mb-2 <?= $hasHistorical ? 'mt-3' : '' ?>"><small class="text-uppercase text-muted fw-semibold"><?= I18N::translate('Aktuell (located-in)') ?></small></div>
+                            <?= $renderChain($gov_chain_current, false) ?>
+                        <?php elseif ($hasHistorical) : ?>
+                            <div class="alert alert-warning py-2 mt-2 mb-0 small">
+                                <?= I18N::translate('GOV liefert keine „aktuell"-Daten (located-in) für diesen Ort — nur die historische Kette.') ?>
+                            </div>
+                        <?php endif ?>
+                    <?php elseif ($gov_hierarchy_mode === \Ortsregister\OrtsregisterModule::HIERARCHY_MODE_CURRENT) : ?>
+                        <?php if ($hasCurrent) : ?>
+                            <?= $renderChain($gov_chain_current, false) ?>
+                        <?php elseif ($hasHistorical) : ?>
+                            <div class="alert alert-warning py-2 mb-2 small">
+                                <?= I18N::translate('GOV hat keine „aktuell"-Daten (located-in) für diesen Ort hinterlegt. Stattdessen wird die historische Kette gezeigt.') ?>
+                            </div>
+                            <?= $renderChain($gov_chain, true) ?>
+                        <?php endif ?>
+                    <?php else : /* historical (default) */ ?>
+                        <?php if ($leadEpoch !== '') : ?>
+                            <div class="alert alert-info py-2 mb-3 small">
+                                <?= I18N::translate('Verwaltungs-Zugehörigkeit zur Zeit %s — kann zu anderen Epochen abweichen.', '<strong>' . e($leadEpoch) . '</strong>') ?>
+                            </div>
+                        <?php endif ?>
+                        <?= $renderChain($hasHistorical ? $gov_chain : $gov_chain_current, $hasHistorical) ?>
+                    <?php endif ?>
                     <div class="form-text">
-                        <?= I18N::translate('Aufgelöste Hierarchie aus GOV (part-of). Verknüpfung: %s', '<code>' . e($gov_id) . '</code>') ?>
+                        <?= I18N::translate('Aufgelöste Hierarchie aus GOV. Verknüpfung: %s', '<code>' . e($gov_id) . '</code>') ?>
                     </div>
                 <?php elseif ($gov_id !== null) : ?>
                     <div class="text-muted">

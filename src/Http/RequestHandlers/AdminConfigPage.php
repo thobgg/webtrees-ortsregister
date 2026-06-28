@@ -75,6 +75,7 @@ class AdminConfigPage implements RequestHandlerInterface
                 'link_archivpdb'   => $this->module->linkArchivportalD(),
                 'link_ddb'         => $this->module->linkDdb(),
                 'folder_root'      => $this->module->folderRoot(),
+                'hierarchy_mode'   => $this->module->hierarchyMode(),
             ]
         );
     }
@@ -109,6 +110,17 @@ class AdminConfigPage implements RequestHandlerInterface
             $folderRoot = OrtsregisterModule::DEFAULT_FOLDER_ROOT;
         }
         $this->module->setPreference(OrtsregisterModule::SETTING_FOLDER_ROOT, $folderRoot);
+
+        // Hierarchy-Modus
+        $hierarchyMode = (string) ($params[OrtsregisterModule::SETTING_HIERARCHY_MODE] ?? OrtsregisterModule::DEFAULT_HIERARCHY_MODE);
+        if (!in_array($hierarchyMode, [
+            OrtsregisterModule::HIERARCHY_MODE_HISTORICAL,
+            OrtsregisterModule::HIERARCHY_MODE_CURRENT,
+            OrtsregisterModule::HIERARCHY_MODE_BOTH,
+        ], true)) {
+            $hierarchyMode = OrtsregisterModule::DEFAULT_HIERARCHY_MODE;
+        }
+        $this->module->setPreference(OrtsregisterModule::SETTING_HIERARCHY_MODE, $hierarchyMode);
 
         // Externe-Link-Toggles (Checkbox: vorhanden = '1', fehlt = '0')
         foreach ([

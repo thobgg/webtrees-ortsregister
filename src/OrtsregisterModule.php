@@ -85,6 +85,11 @@ class OrtsregisterModule extends AbstractModule implements
     public const SETTING_LINK_ARCHIVPDB   = 'link_archivpdb';
     public const SETTING_LINK_DDB         = 'link_ddb';
     public const SETTING_FOLDER_ROOT      = 'folder_root';
+    public const SETTING_HIERARCHY_MODE   = 'hierarchy_mode';
+
+    public const HIERARCHY_MODE_HISTORICAL = 'historical';
+    public const HIERARCHY_MODE_CURRENT    = 'current';
+    public const HIERARCHY_MODE_BOTH       = 'both';
 
     public const DEFAULT_WIKI_ENABLED     = true;
     public const DEFAULT_WIKI_DIST_KM     = 30;
@@ -99,6 +104,7 @@ class OrtsregisterModule extends AbstractModule implements
     public const DEFAULT_LINK_ARCHIVPDB   = true;
     public const DEFAULT_LINK_DDB         = true;
     public const DEFAULT_FOLDER_ROOT      = 'orte';
+    public const DEFAULT_HIERARCHY_MODE   = self::HIERARCHY_MODE_HISTORICAL;
 
     public function title(): string { return 'Ortsregister'; }
     public function description(): string { return 'Ortsregister mit visueller Landing-Page, Medien-Verknüpfung und (geplant) GOV-Integration.'; }
@@ -292,6 +298,15 @@ class OrtsregisterModule extends AbstractModule implements
     public function linkDdb(): bool
     {
         return $this->getPreference(self::SETTING_LINK_DDB, self::DEFAULT_LINK_DDB ? '1' : '0') === '1';
+    }
+    public function hierarchyMode(): string
+    {
+        $raw = $this->getPreference(self::SETTING_HIERARCHY_MODE, self::DEFAULT_HIERARCHY_MODE);
+        return in_array($raw, [
+            self::HIERARCHY_MODE_HISTORICAL,
+            self::HIERARCHY_MODE_CURRENT,
+            self::HIERARCHY_MODE_BOTH,
+        ], true) ? $raw : self::DEFAULT_HIERARCHY_MODE;
     }
     public function folderRoot(): string
     {
