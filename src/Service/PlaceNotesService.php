@@ -5,32 +5,45 @@ declare(strict_types=1);
 namespace Ortsregister\Service;
 
 use Ortsregister\Dto\PlaceNotes;
+use Fisharebest\Webtrees\Http\RequestHandlers\IndividualPage;
+use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\Tree;
 use Fisharebest\Webtrees\Webtrees;
-use League\CommonMark\CommonMarkConverter;
+use League\CommonMark\GithubFlavoredMarkdownConverter;
 use RuntimeException;
 
 /**
- * Liest/schreibt `notes.md` im Ortsbilder-Ordner und rendert Markdown→HTML.
+ * Liest/schreibt Markdown-Notiz-Dateien im Ortsbilder-Ordner und rendert
+ * Markdown → HTML (GitHub-Flavored, inkl. Task-Lists, Tabellen, Autolinks).
  *
- * Konvention: `media/<root>/<ortsname>/notes.md`
+ * Konvention: `media/<root>/<ortsname>/<filename>.md`
  *
- * Optimistic Locking via filemtime: der Caller bekommt beim Read den mtime
- * mit und gibt ihn beim Save zurück. Bei Mismatch wirft save() RuntimeException.
+ * Standard-Slots (vom Modul mit Default-Titel + Placeholder versorgt):
+ *   notes.md, recherche.md, personen.md
+ *
+ * Plus: alle weiteren `*.md` im Ortsordner werden automatisch erkannt
+ * (User-definierbar) — `scanMarkdownFiles()` listet sie auf.
+ *
+ * Filename-Whitelist `^[a-z][a-z0-9_-]*\.md$`: keine Pfade, keine
+ * versteckten Dateien, keine .md.bak-Tricks.
+ *
+ * Optimistic Locking via filemtime: Caller bekommt mtime beim Read mit
+ * und gibt ihn beim Save zurück. Mismatch → RuntimeException.
  */
 class PlaceNotesService
 {
-    public const FILENAME = 'notes.md';
+    /** Filename-Validierungs-Pattern. */
+    private const FILENAME_PATTERN = '/^[a-z][a-z0-9_-]*\.md$/';
 
-    private ?CommonMarkConverter $converter = null;
+    private ?GithubFlavoredMarkdownConverter $converter = null;
 
     public function __construct(
         private readonly string $folderRoot = 'orte',
     ) {}
 
-    public function read(Tree $tree, string $placeName): PlaceNotes
+    public function read(Tree $tree, string $placeName, string $filename = 'notes.md'): PlaceNotes
     {
-        $path = $this->absolutePath($tree, $placeName);
+        $path = $this->absolutePath($tree, $placeName, $filename);
         if ($path === null || !is_file($path)) {
             return PlaceNotes::empty();
         }
@@ -40,22 +53,25 @@ class PlaceNotesService
     }
 
     /**
-     * Schreibt notes.md. Liefert neuen mtime zurück.
+     * Schreibt Markdown-File. Liefert neuen mtime zurück.
      * Wirft RuntimeException bei mtime-Mismatch (parallel edit).
      */
-    public function save(Tree $tree, string $placeName, string $markdown, int $expectedMtime): int
-    {
-        $path = $this->absolutePath($tree, $placeName);
+    public function save(
+        Tree $tree,
+        string $placeName,
+        string $markdown,
+        int $expectedMtime,
+        string $filename = 'notes.md',
+    ): int {
+        $path = $this->absolutePath($tree, $placeName, $filename);
         if ($path === null) {
-            throw new RuntimeException('Ungültiger Ortsname.');
+            throw new RuntimeException('Ungültiger Ortsname oder Filename.');
         }
-        // Ordner ggf. anlegen
         $dir = dirname($path);
         if (!is_dir($dir) && !@mkdir($dir, 0755, true) && !is_dir($dir)) {
             throw new RuntimeException('Ordner konnte nicht angelegt werden: ' . $dir);
         }
 
-        // Optimistic-Lock-Check
         $currentMtime = is_file($path) ? (filemtime($path) ?: 0) : 0;
         if ($expectedMtime !== 0 && $currentMtime !== 0 && $currentMtime !== $expectedMtime) {
             throw new RuntimeException(
@@ -63,7 +79,6 @@ class PlaceNotesService
             );
         }
 
-        // Bei leerem Inhalt: Datei löschen, nicht leer schreiben
         if (trim($markdown) === '') {
             if (is_file($path)) {
                 @unlink($path);
@@ -80,27 +95,131 @@ class PlaceNotesService
     }
 
     /**
-     * Render Markdown → HTML. Default-CommonMark mit konservativen Einstellungen
-     * (kein raw HTML, kein unsafe links).
+     * Listet alle vorhandenen `.md`-Dateien im Ortsordner (sortiert).
+     * Nur Whitelist-konforme Filenames.
+     *
+     * @return list<string>
      */
-    public function render(string $markdown): string
+    public function scanMarkdownFiles(Tree $tree, string $placeName): array
+    {
+        $dir = $this->placeFolder($tree, $placeName);
+        if ($dir === null || !is_dir($dir)) {
+            return [];
+        }
+        $out = [];
+        foreach (scandir($dir) ?: [] as $entry) {
+            if (preg_match(self::FILENAME_PATTERN, $entry) === 1 && is_file($dir . '/' . $entry)) {
+                $out[] = $entry;
+            }
+        }
+        sort($out);
+        return $out;
+    }
+
+    /**
+     * Render Markdown → HTML mit GitHub-Flavored-Markdown
+     * (Task-Lists, Tabellen, Strikethrough, Autolinks).
+     * Roh-HTML wird escapet (sicher), unsafe-Links blockiert.
+     *
+     * Wenn $tree gesetzt: `indi:`-Links auf webtrees-Personen werden zu
+     * echten Individual-URLs aufgelöst; Checkboxen für GFM-Task-Lists
+     * werden mit Indices instrumentiert (für interaktiven Toggle).
+     */
+    public function render(string $markdown, ?Tree $tree = null): string
     {
         if (trim($markdown) === '') {
             return '';
         }
         if ($this->converter === null) {
-            $this->converter = new CommonMarkConverter([
-                'html_input'         => 'escape',  // Roh-HTML escapen, keine Injection
+            $this->converter = new GithubFlavoredMarkdownConverter([
+                'html_input'         => 'escape',
                 'allow_unsafe_links' => false,
             ]);
         }
-        return (string) $this->converter->convert($markdown);
+        $html = (string) $this->converter->convert($markdown);
+        if ($tree !== null) {
+            $html = $this->resolveIndiLinks($html, $tree);
+        }
+        $html = $this->instrumentCheckboxes($html);
+        return $html;
     }
 
     /**
-     * Liefert den absoluten Pfad zur notes.md, oder null bei ungültigem Ortsnamen.
+     * Findet `<a href="indi:Ixxx">Text</a>` und ersetzt durch echten webtrees-Link.
+     * Wenn die Person nicht existiert → grauer Hinweis statt Link.
      */
-    private function absolutePath(Tree $tree, string $placeName): ?string
+    private function resolveIndiLinks(string $html, Tree $tree): string
+    {
+        return (string) preg_replace_callback(
+            '#<a href="indi:([A-Za-z0-9_-]+)"[^>]*>([^<]*)</a>#',
+            static function (array $m) use ($tree): string {
+                $xref = strtoupper($m[1]);
+                if (!str_starts_with($xref, 'I')) {
+                    $xref = 'I' . $xref;
+                }
+                $name = $m[2] !== '' ? $m[2] : $xref;
+                $indi = Registry::individualFactory()->make($xref, $tree);
+                if ($indi === null || !$indi->canShow()) {
+                    return '<span class="text-muted" title="' . htmlspecialchars($xref, ENT_QUOTES) . ' nicht in webtrees gefunden">'
+                        . htmlspecialchars($name, ENT_QUOTES) . ' ⚠️</span>';
+                }
+                $url = route(IndividualPage::class, ['tree' => $tree->name(), 'xref' => $xref]);
+                return '<a href="' . htmlspecialchars($url, ENT_QUOTES)
+                    . '" title="webtrees ' . htmlspecialchars($xref, ENT_QUOTES) . '">'
+                    . htmlspecialchars($name, ENT_QUOTES) . '</a>';
+            },
+            $html,
+        );
+    }
+
+    /**
+     * Macht GFM-Task-List-Checkboxen klickbar (entfernt `disabled`, fügt data-task-index hinzu).
+     * Indices laufen pro HTML-Block, Reihenfolge = Markdown-Reihenfolge.
+     */
+    private function instrumentCheckboxes(string $html): string
+    {
+        $i = 0;
+        return (string) preg_replace_callback(
+            '#<input[^>]*type="checkbox"[^>]*>#',
+            static function (array $m) use (&$i): string {
+                $tag = $m[0];
+                $tag = (string) preg_replace('/\s*disabled(="[^"]*")?\s*/', ' ', $tag);
+                $tag = preg_replace('#>$#', ' data-task-index="' . $i . '" class="ortsregister-task-cb">', $tag) ?? $tag;
+                $i++;
+                return $tag;
+            },
+            $html,
+        );
+    }
+
+    /**
+     * Toggelt eine Checkbox in der Markdown-Quelle (Index in Reihenfolge).
+     * Liefert das geänderte Markdown zurück, ohne zu speichern.
+     */
+    public function toggleTaskInMarkdown(string $markdown, int $taskIndex, bool $checked): string
+    {
+        $lines = preg_split('/\r?\n/', $markdown) ?: [];
+        $found = 0;
+        foreach ($lines as $idx => $line) {
+            if (preg_match('/^(\s*[-*+]\s+)\[([ xX])\](\s.*)?$/', $line, $m) === 1) {
+                if ($found === $taskIndex) {
+                    $newMarker  = $checked ? 'x' : ' ';
+                    $rest       = $m[3] ?? '';
+                    $lines[$idx] = $m[1] . '[' . $newMarker . ']' . $rest;
+                    break;
+                }
+                $found++;
+            }
+        }
+        return implode("\n", $lines);
+    }
+
+    public function isValidFilename(string $filename): bool
+    {
+        return preg_match(self::FILENAME_PATTERN, $filename) === 1;
+    }
+
+    private function placeFolder(Tree $tree, string $placeName): ?string
     {
         $placeName = trim($placeName);
         if ($placeName === ''
@@ -111,6 +230,15 @@ class PlaceNotesService
             return null;
         }
         $mediaDir = $tree->getPreference('MEDIA_DIRECTORY', 'media/');
-        return Webtrees::DATA_DIR . $mediaDir . trim($this->folderRoot, '/') . '/' . $placeName . '/' . self::FILENAME;
+        return Webtrees::DATA_DIR . $mediaDir . trim($this->folderRoot, '/') . '/' . $placeName;
+    }
+
+    private function absolutePath(Tree $tree, string $placeName, string $filename): ?string
+    {
+        if (!$this->isValidFilename($filename)) {
+            return null;
+        }
+        $dir = $this->placeFolder($tree, $placeName);
+        return $dir === null ? null : $dir . '/' . $filename;
     }
 }

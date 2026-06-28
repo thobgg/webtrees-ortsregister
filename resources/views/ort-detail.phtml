@@ -23,8 +23,7 @@ use Fisharebest\Webtrees\Media;
 /** @var bool $link_ddb */
 /** @var \Ortsregister\Dto\DdbPlaceData $ddb */
 /** @var list<\Ortsregister\Dto\PlaceFile> $folder_files */
-/** @var \Ortsregister\Dto\PlaceNotes $notes */
-/** @var string $notes_html */
+/** @var list<array{filename:string,title:string,placeholder:string,markdown:string,html:string,mtime:int}> $note_slots */
 /** @var bool $can_edit */
 /** @var string|null $archion_url */
 /** @var \Ortsregister\OrtsregisterModule $module */
@@ -333,27 +332,41 @@ foreach ($bilder as $medium) {
         </div>
         <?php endif ?>
 
-        <?php if ($notes_html !== '' || $can_edit) : ?>
-        <div class="card mb-4">
-            <div class="card-header fw-semibold d-flex align-items-center">
-                <?= I18N::translate('Notizen') ?>
-                <?php if ($can_edit) : ?>
-                    <button type="button" class="btn btn-sm btn-outline-secondary ms-auto"
-                            id="ortsregister-notes-edit-btn"
-                            title="<?= e(I18N::translate('Notizen bearbeiten (Markdown)')) ?>">
-                        ✎ <?= I18N::translate('Bearbeiten') ?>
-                    </button>
-                <?php endif ?>
-            </div>
-            <div class="card-body">
-                <div id="ortsregister-notes-display" class="ortsregister-prose">
-                    <?php if ($notes_html !== '') : ?>
-                        <?= $notes_html /* schon via CommonMark gerendert, html_input=escape */ ?>
-                    <?php else : ?>
-                        <p class="text-muted mb-0 fst-italic"><?= I18N::translate('Noch keine Notizen. Klick auf „Bearbeiten" zum Anlegen — Markdown-Syntax wird unterstützt.') ?></p>
-                    <?php endif ?>
+        <?php
+        $visibleSlots = array_filter($note_slots, fn($s) => $s['html'] !== '' || $can_edit);
+        ?>
+        <?php if ($visibleSlots !== []) : ?>
+        <div class="row g-3 mb-4">
+            <?php foreach ($visibleSlots as $slot) : ?>
+                <div class="col-12 col-md-6">
+                    <div class="card h-100">
+                        <div class="card-header fw-semibold d-flex align-items-center">
+                            <?= e($slot['title']) ?>
+                            <small class="text-muted ms-2" style="font-size:.7rem"><code><?= e($slot['filename']) ?></code></small>
+                            <?php if ($can_edit) : ?>
+                                <button type="button" class="btn btn-sm btn-outline-secondary ms-auto ortsregister-notes-edit-btn"
+                                        data-filename="<?= e($slot['filename']) ?>"
+                                        data-title="<?= e($slot['title']) ?>"
+                                        data-placeholder="<?= e($slot['placeholder']) ?>"
+                                        data-markdown="<?= e($slot['markdown']) ?>"
+                                        data-mtime="<?= $slot['mtime'] ?>"
+                                        data-person-picker="<?= $slot['person_picker'] ? '1' : '0' ?>">
+                                    ✎ <?= I18N::translate('Bearbeiten') ?>
+                                </button>
+                            <?php endif ?>
+                        </div>
+                        <div class="card-body">
+                            <div class="ortsregister-prose" data-notes-display="<?= e($slot['filename']) ?>">
+                                <?php if ($slot['html'] !== '') : ?>
+                                    <?= $slot['html'] ?>
+                                <?php else : ?>
+                                    <p class="text-muted mb-0 fst-italic"><?= I18N::translate('Noch leer. „Bearbeiten" zum Anlegen — Markdown + GFM-Task-Lists werden unterstützt. Personen verlinken via <code>[Name](indi:I123)</code>.') ?></p>
+                                <?php endif ?>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            <?php endforeach ?>
         </div>
         <?php endif ?>
 
@@ -652,20 +665,43 @@ foreach ($bilder as $medium) {
 <?php if ($ort !== null && $tree !== null && $can_edit) : ?>
 <div class="modal fade" id="ortsregister-notes-modal" tabindex="-1" aria-hidden="true"
      data-save-url="<?= e(route('ortsregister.notes.save', ['tree' => $tree->name(), 'place_id' => $place_id])) ?>"
-     data-csrf="<?= e(csrf_token()) ?>">
+     data-toggle-url="<?= e(route('ortsregister.notes.toggle-task', ['tree' => $tree->name(), 'place_id' => $place_id])) ?>"
+     data-csrf="<?= e(csrf_token()) ?>"
+     data-folder-root="<?= e($module->folderRoot()) ?>"
+     data-place-name="<?= e($ort->name) ?>">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><?= I18N::translate('Notizen bearbeiten') ?> — <?= e($ort->name) ?></h5>
+                <h5 class="modal-title"><span id="ortsregister-notes-title-prefix"><?= I18N::translate('Notizen bearbeiten') ?></span> — <?= e($ort->name) ?></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <textarea id="ortsregister-notes-textarea" class="form-control"
-                          rows="18" style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .9rem"
-                          placeholder="# Überschrift&#10;&#10;Beschreibung in **Markdown**.&#10;&#10;- Listenpunkt&#10;- Listenpunkt&#10;&#10;[Link-Text](https://...)"><?= e($notes->markdown) ?></textarea>
-                <input type="hidden" id="ortsregister-notes-mtime" value="<?= $notes->mtime ?>">
-                <div class="form-text mt-2">
-                    <?= I18N::translate('Markdown-Syntax. Wird gespeichert in <code>media/%1$s/%2$s/notes.md</code> — direkt auch mit Texteditor auf der NAS editierbar.', e($module->folderRoot()), e($ort->name)) ?>
+                          rows="16" style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .9rem"></textarea>
+                <input type="hidden" id="ortsregister-notes-mtime"    value="0">
+                <input type="hidden" id="ortsregister-notes-filename" value="notes.md">
+
+                <div id="ortsregister-indi-picker-wrap">
+                    <div class="mt-3 d-flex align-items-center gap-2">
+                        <label for="ortsregister-indi-picker" class="form-label mb-0 text-nowrap">
+                            <?= I18N::translate('Person einfügen:') ?>
+                        </label>
+                        <div class="flex-grow-1">
+                            <?= view('components/select-individual', [
+                                'id'         => 'ortsregister-indi-picker',
+                                'name'       => 'ortsregister-indi-picker',
+                                'tree'       => $tree,
+                                'individual' => null,
+                            ]) ?>
+                        </div>
+                    </div>
+                    <div class="form-text">
+                        <?= I18N::translate('Auswahl fügt <code>[Name](indi:Ixxx)</code> an Cursor-Position ein. xref-Link kann auch von Hand geschrieben werden.') ?>
+                    </div>
+                </div>
+
+                <div class="form-text mt-2" id="ortsregister-notes-filehint">
+                    <?= I18N::translate('Markdown + GFM-Task-Lists. Datei: <code><span id="ortsregister-notes-fileecho">notes.md</span></code> — direkt auch mit Texteditor auf der NAS editierbar.') ?>
                 </div>
                 <div id="ortsregister-notes-status" class="mt-2 small"></div>
             </div>
@@ -678,16 +714,18 @@ foreach ($bilder as $medium) {
 </div>
 <script>
 (function () {
-    const modalEl  = document.getElementById('ortsregister-notes-modal');
+    const modalEl    = document.getElementById('ortsregister-notes-modal');
     if (!modalEl) return;
-    const saveUrl  = modalEl.dataset.saveUrl;
-    const csrf     = modalEl.dataset.csrf;
-    const textarea = document.getElementById('ortsregister-notes-textarea');
-    const mtimeEl  = document.getElementById('ortsregister-notes-mtime');
-    const status   = document.getElementById('ortsregister-notes-status');
-    const saveBtn  = document.getElementById('ortsregister-notes-save');
+    const saveUrl    = modalEl.dataset.saveUrl;
+    const csrf       = modalEl.dataset.csrf;
+    const textarea   = document.getElementById('ortsregister-notes-textarea');
+    const mtimeEl    = document.getElementById('ortsregister-notes-mtime');
+    const filenameEl = document.getElementById('ortsregister-notes-filename');
+    const titlePrefix= document.getElementById('ortsregister-notes-title-prefix');
+    const fileEcho   = document.getElementById('ortsregister-notes-fileecho');
+    const status     = document.getElementById('ortsregister-notes-status');
+    const saveBtn    = document.getElementById('ortsregister-notes-save');
 
-    // Lazy-Instanziierung: Bootstrap-JS ist zur IIFE-Zeit oft noch nicht da.
     let bsModal = null;
     const getModal = () => {
         if (bsModal === null) {
@@ -697,32 +735,51 @@ foreach ($bilder as $medium) {
         return bsModal;
     };
 
-    // Event-Delegation auf document — robuster gegen Re-Renders/Ordering
+    // Event-Delegation: jeder .ortsregister-notes-edit-btn füllt das Modal aus seinen data-* Attributen
     document.addEventListener('click', function (e) {
-        const btn = e.target.closest('#ortsregister-notes-edit-btn');
+        const btn = e.target.closest('.ortsregister-notes-edit-btn');
         if (!btn) return;
-        status.textContent = '';
-        try {
-            getModal().show();
-        } catch (err) {
-            console.error('[ortsregister] notes-modal show failed:', err);
-            alert('Modal-Fehler: ' + err.message);
+        const filename    = btn.dataset.filename    || 'notes.md';
+        filenameEl.value          = filename;
+        mtimeEl.value             = btn.dataset.mtime       || '0';
+        textarea.value            = btn.dataset.markdown    || '';
+        textarea.placeholder      = btn.dataset.placeholder || '';
+        titlePrefix.textContent   = (btn.dataset.title || 'Notizen') + ' bearbeiten';
+        fileEcho.textContent      = filename;
+        status.textContent        = '';
+
+        // Personen-Picker nur in Slots zeigen die das brauchen (Recherche etc.)
+        const pickerWrap = document.getElementById('ortsregister-indi-picker-wrap');
+        if (pickerWrap) {
+            pickerWrap.style.display = (btn.dataset.personPicker === '1') ? '' : 'none';
         }
+        try { getModal().show(); }
+        catch (err) { console.error('[ortsregister] notes-modal show failed:', err); alert('Modal-Fehler: ' + err.message); }
     });
 
     saveBtn.addEventListener('click', () => {
-        saveBtn.disabled = true;
+        saveBtn.disabled   = true;
         status.textContent = '…';
+        const filename = filenameEl.value;
         const fd = new FormData();
         fd.append('markdown', textarea.value);
         fd.append('mtime',    mtimeEl.value);
+        fd.append('filename', filename);
         fetch(saveUrl, { method: 'POST', body: fd, headers: { 'X-CSRF-TOKEN': csrf }})
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
                     mtimeEl.value = data.mtime;
-                    document.getElementById('ortsregister-notes-display').innerHTML =
-                        data.html || '<p class="text-muted mb-0 fst-italic">Noch keine Notizen.</p>';
+                    const display = document.querySelector('[data-notes-display="' + filename + '"]');
+                    if (display) {
+                        display.innerHTML = data.html || '<p class="text-muted mb-0 fst-italic">Noch leer.</p>';
+                        initCheckboxes(display);
+                    }
+                    const btn = document.querySelector('.ortsregister-notes-edit-btn[data-filename="' + filename + '"]');
+                    if (btn) {
+                        btn.dataset.markdown = data.markdown || textarea.value;
+                        btn.dataset.mtime    = data.mtime;
+                    }
                     getModal().hide();
                 } else {
                     status.innerHTML = '<span class="text-danger">' + (data.message || 'Fehler') + '</span>';
@@ -731,6 +788,73 @@ foreach ($bilder as $medium) {
             .catch(err => { status.innerHTML = '<span class="text-danger">Netzwerkfehler: ' + err + '</span>'; })
             .finally(() => { saveBtn.disabled = false; });
     });
+
+    // ---- Interaktive Task-Checkboxen ----
+    const toggleUrl = modalEl.dataset.toggleUrl;
+
+    function initCheckboxes(display) {
+        const filename = display.dataset.notesDisplay;
+        display.querySelectorAll('input.ortsregister-task-cb[type="checkbox"]').forEach(cb => {
+            cb.style.cursor = 'pointer';
+            cb.addEventListener('change', () => {
+                const idx = cb.dataset.taskIndex;
+                cb.disabled = true;
+                const fd = new FormData();
+                fd.append('filename',   filename);
+                fd.append('task_index', idx);
+                fd.append('checked',    cb.checked ? '1' : '0');
+                fetch(toggleUrl, { method: 'POST', body: fd, headers: { 'X-CSRF-TOKEN': csrf }})
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            display.innerHTML = data.html;
+                            initCheckboxes(display);
+                            const btn = document.querySelector('.ortsregister-notes-edit-btn[data-filename="' + filename + '"]');
+                            if (btn) {
+                                btn.dataset.markdown = data.markdown;
+                                btn.dataset.mtime    = data.mtime;
+                            }
+                        } else {
+                            cb.checked = !cb.checked;
+                            cb.disabled = false;
+                            alert('Toggle fehlgeschlagen: ' + (data.message || 'unbekannt'));
+                        }
+                    })
+                    .catch(err => {
+                        cb.checked = !cb.checked;
+                        cb.disabled = false;
+                        alert('Netzwerkfehler: ' + err);
+                    });
+            });
+        });
+    }
+    document.querySelectorAll('[data-notes-display]').forEach(initCheckboxes);
+
+    // ---- Person einfügen (webtrees TomSelect-Picker) ----
+    const indiPicker = document.getElementById('ortsregister-indi-picker');
+    if (indiPicker) {
+        function insertAtCursor(el, text) {
+            const start = el.selectionStart ?? el.value.length;
+            const end   = el.selectionEnd   ?? el.value.length;
+            el.value    = el.value.substring(0, start) + text + el.value.substring(end);
+            el.selectionStart = el.selectionEnd = start + text.length;
+            el.focus();
+        }
+        indiPicker.addEventListener('change', function () {
+            const xref = indiPicker.value;
+            if (!xref) return;
+            // Label aus tom-select holen (rendered HTML), Tags strippen, Lifespan abschneiden
+            let name = xref;
+            const ts = indiPicker.tomselect;
+            if (ts && ts.options[xref] && ts.options[xref].text) {
+                const tmp = document.createElement('div');
+                tmp.innerHTML = ts.options[xref].text;
+                name = tmp.textContent.trim().replace(/,\s*\d.*$/, ''); // Lifespan ", 1850-1923" weg
+            }
+            insertAtCursor(textarea, '[' + name + '](indi:' + xref + ')');
+            if (ts) ts.clear();
+        });
+    }
 })();
 </script>
 <?php endif ?>
