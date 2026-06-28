@@ -8,6 +8,7 @@ use Ortsregister\Cache\ApcuCacheService;
 use Ortsregister\Http\RequestHandlers\AdminConfigPage;
 use Ortsregister\Http\RequestHandlers\CoordinateImportPage;
 use Ortsregister\Http\RequestHandlers\PlaceFileServe;
+use Ortsregister\Http\RequestHandlers\PlaceNotesSave;
 use Ortsregister\Http\RequestHandlers\GovLinkPage;
 use Ortsregister\Http\RequestHandlers\MergeExecute;
 use Ortsregister\Http\RequestHandlers\MergeModalPage;
@@ -24,7 +25,9 @@ use Ortsregister\Service\GovApiClient;
 use Ortsregister\Service\GovHierarchyResolver;
 use Ortsregister\Service\GovLinkingService;
 use Ortsregister\Service\PlaceEventCounter;
+use Ortsregister\Service\ArchionLinker;
 use Ortsregister\Service\PlaceFolderScanner;
+use Ortsregister\Service\PlaceNotesService;
 use Ortsregister\Service\PlaceOperationService;
 use Ortsregister\Service\WikimediaPlaceClient;
 use Fisharebest\Webtrees\Auth;
@@ -123,10 +126,13 @@ class OrtsregisterModule extends AbstractModule implements
                ->allows('POST');
         $router->get('ortsregister.gov.link',      '/tree/{tree}/orte/gov',            GovLinkPage::class)
                ->allows('POST');
+        // WICHTIG: spezifische Routes MUESSEN vor der {place_id}-Catch-all-Route registriert werden,
+        // sonst matcht z.B. 'datei' als place_id -> "Ort nicht gefunden".
+        $router->get('ortsregister.file',          '/tree/{tree}/orte/datei',          PlaceFileServe::class);
+        $router->post('ortsregister.notes.save',   '/tree/{tree}/orte/{place_id}/notizen', PlaceNotesSave::class);
         $router->get('ortsregister.orte.detail',   '/tree/{tree}/orte/{place_id}',     OrteDetailPage::class);
         $router->get('ortsregister.admin.config',  '/ortsregister/admin/config',       AdminConfigPage::class)
                ->allows('POST');
-        $router->get('ortsregister.file',          '/tree/{tree}/orte/datei',          PlaceFileServe::class);
     }
 
     /**
@@ -193,6 +199,14 @@ class OrtsregisterModule extends AbstractModule implements
             PlaceFolderScanner::class,
             new PlaceFolderScanner($this->folderRoot()),
         );
+        $container->set(
+            PlaceNotesService::class,
+            new PlaceNotesService($this->folderRoot()),
+        );
+        $container->set(
+            ArchionLinker::class,
+            new ArchionLinker($this->folderRoot()),
+        );
         // AdminConfigPage: braucht das Modul selbst
         $container->set(
             AdminConfigPage::class,
@@ -209,6 +223,8 @@ class OrtsregisterModule extends AbstractModule implements
                 $container->get(WikimediaPlaceClient::class),
                 $container->get(DdbClient::class),
                 $container->get(PlaceFolderScanner::class),
+                $container->get(PlaceNotesService::class),
+                $container->get(ArchionLinker::class),
                 $this,
             ),
         );

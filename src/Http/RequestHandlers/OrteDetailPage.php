@@ -12,7 +12,9 @@ use Ortsregister\Service\DdbClient;
 use Ortsregister\Service\GovHierarchyResolver;
 use Ortsregister\Service\GovLinkingService;
 use Ortsregister\Service\PlaceEventCounter;
+use Ortsregister\Service\ArchionLinker;
 use Ortsregister\Service\PlaceFolderScanner;
+use Ortsregister\Service\PlaceNotesService;
 use Ortsregister\Service\WikimediaPlaceClient;
 use Fisharebest\Webtrees\DB;
 use Fisharebest\Webtrees\I18N;
@@ -37,6 +39,8 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
         private readonly WikimediaPlaceClient $wikimedia,
         private readonly DdbClient            $ddb,
         private readonly PlaceFolderScanner   $folderScanner,
+        private readonly PlaceNotesService    $notesService,
+        private readonly ArchionLinker        $archionLinker,
         private readonly OrtsregisterModule   $module,
     ) {}
 
@@ -71,6 +75,11 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
                 'wiki'         => $emptyWiki,
                 'ddb'          => $emptyDdb,
                 'folder_files' => [],
+                'notes'        => \Ortsregister\Dto\PlaceNotes::empty(),
+                'notes_html'   => '',
+                'archion_url'  => null,
+                'can_edit'     => false,
+                'module'       => $this->module,
             ], $defaults));
         }
 
@@ -91,6 +100,11 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
                 'wiki'         => $emptyWiki,
                 'ddb'          => $emptyDdb,
                 'folder_files' => [],
+                'notes'        => \Ortsregister\Dto\PlaceNotes::empty(),
+                'notes_html'   => '',
+                'archion_url'  => null,
+                'can_edit'     => false,
+                'module'       => $this->module,
             ], $defaults));
         }
 
@@ -146,6 +160,25 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
             // Stiller Fallback (z.B. Permission-Error)
         }
 
+        // Markdown-Notizen aus media/<root>/<ortsname>/notes.md
+        $notes     = \Ortsregister\Dto\PlaceNotes::empty();
+        $notesHtml = '';
+        try {
+            $notes     = $this->notesService->read($tree, $ort->name);
+            $notesHtml = $this->notesService->render($notes->markdown);
+        } catch (Throwable) {
+            // Stiller Fallback
+        }
+
+        // Archion-Deep-Link aus _archion.json (oder null wenn keine Konfig)
+        // Fehlende Pflichtfelder werfen Exception → stille Fallback auf Generic-Suche
+        $archionUrl = null;
+        try {
+            $archionUrl = $this->archionLinker->forPlace($tree, $ort->name);
+        } catch (Throwable) {
+            $archionUrl = null;
+        }
+
         return $this->viewResponse($this->viewName('ort-detail'), array_merge([
             'title'        => $ort->name,
             'tree'         => $tree,
@@ -159,6 +192,10 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
             'wiki'         => $wiki,
             'ddb'          => $ddb,
             'folder_files' => $folderFiles,
+            'notes'        => $notes,
+            'notes_html'   => $notesHtml,
+            'archion_url'  => $archionUrl,
+            'can_edit'     => \Fisharebest\Webtrees\Auth::isEditor($tree),
             'module'       => $this->module,
         ], $defaults));
     }
