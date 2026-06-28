@@ -9,6 +9,7 @@ use Ortsregister\Http\RequestHandlers\AdminConfigPage;
 use Ortsregister\Http\RequestHandlers\CoordinateImportPage;
 use Ortsregister\Http\RequestHandlers\PlaceFileServe;
 use Ortsregister\Http\RequestHandlers\PlaceNotesSave;
+use Ortsregister\Http\RequestHandlers\PlaceNotesToggleTask;
 use Ortsregister\Http\RequestHandlers\GovLinkPage;
 use Ortsregister\Http\RequestHandlers\MergeExecute;
 use Ortsregister\Http\RequestHandlers\MergeModalPage;
@@ -129,7 +130,8 @@ class OrtsregisterModule extends AbstractModule implements
         // WICHTIG: spezifische Routes MUESSEN vor der {place_id}-Catch-all-Route registriert werden,
         // sonst matcht z.B. 'datei' als place_id -> "Ort nicht gefunden".
         $router->get('ortsregister.file',          '/tree/{tree}/orte/datei',          PlaceFileServe::class);
-        $router->post('ortsregister.notes.save',   '/tree/{tree}/orte/{place_id}/notizen', PlaceNotesSave::class);
+        $router->post('ortsregister.notes.save',         '/tree/{tree}/orte/{place_id}/notizen',        PlaceNotesSave::class);
+        $router->post('ortsregister.notes.toggle-task',  '/tree/{tree}/orte/{place_id}/notizen/toggle', PlaceNotesToggleTask::class);
         $router->get('ortsregister.orte.detail',   '/tree/{tree}/orte/{place_id}',     OrteDetailPage::class);
         $router->get('ortsregister.admin.config',  '/ortsregister/admin/config',       AdminConfigPage::class)
                ->allows('POST');

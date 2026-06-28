@@ -75,8 +75,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
                 'wiki'         => $emptyWiki,
                 'ddb'          => $emptyDdb,
                 'folder_files' => [],
-                'notes'        => \Ortsregister\Dto\PlaceNotes::empty(),
-                'notes_html'   => '',
+                'note_slots'   => [],
                 'archion_url'  => null,
                 'can_edit'     => false,
                 'module'       => $this->module,
@@ -100,8 +99,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
                 'wiki'         => $emptyWiki,
                 'ddb'          => $emptyDdb,
                 'folder_files' => [],
-                'notes'        => \Ortsregister\Dto\PlaceNotes::empty(),
-                'notes_html'   => '',
+                'note_slots'   => [],
                 'archion_url'  => null,
                 'can_edit'     => false,
                 'module'       => $this->module,
@@ -160,14 +158,54 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
             // Stiller Fallback (z.B. Permission-Error)
         }
 
-        // Markdown-Notizen aus media/<root>/<ortsname>/notes.md
-        $notes     = \Ortsregister\Dto\PlaceNotes::empty();
-        $notesHtml = '';
+        // Markdown-Slots: Standard-3 + alle weiteren *.md aus dem Ortsordner.
+        // Pro Slot {filename, title, placeholder, markdown, html, mtime}.
+        $defaultSlots = [
+            'notes.md'     => [
+                'title'       => \Fisharebest\Webtrees\I18N::translate('Beschreibung'),
+                'placeholder' => "# " . $ort->name . "\n\nKurze Beschreibung des Orts, historische/geografische Hinweise, Kirchen-/Pfarrei-Zugehörigkeit…",
+                'person_picker' => false,
+            ],
+            'recherche.md' => [
+                'title'       => \Fisharebest\Webtrees\I18N::translate('Recherche'),
+                'placeholder' => "## Kirchenbücher gesichtet\n\n- [ ] Taufen JJJJ–JJJJ\n- [ ] Heiraten JJJJ–JJJJ\n- [ ] Beerdigungen JJJJ–JJJJ\n\n## Offene Punkte\n\n- [ ] \n\n## Relevante Personen\n\n- [Hans Müller](indi:I123) — *Vater unklar, KB Taufe 1715 prüfen*\n",
+                'person_picker' => true,
+            ],
+        ];
+        $extraSlots = [];
         try {
-            $notes     = $this->notesService->read($tree, $ort->name);
-            $notesHtml = $this->notesService->render($notes->markdown);
+            foreach ($this->notesService->scanMarkdownFiles($tree, $ort->name) as $foundFile) {
+                if (!isset($defaultSlots[$foundFile])) {
+                    $extraSlots[$foundFile] = [
+                        'title'       => ucfirst(basename($foundFile, '.md')),
+                        'placeholder' => '',
+                    ];
+                }
+            }
         } catch (Throwable) {
-            // Stiller Fallback
+            // bei Scan-Fehler — Standard-Slots reichen
+        }
+        $allSlots = $defaultSlots + $extraSlots;
+
+        $noteSlots = [];
+        foreach ($allSlots as $filename => $meta) {
+            try {
+                $n    = $this->notesService->read($tree, $ort->name, $filename);
+                $html = $this->notesService->render($n->markdown, $tree);
+            } catch (Throwable) {
+                $n    = \Ortsregister\Dto\PlaceNotes::empty();
+                $html = '';
+            }
+            $noteSlots[] = [
+                'filename'      => $filename,
+                'title'         => $meta['title'],
+                'placeholder'   => $meta['placeholder'],
+                'markdown'      => $n->markdown,
+                'html'          => $html,
+                'mtime'         => $n->mtime,
+                // Default: Picker für Extra-Slots EINgeschaltet (User-Custom-MD), für notes.md aus
+                'person_picker' => $meta['person_picker'] ?? ($filename !== 'notes.md'),
+            ];
         }
 
         // Archion-Deep-Link aus _archion.json (oder null wenn keine Konfig)
@@ -192,8 +230,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
             'wiki'         => $wiki,
             'ddb'          => $ddb,
             'folder_files' => $folderFiles,
-            'notes'        => $notes,
-            'notes_html'   => $notesHtml,
+            'note_slots'   => $noteSlots,
             'archion_url'  => $archionUrl,
             'can_edit'     => \Fisharebest\Webtrees\Auth::isEditor($tree),
             'module'       => $this->module,

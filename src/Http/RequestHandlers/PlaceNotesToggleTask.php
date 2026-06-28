@@ -16,12 +16,13 @@ use Psr\Http\Server\RequestHandlerInterface;
 use Throwable;
 
 /**
- * POST /tree/{tree}/orte/{place_id}/notizen
+ * POST /tree/{tree}/orte/{place_id}/notizen/toggle
  *
- * Body: markdown (string), mtime (int — expected, 0 für neu)
- * Response: JSON {success, mtime, html} | {success:false, message}
+ * Body: filename, task_index, checked (0/1)
+ * Toggelt eine GFM-Task-List-Checkbox in der Markdown-Quelle und liefert
+ * das neu gerenderte HTML + neuen mtime zurück.
  */
-final class PlaceNotesSave implements RequestHandlerInterface
+final class PlaceNotesToggleTask implements RequestHandlerInterface
 {
     public function __construct(
         private readonly PlaceNotesService $notesService,
@@ -32,7 +33,6 @@ final class PlaceNotesSave implements RequestHandlerInterface
         $tree = Validator::attributes($request)->tree();
         $user = Validator::attributes($request)->user();
 
-        // ACL: Editor+ dürfen Notizen schreiben (Member sehen sie nur)
         if (!Auth::isEditor($tree, $user)) {
             return $this->json(['success' => false, 'message' => 'Keine Berechtigung.'], StatusCodeInterface::STATUS_FORBIDDEN);
         }
@@ -42,7 +42,6 @@ final class PlaceNotesSave implements RequestHandlerInterface
             return $this->json(['success' => false, 'message' => 'Ungültige place_id.'], StatusCodeInterface::STATUS_BAD_REQUEST);
         }
 
-        // Ortsname aus places-Tabelle
         $row = DB::table('places')
             ->where('p_id',   '=', $placeId)
             ->where('p_file', '=', $tree->id())
@@ -53,22 +52,25 @@ final class PlaceNotesSave implements RequestHandlerInterface
         }
         $placeName = (string) $row->p_place;
 
-        $body          = (array) $request->getParsedBody();
-        $markdown      = (string) ($body['markdown'] ?? '');
-        $expectedMtime = (int)    ($body['mtime']    ?? 0);
-        $filename      = (string) ($body['filename'] ?? 'notes.md');
+        $body      = (array) $request->getParsedBody();
+        $filename  = (string) ($body['filename']   ?? 'notes.md');
+        $taskIndex = (int)    ($body['task_index'] ?? -1);
+        $checked   = ((string) ($body['checked'] ?? '0')) === '1';
 
-        if (!$this->notesService->isValidFilename($filename)) {
-            return $this->json(['success' => false, 'message' => 'Ungültiger Filename.'], StatusCodeInterface::STATUS_BAD_REQUEST);
+        if (!$this->notesService->isValidFilename($filename) || $taskIndex < 0) {
+            return $this->json(['success' => false, 'message' => 'Ungültige Parameter.'], StatusCodeInterface::STATUS_BAD_REQUEST);
         }
 
         try {
-            $newMtime = $this->notesService->save($tree, $placeName, $markdown, $expectedMtime, $filename);
+            $current  = $this->notesService->read($tree, $placeName, $filename);
+            $newMd    = $this->notesService->toggleTaskInMarkdown($current->markdown, $taskIndex, $checked);
+            // mtime-Lock — wir nutzen current->mtime als expected, um spätere Änderungen nicht zu killen
+            $newMtime = $this->notesService->save($tree, $placeName, $newMd, $current->mtime, $filename);
             return $this->json([
                 'success'  => true,
                 'mtime'    => $newMtime,
-                'html'     => $this->notesService->render($markdown, $tree),
-                'markdown' => $markdown,
+                'html'     => $this->notesService->render($newMd, $tree),
+                'markdown' => $newMd,
                 'filename' => $filename,
             ]);
         } catch (Throwable $e) {
