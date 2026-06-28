@@ -61,6 +61,16 @@ $BILDER_VISIBLE   = $bilder_visible   ?? 12;
 .ortsregister-prose p:last-child { margin-bottom: 0; }
 .ortsregister-prose img { max-width: 100%; height: auto; border-radius: .375rem; }
 .ortsregister-prose blockquote { border-left: 3px solid #dee2e6; padding-left: 1rem; color: #6c757d; }
+
+/* Collapsible-Cards: Chevron + Hover-Affordance */
+[data-collapsible] > .card-header { cursor: pointer; user-select: none; }
+[data-collapsible] > .card-header:hover { background: rgba(0,0,0,.03); }
+[data-collapsible] > .card-header .ortsregister-chevron {
+    display: inline-block; transition: transform .2s ease; margin-left: auto; opacity: .55; font-size: .85rem;
+}
+[data-collapsible].ortsregister-collapsed > .card-header .ortsregister-chevron { transform: rotate(-90deg); }
+[data-collapsible].ortsregister-collapsed > .card-body,
+[data-collapsible].ortsregister-collapsed > .collapse { display: none !important; }
 </style>
 <?php
 
@@ -165,7 +175,7 @@ foreach ($bilder as $medium) {
             <p class="text-muted mb-4"><?= e($ort->vollstaendigerPfad) ?></p>
         <?php endif ?>
 
-        <div class="card mb-4">
+        <div class="card mb-4" data-collapsible data-card-key="hierarchie">
             <div class="card-header fw-semibold d-flex align-items-center">
                 <span class="me-2" aria-hidden="true">🌍</span><?= I18N::translate('Hierarchie') ?>
                 <?php if ($gov_id !== null && $gov_chain !== []) : ?>
@@ -377,7 +387,7 @@ foreach ($bilder as $medium) {
         $serveUrl = static fn(\Ortsregister\Dto\PlaceFile $f) =>
             route('ortsregister.file', ['tree' => $tree->name(), 'pfad' => $f->relativePath]);
         ?>
-        <div class="card mb-4">
+        <div class="card mb-4" data-collapsible data-card-key="digitalisate">
             <div class="card-header fw-semibold d-flex align-items-center">
                 <?= I18N::translate('Eigene Digitalisate') ?>
                 <span class="badge bg-secondary ms-2"><?= count($folder_files) ?></span>
@@ -430,7 +440,7 @@ foreach ($bilder as $medium) {
         <?php endif ?>
 
         <?php if ($ort->hatKoordinaten()) : ?>
-        <div class="card mb-4">
+        <div class="card mb-4" data-collapsible data-card-key="karte">
             <div class="card-header fw-semibold d-flex align-items-center">
                 <?= I18N::translate('Karte') ?>
                 <small class="text-muted ms-auto" style="font-size:.75rem">
@@ -478,7 +488,7 @@ foreach ($bilder as $medium) {
         ?>
 
         <?php if ($wiki->galerie !== []) : ?>
-        <div class="card mb-4">
+        <div class="card mb-4" data-collapsible data-card-key="wikimedia">
             <div class="card-header fw-semibold d-flex align-items-center">
                 <?= I18N::translate('Aus Wikimedia Commons') ?>
                 <span class="badge bg-secondary ms-2"><?= count($wiki->galerie) ?></span>
@@ -518,7 +528,7 @@ foreach ($bilder as $medium) {
         <?php endif ?>
 
         <?php if ($ddb->items !== []) : ?>
-        <div class="card mb-4">
+        <div class="card mb-4" data-collapsible data-card-key="ddb">
             <div class="card-header fw-semibold d-flex align-items-center">
                 <?= I18N::translate('Aus Deutscher Digitaler Bibliothek') ?>
                 <span class="badge bg-secondary ms-2"><?= count($ddb->items) ?></span>
@@ -594,8 +604,8 @@ foreach ($bilder as $medium) {
             return (string) ob_get_clean();
         };
         ?>
-        <div class="card mb-4">
-            <div class="card-header fw-semibold">
+        <div class="card mb-4" data-collapsible data-card-key="weitere-medien">
+            <div class="card-header fw-semibold d-flex align-items-center">
                 <?= I18N::translate('Weitere Medien') ?>
                 <span class="badge bg-secondary ms-2"><?= count($sonstige) ?></span>
             </div>
@@ -625,8 +635,8 @@ foreach ($bilder as $medium) {
         <?php endif ?>
 
         <?php if (count($personen) > 0) : ?>
-        <div class="card mb-4">
-            <div class="card-header fw-semibold">
+        <div class="card mb-4" data-collapsible data-card-key="personen">
+            <div class="card-header fw-semibold d-flex align-items-center">
                 <i class="fas fa-users me-2"></i><?= I18N::translate('Personen mit Ereignissen an diesem Ort') ?>
                 <span class="badge bg-secondary ms-2"><?= count($personen) ?></span>
             </div>
@@ -1023,6 +1033,49 @@ foreach ($bilder as $medium) {
         fetch(form.action, { method: 'POST', body: fd, headers: { 'X-CSRF-TOKEN': csrf }})
             .then(r => r.json())
             .then(_ => location.reload());
+    });
+})();
+</script>
+<?php endif ?>
+
+<?php if ($ort !== null) : ?>
+<script>
+// Generischer Collapse-Wrapper: jede Card mit [data-collapsible] wird klickbar im Header,
+// State wird per Card-Key in localStorage persistiert (per-User, per-Browser).
+(function () {
+    const STORAGE_PREFIX = 'ortsregister-card:';
+    document.querySelectorAll('[data-collapsible]').forEach(function (card) {
+        const key    = card.dataset.cardKey;
+        const header = card.querySelector(':scope > .card-header');
+        if (!header || !key) return;
+
+        // Chevron einmal anhängen
+        if (!header.querySelector('.ortsregister-chevron')) {
+            const ch = document.createElement('span');
+            ch.className = 'ortsregister-chevron ms-auto';
+            ch.textContent = '▼';
+            ch.setAttribute('aria-hidden', 'true');
+            header.appendChild(ch);
+        }
+
+        // Initial-State aus localStorage
+        try {
+            if (localStorage.getItem(STORAGE_PREFIX + key) === 'collapsed') {
+                card.classList.add('ortsregister-collapsed');
+            }
+        } catch (e) { /* localStorage nicht verfügbar — egal */ }
+
+        header.addEventListener('click', function (e) {
+            // Click auf interaktive Header-Kinder (Buttons, Links) nicht abfangen
+            if (e.target.closest('a, button, input, select')) return;
+            card.classList.toggle('ortsregister-collapsed');
+            try {
+                localStorage.setItem(
+                    STORAGE_PREFIX + key,
+                    card.classList.contains('ortsregister-collapsed') ? 'collapsed' : 'expanded'
+                );
+            } catch (e) { /* still egal */ }
+        });
     });
 })();
 </script>
