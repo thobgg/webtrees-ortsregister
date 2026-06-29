@@ -27,6 +27,11 @@ final class MergeAnalysis
         public readonly array  $affectedCounts,
         public readonly array  $conflicts,
         public readonly array  $warnings,
+
+        /** Kuratorischer Bestand der Quelle (was beim Merge mitwandert). */
+        public readonly SidecarInventory $sourceSidecar,
+        /** Kuratorischer Bestand des Ziels. */
+        public readonly SidecarInventory $targetSidecar,
     ) {}
 
     public function totalAffected(): int

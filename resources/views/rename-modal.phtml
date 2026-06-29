@@ -1,0 +1,56 @@
+<?php
+
+/**
+ * View: ortsregister::rename-modal  (AJAX-Fragment für Bootstrap-Modal-Body)
+ *
+ * @var int                          $placeId
+ * @var string                       $fullName
+ * @var int                          $affectedCount
+ * @var \Fisharebest\Webtrees\Tree   $tree
+ * @var bool                         $autoAcceptEditsActive
+ */
+
+use Fisharebest\Webtrees\I18N;
+
+?>
+<div class="modal-header">
+    <h5 class="modal-title">
+        <?= I18N::translate('Ort umbenennen') ?>
+    </h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+<div class="modal-body">
+
+    <?php if (!$autoAcceptEditsActive) : ?>
+        <div class="alert alert-danger">
+            <i class="fas fa-exclamation-triangle me-1"></i>
+            <?= I18N::translate('Deine Benutzereinstellung „Änderungen automatisch übernehmen" ist nicht aktiv. Das Umbenennen würde fehlschlagen. Bitte in den Benutzereinstellungen aktivieren und erneut versuchen.') ?>
+        </div>
+    <?php endif ?>
+
+    <label class="form-label small text-muted text-uppercase mb-1"><?= I18N::translate('Neuer Name (voller Pfad)') ?></label>
+    <input type="text" class="form-control" id="ortsregister-rename-input" value="<?= e($fullName) ?>"
+           autocomplete="off" spellcheck="false">
+
+    <p class="text-muted small mt-2 mb-0">
+        <i class="fas fa-arrow-right me-1"></i>
+        <?= I18N::translate('Propagiert auf alle %s betroffenen Datensätze. Kuratierte Daten (Notizen, KB, GOV, Digitalisate) wandern mit.', '<span class="badge bg-primary">' . I18N::number($affectedCount) . '</span>') ?>
+    </p>
+
+    <div class="alert alert-info small mt-3 mb-0">
+        <i class="fas fa-info-circle me-1"></i>
+        <?= I18N::translate('Den vollen Komma-Pfad bearbeiten (z. B. nur die Schreibweise korrigieren). Existiert der neue Name bereits als Ort, wird abgebrochen — dann ist Zusammenführen (Merge) das richtige Werkzeug. Vor der Ausführung wird ein Backup geschrieben; rückgängig machbar.') ?>
+    </div>
+</div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+        <?= I18N::translate('Abbrechen') ?>
+    </button>
+    <button type="button" class="btn btn-primary" id="ortsregister-rename-confirm"
+            <?= $autoAcceptEditsActive ? '' : 'disabled' ?>
+            data-place-id="<?= $placeId ?>"
+            data-old-name="<?= e($fullName) ?>">
+        <i class="fas fa-check me-1"></i>
+        <?= I18N::translate('Umbenennen') ?>
+    </button>
+</div>

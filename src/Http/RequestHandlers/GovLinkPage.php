@@ -70,7 +70,8 @@ class GovLinkPage extends AbstractOrtsregisterHandler
                 'lng'      => $obj->longitude,
             ]);
         } catch (Throwable $e) {
-            return $this->json(['success' => false, 'message' => $e->getMessage()], 500);
+            // Status 200 mit success:false — sonst HTML-Fehlerseite → „JSON.parse".
+            return $this->json(['success' => false, 'message' => $e->getMessage()], 200);
         }
     }
 
@@ -106,7 +107,7 @@ class GovLinkPage extends AbstractOrtsregisterHandler
 
         $html = sprintf(
             '<div class="modal-header">'
-            . '<h5 class="modal-title"><i class="fas fa-globe me-2"></i>GOV-Verknüpfung</h5>'
+            . '<h5 class="modal-title">GOV-Verknüpfung</h5>'
             . '<button type="button" class="btn-close" data-bs-dismiss="modal"></button>'
             . '</div>'
             . '<div class="modal-body">'
@@ -119,7 +120,7 @@ class GovLinkPage extends AbstractOrtsregisterHandler
             . '<strong>%s</strong>'
             . '<a href="%s" target="_blank" rel="noopener" '
             . '   class="btn btn-sm btn-outline-primary ms-auto">'
-            . '<i class="fas fa-external-link-alt me-1"></i>Auf GOV suchen'
+            . '<i class="fas fa-link me-1"></i>Auf GOV suchen'
             . '</a>'
             . '</div>'
             . '<div class="form-text mt-1">'
@@ -188,7 +189,7 @@ class GovLinkPage extends AbstractOrtsregisterHandler
     private function json(array $payload, int $status = 200): ResponseInterface
     {
         return Registry::responseFactory()->response(
-            json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
+            (string) json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE),
             $status,
             ['Content-Type' => 'application/json; charset=UTF-8'],
         );

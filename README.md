@@ -7,12 +7,29 @@
 | | |
 |---|---|
 | Module name | `ortsregister` |
-| Version | 0.1.0 (in development) |
+| Version | 0.2.0-alpha (alpha — for testers) |
 | webtrees | 2.2.x |
 | PHP | 8.2 – 8.4 |
 | License | GPL-3.0-or-later |
 
 ---
+
+## ⚠️ Alpha — for testers
+
+**This module writes to your family tree.** *Merge* and *Rename* rewrite the `PLAC`
+of affected records through the native webtrees edit API. Treat it as **alpha**:
+
+- **Make a full GEDCOM backup first** (Control panel → manage trees → export) —
+  not just the module's per-operation JSON backup.
+- **Test on a copy** of your tree, not your production tree.
+- Start with places that have **few events** (large merges run in one transaction
+  and are warned about).
+- **Spot-check** affected individuals after each operation.
+- **Undo** is safe right after an operation; it **aborts** if an affected record
+  changed in the meantime — it never overwrites later edits.
+- Requires the user preference **“Automatically accept changes”** (operations
+  bypass the moderation workflow).
+- Found a problem? Please open a **GitHub issue**.
 
 ## Idea
 

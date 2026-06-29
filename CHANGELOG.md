@@ -2,7 +2,26 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung: [SemVer](https://semver.org/lang/de/).
 
-## [Unreleased]
+## [0.2.0-alpha] – 2026-06-29
+
+### Phase 4 — Orts-Hygiene-Cockpit (Merge / Rename / Undo)
+- **Sidecar-Vereinigung beim Merge**: Notizen, Kirchenbücher, GOV-Verknüpfung,
+  Aufgaben und Digitalisate des Quell-Orts wandern ins Ziel statt zu verwaisen
+  (`PlaceSidecarMerger`). Behebt den bisherigen `mergePlaceMeta`-Crash
+  (PK-Duplicate). Backup-Format v2 + Undo-Restore der Sidecar-Schicht.
+- **Rename-ohne-Merge**: einen Ort umbenennen (propagiert auf alle Ereignisse);
+  existiert der neue Name bereits → Hinweis, stattdessen zu mergen.
+- **Reversibles Undo mit Stale-Schutz**: bricht ab, wenn ein betroffener Datensatz
+  seit der Operation geändert wurde (überschreibt keine späteren Edits).
+- **GOV-Statusspalte** in der Ortsliste (verknüpft / nicht).
+- **Wächter & Warnungen**: degenerierter-Merge-Hinweis („X" vs „X."), Warnung bei
+  großen Merges (Single-Transaction), GOV-/Koordinaten-Konflikt-Hinweise im Modal.
+- **Robuste AJAX-Fehlerbehandlung**: Geschäftsfehler als HTTP 200 + `success:false`
+  (kein „JSON.parse"-Crash mehr), UTF-8-tolerantes `json_encode` in allen Handlern.
+- **UI-Fixes**: Font-Awesome-Subset-konforme Icons, voller Hierarchie-Pfad in der
+  Liste (macht namensgleiche Orte unterscheidbar), dismissbarer Endorte-Hinweis.
+- **Tests**: `GedcomPlaceMergeEdgeCasesTest` (Compound-PLAC, Suffix-Over-Capture,
+  Trailing-Dot, Substring-Falle). PHP-8.5-Lauf: alle 75 Tests grün, Lint sauber.
 
 ### Hinzugefügt
 - **Merge-Operation für Orte**: `PlaceOperationService` mit analyzeMerge /

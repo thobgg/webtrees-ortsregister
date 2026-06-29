@@ -42,7 +42,7 @@ class CoordinateImportPage extends AbstractOrtsregisterHandler
             try {
                 $result = $this->service->executeImport($tree);
                 $html = sprintf(
-                    '<div class="alert alert-success"><i class="fas fa-check-circle me-1"></i>'
+                    '<div class="alert alert-success"><i class="fas fa-check me-1"></i>'
                     . '<strong>Import erfolgreich.</strong> %d Koordinaten geschrieben, %d übersprungen (bereits vorhanden).</div>'
                     . '<p>Backup: <code>%s</code></p>'
                     . '<p><a href="%s" class="btn btn-primary">Zur Ortsliste</a></p>',
@@ -84,7 +84,7 @@ class CoordinateImportPage extends AbstractOrtsregisterHandler
             . '<form method="POST" action="%s">'
             . '<input type="hidden" name="_csrf" value="%s">'
             . '<button type="submit" class="btn btn-primary" %s>'
-            . '<i class="fas fa-cloud-download-alt me-1"></i>Import starten</button>'
+            . '<i class="fas fa-download me-1"></i>Import starten</button>'
             . ' <a href="%s" class="btn btn-secondary">Abbrechen</a>'
             . '</form>',
             $warn,

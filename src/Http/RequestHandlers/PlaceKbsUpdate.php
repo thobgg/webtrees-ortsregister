@@ -146,7 +146,7 @@ final class PlaceKbsUpdate implements RequestHandlerInterface
     private function json(array $payload, int $status = StatusCodeInterface::STATUS_OK): ResponseInterface
     {
         return Registry::responseFactory()->response(
-            json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
+            (string) json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE),
             $status,
             ['Content-Type' => 'application/json; charset=UTF-8'],
         );

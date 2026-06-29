@@ -15,6 +15,9 @@ $ajaxUrl         = e(route('ortsregister.orte.data', ['tree' => $tree?->name()])
 $kartenUrl       = e(route('ortsregister.orte.karte', ['tree' => $tree?->name()]));
 $mergePreview    = e(route('ortsregister.merge.preview', ['tree' => $tree?->name()]));
 $mergeExecute    = e(route('ortsregister.merge.execute', ['tree' => $tree?->name()]));
+$mergeUndo       = e(route('ortsregister.merge.undo', ['tree' => $tree?->name()]));
+$renamePreview   = e(route('ortsregister.rename.preview', ['tree' => $tree?->name()]));
+$renameExecute   = e(route('ortsregister.rename.execute', ['tree' => $tree?->name()]));
 $filterModeUrl   = e(route('ortsregister.filter-mode', ['tree' => $tree?->name()]));
 $coordImportUrl  = e(route('ortsregister.coord.import', ['tree' => $tree?->name()]));
 $govLinkUrl      = $tree !== null ? e(route('ortsregister.gov.link', ['tree' => $tree->name()])) : '';
@@ -61,7 +64,7 @@ $filterMode      = $filterMode ?? 'all';
             </a>
             <a href="<?= $coordImportUrl ?>" class="btn btn-outline-secondary btn-sm"
                title="<?= e(I18N::translate('Koordinaten aus PLAC-Subtags ins place_location übernehmen')) ?>">
-                <i class="fas fa-globe me-1"></i><?= I18N::translate('Koordinaten-Import') ?>
+                <i class="fas fa-location-dot me-1"></i><?= I18N::translate('Koordinaten-Import') ?>
             </a>
         </div>
         <?php endif ?>
@@ -70,6 +73,15 @@ $filterMode      = $filterMode ?? 'all';
     <?php if ($tree === null) : ?>
         <div class="alert alert-warning"><?= I18N::translate('Bitte wählen Sie einen Stammbaum aus.') ?></div>
     <?php else : ?>
+
+        <div id="ortsregister-endorte-hint" class="alert alert-warning alert-dismissible small d-flex align-items-start mb-3" style="display:none;">
+            <i class="fas fa-triangle-exclamation me-2 mt-1"></i>
+            <div>
+                <strong><?= I18N::translate('„Nur Endorte" aktiv — es sind Orte ausgeblendet.') ?></strong><br>
+                <?= I18N::translate('Ein „Endort" ist die unterste in deinen Daten vorhandene Stufe eines Ortes — meist ein Dorf/Stadt (z. B. „Brackenheim"), manchmal aber auch nur eine Verwaltungseinheit (z. B. „OA Brackenheim"), wenn im Eintrag kein genauerer Ort steht. Ausgeblendet sind hier: übergeordnete Ebenen UND jeder Ort, unter dem ein noch genauerer Ort existiert (auch wenn der durch einen Eintrag wie „Stadtteil, Stadt, …" erst entstanden ist). Vermisst du einen Ort, schalte auf „Alle Ebenen".') ?>
+            </div>
+            <button type="button" class="btn-close ortsregister-hint-close" aria-label="<?= e(I18N::translate('Schließen')) ?>"></button>
+        </div>
 
         <!-- Merge-Selection-Bar -->
         <div id="ortsregister-merge-bar" class="alert alert-info d-none mb-3 d-flex align-items-center justify-content-between">
@@ -89,20 +101,28 @@ $filterMode      = $filterMode ?? 'all';
             </div>
         </div>
 
+        <style>
+            /* Auswahl-Buttons (Q · Z · GOV · Name) einheitlich breit + zentriert */
+            .ortsregister-select .btn { min-width: 2.9rem; text-align: center; }
+        </style>
         <div class="table-responsive">
             <table id="orte-datatable"
                    class="table table-hover table-striped w-100"
                    data-ajax="<?= $ajaxUrl ?>"
                    data-merge-preview="<?= $mergePreview ?>"
                    data-merge-execute="<?= $mergeExecute ?>"
+                   data-merge-undo="<?= $mergeUndo ?>"
+                   data-rename-preview="<?= $renamePreview ?>"
+                   data-rename-execute="<?= $renameExecute ?>"
                    data-gov-link="<?= $govLinkUrl ?>"
                    data-csrf="<?= e(csrf_token()) ?>">
                 <thead class="table-light">
                     <tr>
-                        <th style="width:6%"><?= I18N::translate('Auswahl') ?></th>
+                        <th style="width:12%"><?= I18N::translate('Auswahl') ?></th>
                         <th><?= I18N::translate('Ort') ?></th>
                         <th style="width:10%"><?= I18N::translate('Ereignisse') ?></th>
                         <th style="width:8%"><?= I18N::translate('Koordinaten') ?></th>
+                        <th style="width:6%">GOV</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -148,6 +168,7 @@ document.addEventListener('DOMContentLoaded', function () {
             { orderable: true,  searchable: true  },
             { orderable: true,  searchable: false, className: 'text-end' },
             { orderable: false, searchable: false, className: 'text-center' },
+            { orderable: false, searchable: false, className: 'text-center' },
         ],
         order:      [[1, 'asc']],
         pageLength: 50,
@@ -189,7 +210,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const content = document.getElementById('ortsregister-merge-modal-content');
             if (data.success) {
                 content.innerHTML = '<div class="modal-header"><h5 class="modal-title text-success">'
-                    + '<i class="fas fa-check-circle me-2"></i>GOV verknüpft</h5></div>'
+                    + '<i class="fas fa-check me-2"></i>GOV verknüpft</h5></div>'
                     + '<div class="modal-body"><p><strong>' + (data.name || data.gov_id) + '</strong></p>'
                     + (data.lat ? '<p class="small text-muted">Koord.: ' + data.lat.toFixed(4) + ', ' + data.lng.toFixed(4) + '</p>' : '')
                     + '</div><div class="modal-footer">'
@@ -246,6 +267,7 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(data => {
                 if (data.success) {
                     dt.api().ajax.reload();
+                    updateEndorteHint();
                 } else {
                     alert('Fehler beim Setzen des Filters: ' + (data.message || 'unbekannt'));
                 }
@@ -253,6 +275,28 @@ document.addEventListener('DOMContentLoaded', function () {
             .catch(err => alert('Netzwerkfehler: ' + err));
         });
     });
+
+    // ---- Endorte-Hinweis: nur bei „Nur Endorte", schließbar + per-Browser gemerkt ----
+    const endorteHint = document.getElementById('ortsregister-endorte-hint');
+    const ENDORTE_HINT_KEY = 'ortsregister-endorte-hint-hidden';
+    function updateEndorteHint() {
+        if (!endorteHint) return;
+        const checked = document.querySelector('.ortsregister-filter-mode:checked');
+        const isLeaves = checked && checked.value === 'leaves';
+        let dismissed = false;
+        try { dismissed = localStorage.getItem(ENDORTE_HINT_KEY) === '1'; } catch (e) {}
+        endorteHint.style.display = (isLeaves && !dismissed) ? '' : 'none';
+    }
+    if (endorteHint) {
+        const closeBtn = endorteHint.querySelector('.ortsregister-hint-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', function () {
+                try { localStorage.setItem(ENDORTE_HINT_KEY, '1'); } catch (e) {}
+                updateEndorteHint();
+            });
+        }
+    }
+    updateEndorteHint();
 
     // ---- Merge-Selection State ----
     const mergeState = { srcId: null, dstId: null };
@@ -356,14 +400,17 @@ document.addEventListener('DOMContentLoaded', function () {
             const content = document.getElementById('ortsregister-merge-modal-content');
             if (data.success) {
                 content.innerHTML = '<div class="modal-header"><h5 class="modal-title text-success">'
-                    + '<i class="fas fa-check-circle me-2"></i>Merge erfolgreich</h5></div>'
+                    + '<i class="fas fa-check me-2"></i>Merge erfolgreich</h5></div>'
                     + '<div class="modal-body"><p>' + data.message + '</p></div>'
-                    + '<div class="modal-footer"><button class="btn btn-primary" onclick="location.reload()">Liste neu laden</button></div>';
+                    + '<div class="modal-footer">'
+                    + '<button class="btn btn-outline-danger ortsregister-merge-undo" data-log-id="' + (data.log_id || '') + '">'
+                    + '<i class="fas fa-arrow-left me-1"></i>Rückgängig</button>'
+                    + '<button class="btn btn-primary" onclick="location.reload()">Liste neu laden</button></div>';
                 // State zurücksetzen
                 mergeState.srcId = null; mergeState.dstId = null;
             } else {
                 content.innerHTML = '<div class="modal-header"><h5 class="modal-title text-danger">'
-                    + '<i class="fas fa-times-circle me-2"></i>Merge fehlgeschlagen</h5></div>'
+                    + '<i class="fas fa-exclamation-triangle me-2"></i>Merge fehlgeschlagen</h5></div>'
                     + '<div class="modal-body"><div class="alert alert-danger">' + data.message + '</div></div>'
                     + '<div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button></div>';
             }
@@ -371,6 +418,100 @@ document.addEventListener('DOMContentLoaded', function () {
         .catch(err => {
             btn.disabled = false;
             alert('Netzwerkfehler: ' + err);
+        });
+    });
+
+    // ---- Umbenennen-Button öffnet Modal ----
+    table.addEventListener('click', function (e) {
+        const btn = e.target.closest('.ortsregister-rename-btn');
+        if (!btn) return;
+        const placeId = btn.dataset.placeId;
+        const url = appendQuery(table.dataset.renamePreview, 'place_id=' + placeId);
+        const content = document.getElementById('ortsregister-merge-modal-content');
+        content.innerHTML = '<div class="modal-body text-center py-5"><div class="spinner-border text-primary"></div></div>';
+        new bootstrap.Modal(document.getElementById('ortsregister-merge-modal')).show();
+        fetch(url, { headers: { 'Accept': 'text/html' }})
+            .then(r => r.text())
+            .then(html => { content.innerHTML = html; })
+            .catch(err => { content.innerHTML = '<div class="modal-body text-danger">Fehler: ' + err + '</div>'; });
+    });
+
+    // ---- Umbenennen bestätigen -> POST ----
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('#ortsregister-rename-confirm');
+        if (!btn) return;
+        const input = document.getElementById('ortsregister-rename-input');
+        const newValue = input ? input.value.trim() : '';
+        if (newValue === '') { alert('Bitte einen Namen eingeben.'); return; }
+        if (newValue === btn.dataset.oldName) { alert('Der Name ist unverändert.'); return; }
+        btn.disabled = true;
+
+        const fd = new FormData();
+        fd.append('_csrf', table.dataset.csrf);
+        fd.append('src', btn.dataset.placeId);
+        fd.append('new_value', newValue);
+
+        fetch(table.dataset.renameExecute, {
+            method: 'POST',
+            body: fd,
+            headers: { 'X-CSRF-TOKEN': table.dataset.csrf },
+        })
+        .then(r => r.json())
+        .then(data => {
+            const content = document.getElementById('ortsregister-merge-modal-content');
+            if (data.success) {
+                content.innerHTML = '<div class="modal-header"><h5 class="modal-title text-success">'
+                    + '<i class="fas fa-check me-2"></i>Umbenannt</h5></div>'
+                    + '<div class="modal-body"><p>' + data.message + '</p></div>'
+                    + '<div class="modal-footer">'
+                    + '<button class="btn btn-outline-danger ortsregister-merge-undo" data-log-id="' + (data.log_id || '') + '">'
+                    + '<i class="fas fa-arrow-left me-1"></i>Rückgängig</button>'
+                    + '<button class="btn btn-primary" onclick="location.reload()">Liste neu laden</button></div>';
+            } else {
+                content.innerHTML = '<div class="modal-header"><h5 class="modal-title text-danger">'
+                    + '<i class="fas fa-exclamation-triangle me-2"></i>Umbenennen fehlgeschlagen</h5></div>'
+                    + '<div class="modal-body"><div class="alert alert-danger">' + data.message + '</div></div>'
+                    + '<div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button></div>';
+            }
+        })
+        .catch(err => {
+            btn.disabled = false;
+            alert('Netzwerkfehler: ' + err);
+        });
+    });
+
+    // ---- Merge rückgängig (Event-Delegation, überlebt Modal-Re-Render) ----
+    document.addEventListener('click', function (e) {
+        const undoBtn = e.target.closest('.ortsregister-merge-undo');
+        if (!undoBtn) return;
+        const logId = undoBtn.dataset.logId;
+        if (!logId) {
+            alert('Kein Log-Eintrag für diesen Merge — Undo nicht möglich.');
+            return;
+        }
+        undoBtn.disabled = true;
+
+        const fd = new FormData();
+        fd.append('_csrf', table.dataset.csrf);
+        fd.append('log_id', logId);
+
+        fetch(table.dataset.mergeUndo, {
+            method: 'POST',
+            body: fd,
+            headers: { 'X-CSRF-TOKEN': table.dataset.csrf },
+        })
+        .then(r => r.json())
+        .then(data => {
+            const content = document.getElementById('ortsregister-merge-modal-content');
+            content.innerHTML = '<div class="modal-header"><h5 class="modal-title ' + (data.success ? 'text-success' : 'text-danger') + '">'
+                + '<i class="fas ' + (data.success ? 'fa-check' : 'fa-exclamation-triangle') + ' me-2"></i>'
+                + (data.success ? 'Rückgängig gemacht' : 'Fehler') + '</h5></div>'
+                + '<div class="modal-body"><p>' + data.message + '</p></div>'
+                + '<div class="modal-footer"><button class="btn btn-primary" onclick="location.reload()">Liste neu laden</button></div>';
+        })
+        .catch(err => {
+            undoBtn.disabled = false;
+            alert('Undo fehlgeschlagen: ' + err);
         });
     });
 });

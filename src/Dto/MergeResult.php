@@ -21,5 +21,14 @@ final class MergeResult
 
         /** ID des Eintrags in `ortsregister_merge_log` */
         public readonly int    $logId,
+
+        /**
+         * Nicht-fatale Hinweise aus der Sidecar-Vereinigung
+         * (GOV-Konflikt, übersprungener Ordner bei Namens-Mehrdeutigkeit,
+         * Koordinaten-Verlust). Dem User nach dem Merge anzeigen.
+         *
+         * @var list<string>
+         */
+        public readonly array  $warnings = [],
     ) {}
 }

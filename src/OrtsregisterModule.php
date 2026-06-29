@@ -15,6 +15,9 @@ use Ortsregister\Http\RequestHandlers\PlaceTasksUpdate;
 use Ortsregister\Http\RequestHandlers\GovLinkPage;
 use Ortsregister\Http\RequestHandlers\MergeExecute;
 use Ortsregister\Http\RequestHandlers\MergeModalPage;
+use Ortsregister\Http\RequestHandlers\MergeUndo;
+use Ortsregister\Http\RequestHandlers\RenameExecute;
+use Ortsregister\Http\RequestHandlers\RenameModalPage;
 use Ortsregister\Http\RequestHandlers\OrteDataTable;
 use Ortsregister\Http\RequestHandlers\OrteDetailPage;
 use Ortsregister\Http\RequestHandlers\OrteKarte;
@@ -29,7 +32,11 @@ use Ortsregister\Service\GovHierarchyResolver;
 use Ortsregister\Service\GovLinkingService;
 use Ortsregister\Service\PlaceEventCounter;
 use Ortsregister\Service\ArchionLinker;
+use Ortsregister\Service\ArchionParishLookup;
+use Ortsregister\Service\PlaceFolderLocator;
 use Ortsregister\Service\PlaceFolderScanner;
+use Ortsregister\Service\PlaceSidecarInventory;
+use Ortsregister\Service\PlaceSidecarMerger;
 use Ortsregister\Service\PlaceNotesService;
 use Ortsregister\Service\PlaceKbListService;
 use Ortsregister\Service\PlaceTasksService;
@@ -90,6 +97,7 @@ class OrtsregisterModule extends AbstractModule implements
     public const SETTING_LINK_DDB         = 'link_ddb';
     public const SETTING_FOLDER_ROOT      = 'folder_root';
     public const SETTING_HIERARCHY_MODE   = 'hierarchy_mode';
+    public const SETTING_ARCHION_AUTO_KM  = 'archion_auto_km';
 
     public const HIERARCHY_MODE_HISTORICAL = 'historical';
     public const HIERARCHY_MODE_CURRENT    = 'current';
@@ -109,11 +117,12 @@ class OrtsregisterModule extends AbstractModule implements
     public const DEFAULT_LINK_DDB         = true;
     public const DEFAULT_FOLDER_ROOT      = 'orte';
     public const DEFAULT_HIERARCHY_MODE   = self::HIERARCHY_MODE_HISTORICAL;
+    public const DEFAULT_ARCHION_AUTO_KM  = 10;
 
     public function title(): string { return 'Ortsregister'; }
     public function description(): string { return 'Ortsregister mit visueller Landing-Page, Medien-Verknüpfung und (geplant) GOV-Integration.'; }
     public function customModuleAuthorName(): string { return 'Thomas Bugge'; }
-    public function customModuleVersion(): string { return '0.1.0'; }
+    public function customModuleVersion(): string { return '0.2.0-alpha'; }
     public function customModuleLatestVersion(): string { return '0.1.0'; }
     public function customModuleSupportUrl(): string { return ''; }
 
@@ -130,6 +139,11 @@ class OrtsregisterModule extends AbstractModule implements
         $router->get('ortsregister.orte.karte',    '/tree/{tree}/orte/karte',          OrteKarte::class);
         $router->get('ortsregister.merge.preview', '/tree/{tree}/orte/merge/preview',  MergeModalPage::class);
         $router->get('ortsregister.merge.execute', '/tree/{tree}/orte/merge/execute',  MergeExecute::class)
+               ->allows('POST');
+        $router->get('ortsregister.merge.undo',    '/tree/{tree}/orte/merge/undo',     MergeUndo::class)
+               ->allows('POST');
+        $router->get('ortsregister.rename.preview','/tree/{tree}/orte/rename/preview', RenameModalPage::class);
+        $router->get('ortsregister.rename.execute','/tree/{tree}/orte/rename/execute', RenameExecute::class)
                ->allows('POST');
         $router->get('ortsregister.filter-mode',   '/tree/{tree}/orte/filter-mode',    SetPlaceFilterMode::class)
                ->allows('POST');
@@ -157,14 +171,8 @@ class OrtsregisterModule extends AbstractModule implements
     private function registerServices(): void
     {
         $container = Registry::container();
-        $container->set(
-            PlaceOperationService::class,
-            new PlaceOperationService(
-                $container->get(ApcuCacheService::class),
-                $container->get(GedcomPlaceManipulator::class),
-                __DIR__ . '/../backups',
-            ),
-        );
+        // PlaceOperationService + Sidecar-Merge-Stack werden am ENDE registriert
+        // (sie brauchen die weiter unten gesetzten Sidecar-/GOV-Services).
         $container->set(
             CoordinateImportService::class,
             new CoordinateImportService(
@@ -218,8 +226,16 @@ class OrtsregisterModule extends AbstractModule implements
             new PlaceNotesService($this->folderRoot()),
         );
         $container->set(
+            ArchionParishLookup::class,
+            new ArchionParishLookup(__DIR__ . '/../resources/data/archion-parishes.json'),
+        );
+        $container->set(
             ArchionLinker::class,
-            new ArchionLinker($this->folderRoot()),
+            new ArchionLinker(
+                $this->folderRoot(),
+                $container->get(ArchionParishLookup::class),
+                (float) $this->archionAutoDistanceKm(),
+            ),
         );
         $container->set(
             PlaceTasksService::class,
@@ -228,6 +244,36 @@ class OrtsregisterModule extends AbstractModule implements
         $container->set(
             PlaceKbListService::class,
             new PlaceKbListService($this->folderRoot()),
+        );
+        // Sidecar-Merge-Stack (Phase-4-GATE): nutzt die oben registrierten
+        // Sidecar-Services + GovLinkingService, daher erst hier.
+        $container->set(
+            PlaceFolderLocator::class,
+            new PlaceFolderLocator($this->folderRoot()),
+        );
+        $container->set(
+            PlaceSidecarMerger::class,
+            new PlaceSidecarMerger($container->get(PlaceFolderLocator::class)),
+        );
+        $container->set(
+            PlaceSidecarInventory::class,
+            new PlaceSidecarInventory(
+                $container->get(PlaceNotesService::class),
+                $container->get(PlaceTasksService::class),
+                $container->get(PlaceKbListService::class),
+                $container->get(PlaceFolderScanner::class),
+                $container->get(GovLinkingService::class),
+            ),
+        );
+        $container->set(
+            PlaceOperationService::class,
+            new PlaceOperationService(
+                $container->get(ApcuCacheService::class),
+                $container->get(GedcomPlaceManipulator::class),
+                __DIR__ . '/../backups',
+                $container->get(PlaceSidecarMerger::class),
+                $container->get(PlaceSidecarInventory::class),
+            ),
         );
         // AdminConfigPage: braucht das Modul selbst
         $container->set(
@@ -314,6 +360,10 @@ class OrtsregisterModule extends AbstractModule implements
     public function linkDdb(): bool
     {
         return $this->getPreference(self::SETTING_LINK_DDB, self::DEFAULT_LINK_DDB ? '1' : '0') === '1';
+    }
+    public function archionAutoDistanceKm(): int
+    {
+        return max(1, min(100, (int) $this->getPreference(self::SETTING_ARCHION_AUTO_KM, (string) self::DEFAULT_ARCHION_AUTO_KM)));
     }
     public function hierarchyMode(): string
     {

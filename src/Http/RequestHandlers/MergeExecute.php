@@ -51,11 +51,22 @@ class MergeExecute implements RequestHandlerInterface
             $result = $this->service->executeMerge($tree, $srcId, $dstId, $resolutions);
         } catch (Throwable $e) {
             $this->logExceptionToFile($e, ['src' => $srcId, 'dst' => $dstId]);
+            // Status 200 mit success:false — sonst ersetzt webtrees eine 500er
+            // durch eine HTML-Fehlerseite (Frontend sieht „JSON.parse").
             return $this->json([
                 'success' => false,
                 'message' => $e->getMessage(),
                 'file'    => basename($e->getFile()) . ':' . $e->getLine(),
-            ], 500);
+            ], 200);
+        }
+
+        $message = sprintf(
+            '%d Records umgeschrieben. Backup: %s',
+            $result->modifiedRecords,
+            basename($result->backupPath),
+        );
+        if ($result->warnings !== []) {
+            $message .= ' ⚠️ ' . implode(' ', $result->warnings);
         }
 
         return $this->json([
@@ -63,11 +74,8 @@ class MergeExecute implements RequestHandlerInterface
             'modified' => $result->modifiedRecords,
             'backup'   => basename($result->backupPath),
             'log_id'   => $result->logId,
-            'message'  => sprintf(
-                '%d Records umgeschrieben. Backup: %s',
-                $result->modifiedRecords,
-                basename($result->backupPath),
-            ),
+            'warnings' => $result->warnings,
+            'message'  => $message,
         ], 200);
     }
 
@@ -112,7 +120,7 @@ class MergeExecute implements RequestHandlerInterface
     private function json(array $payload, int $status): ResponseInterface
     {
         return Registry::responseFactory()->response(
-            json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
+            (string) json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE),
             $status,
             ['Content-Type' => 'application/json; charset=UTF-8'],
         );
