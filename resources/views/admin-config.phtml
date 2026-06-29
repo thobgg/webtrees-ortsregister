@@ -20,6 +20,7 @@ use Ortsregister\OrtsregisterModule;
 /** @var bool   $link_ddb */
 /** @var string $folder_root */
 /** @var string $hierarchy_mode */
+/** @var int    $archion_auto_km */
 
 $secondsToDays = static fn(int $s): string => $s >= 86400
     ? round($s / 86400, 1) . ' Tage'
@@ -205,6 +206,32 @@ $secondsToDays = static fn(int $s): string => $s >= 86400
             </div>
             <div class="form-text mt-3">
                 <?= I18N::translate('Hinweis: Archion-Deep-Links (auf spezifisches Dekanat/Parochie) werden separat pro Ort gepflegt — geplant in Phase 3I-0.') ?>
+            </div>
+        </div>
+    </fieldset>
+
+    <fieldset class="card mb-4">
+        <legend class="card-header h6 mb-0"><?= I18N::translate('Archion Auto-Pfarrei-Lookup') ?></legend>
+        <div class="card-body">
+            <p class="text-muted small mb-3">
+                <?= I18N::translate('Wenn ein Ort GOV-Koordinaten hat, wird in der Quellen-Zeile automatisch ein Deep-Link auf die nächste Archion-Pfarrei gesetzt — auch ohne manuelle Pflege. Manueller Override via <code>_archion.json</code> oder <code>_archion-urls.json</code> hat weiter Vorrang.') ?>
+            </p>
+            <div class="mb-3">
+                <label for="archion_auto_km" class="form-label">
+                    <?= I18N::translate('Max. Suchradius für Auto-Match (km)') ?>
+                </label>
+                <input type="number" class="form-control" style="max-width:8rem"
+                       id="archion_auto_km" name="<?= e(OrtsregisterModule::SETTING_ARCHION_AUTO_KM) ?>"
+                       value="<?= (int) $archion_auto_km ?>" min="1" max="100" step="1">
+                <div class="form-text">
+                    <?= I18N::translate('Pfarreien jenseits dieses Radius werden ignoriert. Default: 10 km. Mutter-Pfarreien können in dünn besiedelten Regionen weiter weg sein — dann Radius erhöhen.') ?>
+                </div>
+            </div>
+            <div class="alert alert-secondary small mb-0">
+                <strong><?= I18N::translate('Datenquelle') ?>:</strong>
+                <a href="https://github.com/brger93/archionkarte-20" target="_blank" rel="noopener">
+                    github.com/brger93/archionkarte-20
+                </a> (MIT-Lizenz, brger93). Snapshot der Pfarrei-Stammdaten aller deutschen Landeskirchen, ausgeliefert mit dem Modul unter <code>resources/data/archion-parishes.json</code>. Update folgt mit Modul-Release.
             </div>
         </div>
     </fieldset>

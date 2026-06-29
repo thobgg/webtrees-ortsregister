@@ -82,7 +82,8 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
                 'ddb'          => $emptyDdb,
                 'folder_files' => [],
                 'note_slots'   => [],
-                'archion_url'  => null,
+                'archion_url'    => null,
+                'archion_source' => null,
                 'tasks'        => [],
                 'task_counts'  => ['open' => 0, 'done' => 0],
                 'kbs'          => [],
@@ -111,7 +112,8 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
                 'ddb'          => $emptyDdb,
                 'folder_files' => [],
                 'note_slots'   => [],
-                'archion_url'  => null,
+                'archion_url'    => null,
+                'archion_source' => null,
                 'tasks'        => [],
                 'task_counts'  => ['open' => 0, 'done' => 0],
                 'kbs'          => [],
@@ -229,13 +231,22 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
             ];
         }
 
-        // Archion-Deep-Link aus _archion.json (oder null wenn keine Konfig)
-        // Fehlende Pflichtfelder werfen Exception → stille Fallback auf Generic-Suche
-        $archionUrl = null;
+        // Archion-Deep-Link: 1. per-place file, 2. global map, 3. auto via Koord.
+        // Fehler dürfen die Seite nicht killen.
+        $archionUrl    = null;
+        $archionSource = null;
         try {
-            $archionUrl = $this->archionLinker->forPlace($tree, $ort->name);
+            $resolved = $this->archionLinker->forPlaceWithSource(
+                $tree, $ort->name,
+                $ort->breitengrad,
+                $ort->laengengrad,
+            );
+            if ($resolved !== null) {
+                $archionUrl    = $resolved['url'];
+                $archionSource = $resolved['source'];
+            }
         } catch (Throwable) {
-            $archionUrl = null;
+            // stiller Fallback
         }
 
         // Strukturierte Aufgaben aus _tasks.json
@@ -291,7 +302,8 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
             'ddb'          => $ddb,
             'folder_files' => $folderFiles,
             'note_slots'   => $noteSlots,
-            'archion_url'  => $archionUrl,
+            'archion_url'    => $archionUrl,
+            'archion_source' => $archionSource,
             'tasks'        => $tasks,
             'task_counts'  => $taskCounts,
             'kbs'          => $kbs,

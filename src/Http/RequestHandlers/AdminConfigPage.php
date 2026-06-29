@@ -76,6 +76,7 @@ class AdminConfigPage implements RequestHandlerInterface
                 'link_ddb'         => $this->module->linkDdb(),
                 'folder_root'      => $this->module->folderRoot(),
                 'hierarchy_mode'   => $this->module->hierarchyMode(),
+                'archion_auto_km'  => $this->module->archionAutoDistanceKm(),
             ]
         );
     }
@@ -121,6 +122,11 @@ class AdminConfigPage implements RequestHandlerInterface
             $hierarchyMode = OrtsregisterModule::DEFAULT_HIERARCHY_MODE;
         }
         $this->module->setPreference(OrtsregisterModule::SETTING_HIERARCHY_MODE, $hierarchyMode);
+
+        // Archion Auto-Lookup-Radius
+        $archionKm = (int) ($params[OrtsregisterModule::SETTING_ARCHION_AUTO_KM] ?? OrtsregisterModule::DEFAULT_ARCHION_AUTO_KM);
+        $archionKm = max(1, min(100, $archionKm));
+        $this->module->setPreference(OrtsregisterModule::SETTING_ARCHION_AUTO_KM, (string) $archionKm);
 
         // Externe-Link-Toggles (Checkbox: vorhanden = '1', fehlt = '0')
         foreach ([

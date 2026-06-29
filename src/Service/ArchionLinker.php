@@ -32,12 +32,23 @@ final class ArchionLinker
 
     public function __construct(
         private readonly string $folderRoot = 'orte',
+        private readonly ?ArchionParishLookup $parishLookup = null,
+        private readonly float $autoMaxDistanceKm = 10.0,
     ) {}
 
     /**
      * Liefert die Archion-URL für einen Ort, oder null wenn keine bekannt.
+     *
+     * Lookup-Reihenfolge:
+     *   1. Per-Place-File `_archion.json` (User-Override)
+     *   2. Global-Map `_archion-urls.json` (User-managed)
+     *   3. Auto-Lookup via archionkarte-20 (nearest Pfarrei in Koord-Radius)
+     *   4. null (Caller fällt auf generische Such-URL zurück)
+     *
+     * @param float|null $lat  GOV-Koordinaten falls vorhanden — für Auto-Lookup nötig
+     * @param float|null $lon
      */
-    public function forPlace(Tree $tree, string $placeName): ?string
+    public function forPlace(Tree $tree, string $placeName, ?float $lat = null, ?float $lon = null): ?string
     {
         $placeName = trim($placeName);
         if (!$this->isValidPlaceName($placeName)) {
@@ -48,9 +59,47 @@ final class ArchionLinker
         if ($perPlace !== null) {
             return $perPlace;
         }
-        // 2. Single-Map als Fallback
+        // 2. Single-Map
         $map = $this->readMap($tree);
-        return $map[$placeName] ?? null;
+        if (isset($map[$placeName])) {
+            return $map[$placeName];
+        }
+        // 3. Auto-Lookup via Koordinaten
+        if ($this->parishLookup !== null && $lat !== null && $lon !== null) {
+            $parish = $this->parishLookup->nearestWithin($lat, $lon, $this->autoMaxDistanceKm);
+            if ($parish !== null) {
+                return $parish->fullUrl();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Wie forPlace(), liefert aber auch Auskunft über die Lookup-Quelle.
+     *
+     * @return array{url: string, source: string}|null
+     */
+    public function forPlaceWithSource(Tree $tree, string $placeName, ?float $lat = null, ?float $lon = null): ?array
+    {
+        $placeName = trim($placeName);
+        if (!$this->isValidPlaceName($placeName)) {
+            return null;
+        }
+        $perPlace = $this->readPerPlace($tree, $placeName);
+        if ($perPlace !== null) {
+            return ['url' => $perPlace, 'source' => 'per-place'];
+        }
+        $map = $this->readMap($tree);
+        if (isset($map[$placeName])) {
+            return ['url' => $map[$placeName], 'source' => 'map'];
+        }
+        if ($this->parishLookup !== null && $lat !== null && $lon !== null) {
+            $parish = $this->parishLookup->nearestWithin($lat, $lon, $this->autoMaxDistanceKm);
+            if ($parish !== null) {
+                return ['url' => $parish->fullUrl(), 'source' => 'auto:' . $parish->name];
+            }
+        }
+        return null;
     }
 
     private function readPerPlace(Tree $tree, string $placeName): ?string

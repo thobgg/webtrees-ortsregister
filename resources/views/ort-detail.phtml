@@ -28,6 +28,7 @@ use Fisharebest\Webtrees\Media;
 /** @var list<array{filename:string,title:string,placeholder:string,markdown:string,html:string,mtime:int}> $note_slots */
 /** @var bool $can_edit */
 /** @var string|null $archion_url */
+/** @var string|null $archion_source */
 /** @var list<\Ortsregister\Dto\PlaceTask> $tasks */
 /** @var array{open:int,done:int} $task_counts */
 /** @var \Ortsregister\OrtsregisterModule $module */
@@ -360,12 +361,19 @@ foreach ($bilder as $medium) {
         }
         if (($link_archion ?? true)) {
             if ($archion_url !== null) {
-                // Deep-Link aus _archion.json — präzise Pfarrei-Seite
+                // Deep-Link aus per-place file, global-map oder auto-Lookup (Quelle in title sichtbar)
+                $autoMatch = is_string($archion_source ?? null) && str_starts_with($archion_source, 'auto:');
+                $linkLabel = $autoMatch ? 'Pfarrei (auto) ↗' : 'Pfarrei ↗';
+                $titleTxt  = match (true) {
+                    $archion_source === 'per-place' => 'Direkter Link aus _archion.json',
+                    $archion_source === 'map'       => 'Aus _archion-urls.json (User-Mapping)',
+                    $autoMatch                      => 'Auto-Lookup via archionkarte-20: ' . substr($archion_source, 5),
+                    default                         => '',
+                };
                 $quellen[] = '<strong>Archion</strong> · <a href="' . e($archion_url)
-                    . '" target="_blank" rel="noopener" title="Direkter Link aus _archion.json">'
-                    . 'Pfarrei ↗</a>';
+                    . '" target="_blank" rel="noopener" title="' . e($titleTxt) . '">'
+                    . e($linkLabel) . '</a>';
             } else {
-                // Fallback: generische Such-URL (raten — funktioniert oft nicht)
                 $quellen[] = '<strong>Archion</strong> · <a href="https://www.archion.de/de/browse/?place='
                     . urlencode($ort->name) . '" target="_blank" rel="noopener">Suche ↗</a>';
             }
