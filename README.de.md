@@ -2,7 +2,11 @@
 
 [🇬🇧 English](README.md) · 🇩🇪 **Deutsch**
 
-**Visuelle Landing-Page pro Ort mit Hauptfoto, Medien-Verknüpfung und (geplant) GOV-Integration.**
+**🏡 Dein mitwachsendes Orts-Archiv für webtrees.** Jeder Ort deines Stammbaums wird
+zur Archiv-Seite, die mit jeder Recherche reicher wird: Digitalisate, Kirchenbücher,
+Quellen, Karten und Forschungstagebuch an einem Ort.
+
+🌍 GOV-verankert · 🧹 Schreibvarianten sicher zusammengeführt (Vorschau · Backup · Undo) · 🔓 offene Formate, kein Lock-in.
 
 | | |
 |---|---|
@@ -31,28 +35,36 @@ die `PLAC` betroffener Datensätze über die native webtrees-Edit-API um. Behand
   (Operationen umgehen den Moderations-Workflow).
 - Problem gefunden? Bitte ein **GitHub-Issue** öffnen.
 
-## Idee
+## Was es kann
 
-webtrees ist streng GEDCOM-konform und bietet nur eine sehr nüchterne Orts-Verwaltung.
-`Ortsregister` ergänzt die emotionale Familien-Sicht auf Orte:
+**Jeder Ort in deinem Stammbaum wird zur Archiv-Seite, die mit jeder Recherche reicher wird.** Was du über ein Dorf, eine Pfarrei, eine Stadt zusammenträgst, sammelt sich an einem Ort — dauerhaft, geordnet, auffindbar.
 
-- **Visuelle Landing-Page** pro Ort: Hauptfoto, Beschreibung, Galerie
-- **Personen-Ereignisse** an diesem Ort (Geburten, Hochzeiten, Tode)
-- **Medien-Verknüpfung**: Fotos einem Ort zuordnen
-- **GOV-Integration** (geplant): historische Verwaltungszugehörigkeit, Kirchspiele, Archivlinks – ggf. via Vesta-Modul
+🗂️ **Dein Archiv bekommt ein Zuhause.** Digitalisate, Kirchenbücher, Quellen, Karten, Notizen und dein Forschungstagebuch — direkt am Ort, wo du sie suchst. Schluss mit verstreuten Funden in Ordnern, Mails und Notizzetteln.
+
+🧹 **Damit dein Archiv sauber adressiert bleibt.** „Brackenheim", „Brakenheim", „Brackenheim a.N." — derselbe Ort, drei Schreibweisen? Ortsregister erkennt zusammengehörige Orte und führt sie sicher zusammen: mit Vorschau, vollständigem Backup und Rückgängig-Funktion. Deine kuratierten Daten reisen mit — keine Notiz, kein Digitalisat geht verloren.
+
+🌍 **Wasserdicht verankert.** Die GOV-Anbindung verknüpft deine Orte mit dem offiziellen historischen Ortsverzeichnis: stabile Kennung, historische Namensvarianten, Hierarchie und Koordinaten. Dazu Treffer aus Archion, Deutscher Digitaler Bibliothek und Wikimedia, direkt auf der Ortsseite.
+
+🔎 **Zeigt dir, wo Arbeit liegt.** Welche Orte haben noch keine Koordinaten? Keine GOV-Kennung? Welche sehen nach Dubletten aus? Ortsregister macht aus deiner Ortsliste eine Arbeits-Warteschlange.
+
+🔓 **Deine Daten bleiben deine Daten.** Alles liegt im offenen Standard seiner Art — im Stammbaum oder als lesbare Datei im Orts-Ordner. Die Datenbank ist nur ein Index, jederzeit neu aufbaubar. Kein proprietäres Format, kein Vendor-Lock-in.
 
 Das Modul tritt **nicht in Konkurrenz** zum Standard-Orte-Modul von webtrees oder
-zur Vesta-Modul-Familie, sondern fokussiert sich auf die UX-Schicht.
+zur Vesta-Familie — es ist die UX- und Archiv-Schicht darüber.
 
 ## Funktionsumfang (aktueller Stand)
 
-- Listenansicht aller Orte mit Server-seitiger DataTables-Paginierung
-- **Hierarchie-Filter** (siehe unten): „Alle Ebenen" vs. „Nur Endorte"
-- Volltextfilter
+- Listenansicht aller Orte (Server-seitige DataTables-Paginierung, Volltextfilter)
+- **Hierarchie-Filter**: „Alle Ebenen" vs. „Nur Endorte" (siehe unten)
+- **GOV-Statusspalte** + GOV-Verknüpfung pro Ort, GOV-Hierarchie auf der Detailseite
 - Leaflet-Karte mit MarkerCluster
-- Ort-Detail-Seite mit Personen-/Familienlisten
-- **Merge-Operation** mit Backup als JSON, opake Subtag-Übernahme, Suffix-Match
-  über mittlere Hierarchie-Ebenen
+- **Detailseite** pro Ort: Ereignis-Statistik (Geburten/Heiraten/Tode), Medien-Galerie
+  mit Lightbox, Notizen/Aufgaben/Kirchenbuch-Logbuch (Markdown)
+- **Orts-Hygiene**: Merge & Umbenennen mit Vorschau, JSON-Backup und Undo; kuratierte
+  Daten (Notizen/KB/GOV/Digitalisate) wandern mit
+- **Externe Treffer** auf der Detailseite: Wikimedia/Commons, Deutsche Digitale
+  Bibliothek, Archion-Auto-Pfarrei-Lookup
+- **Koordinaten-Import** aus PLAC-Subtags ins webtrees-`place_location`
 
 ### Hierarchie-Filter
 
@@ -69,14 +81,26 @@ haben. Es bleiben nur die Blätter der Hierarchie übrig — typischerweise die
 Default: „Alle Ebenen" (kein Datenverlust-Eindruck, konservativ). Toggle
 oberhalb der Liste.
 
+## Bekannte Einschränkungen (Alpha)
+
+- **Namensgleiche Orte teilen einen Daten-Ordner.** Zwei „Neustadt" auf verschiedenen
+  Hierarchie-Ebenen nutzen denselben `media/orte/Neustadt/`-Ordner. Merge/Umbenennen
+  warnt dann und überspringt die Ordner-Operation.
+- **Dateisystem-Operationen sind nicht transaktional.** Bricht eine Operation nach der
+  GEDCOM-Änderung, aber während der Ordner-Verschiebung ab, kann die Sidecar-Ebene
+  inkonsistent bleiben (DB/GEDCOM werden sauber zurückgerollt).
+- **Auto-Accept nötig.** Merge/Umbenennen erfordern „Änderungen automatisch übernehmen"
+  und umgehen den Moderations-/Pending-Changes-Workflow.
+- **Sehr große Merges** (z. B. ganze Länder) laufen in einer Transaktion ohne Batching —
+  bei tausenden Datensätzen droht Timeout/Speicher (es wird gewarnt).
+- **Undo** ist sicher direkt nach einer Operation; wurde ein Datensatz seither geändert,
+  bricht es ab (überschreibt nichts) — kein vollständiges Versions-Undo.
+
 ## Roadmap
 
-| Stufe | Inhalt |
-|---|---|
-| 1 | Eigenes Datenmodell: `ortsregister_ort`, `ortsregister_ort_medium` |
-| 2 | Foto-Verknüpfung: 📍-Button in Lightbox „Diesem Ort zuordnen" |
-| 3 | Visuelle Landing-Page mit Hauptfoto und Galerie |
-| 4 | GOV-Integration (eigenständig oder über Vesta-API) |
+Aktueller Funktionsstand: [CHANGELOG](CHANGELOG.md). Die Alpha sammelt Tester-Feedback;
+als Nächstes: record-genauer Split (einzelne Ereignisse von einem Sammel-Ort lösen) und
+Ausbau der Dubletten-Erkennung.
 
 ## Voraussetzungen
 
