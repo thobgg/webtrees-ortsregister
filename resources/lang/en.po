@@ -4,511 +4,511 @@ msgstr ""
 "Report-Msgid-Bugs-To: \n"
 "PO-Revision-Date: 2026-06-29 00:00+0000\n"
 "Last-Translator: \n"
-"Language-Team: German\n"
-"Language: de\n"
+"Language-Team: English\n"
+"Language: en\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 msgid "%s Aufgaben"
-msgstr "%s Aufgaben"
+msgstr "%s tasks"
 
 msgid "%s Digitalisate"
-msgstr "%s Digitalisate"
+msgstr "%s digitised items"
 
 msgid "%s Kirchenbücher"
-msgstr "%s Kirchenbücher"
+msgstr "%s church books"
 
 msgid "%s Notizen"
-msgstr "%s Notizen"
+msgstr "%s notes"
 
 msgid "%s Treffer insgesamt ↗"
-msgstr "%s Treffer insgesamt ↗"
+msgstr "%s results in total"
 
 msgid "API-Zugangsdaten"
-msgstr "API-Zugangsdaten"
+msgstr "API credentials"
 
 msgid "Abbrechen"
-msgstr "Abbrechen"
+msgstr "Cancel"
 
 msgid "Aktuell (located-in)"
-msgstr "Aktuell (located-in)"
+msgstr "Current (located-in)"
 
 msgid "Aktuell: %s. Default 604800 (7 Tage)."
-msgstr "Aktuell: %s. Default 604800 (7 Tage)."
+msgstr "Currently: %s. Default 604800 (7 days)."
 
 msgid "Aktuell: %s. Default 604800 (7 Tage). GOV-Daten ändern sich selten."
-msgstr "Aktuell: %s. Default 604800 (7 Tage). GOV-Daten ändern sich selten."
+msgstr "Currently: %s. Default 604800 (7 days). GOV data rarely changes."
 
 msgid "Alle %d Medien anzeigen"
-msgstr "Alle %d Medien anzeigen"
+msgstr "Show all %d media"
 
 msgid "Alle %d Personen anzeigen"
-msgstr "Alle %d Personen anzeigen"
+msgstr "Show all %d individuals"
 
 msgid "Alle Ebenen"
-msgstr "Alle Ebenen"
+msgstr "All levels"
 
 msgid "Alle Hierarchie-Ebenen anzeigen (inkl. Verwaltungseinheiten wie Ämter, Kreise, Länder)"
-msgstr "Alle Hierarchie-Ebenen anzeigen (inkl. Verwaltungseinheiten wie Ämter, Kreise, Länder)"
+msgstr "Show all hierarchy levels (incl. administrative units such as districts, counties, countries)"
 
 msgid "Archion Auto-Pfarrei-Lookup"
-msgstr "Archion Auto-Pfarrei-Lookup"
+msgstr "Archion auto parish lookup"
 
 msgid "Archion-URL (optional)"
-msgstr "Archion-URL (optional)"
+msgstr "Archion URL (optional)"
 
 msgid "Aufgaben"
-msgstr "Aufgaben"
+msgstr "Tasks"
 
 msgid "Aufgelöste Hierarchie aus GOV. Verknüpfung: %s"
-msgstr "Aufgelöste Hierarchie aus GOV. Verknüpfung: %s"
+msgstr "Hierarchy resolved from GOV. Link: %s"
 
 msgid "Aus Deutscher Digitaler Bibliothek"
-msgstr "Aus Deutscher Digitaler Bibliothek"
+msgstr "From the German Digital Library"
 
 msgid "Aus Wikimedia Commons"
-msgstr "Aus Wikimedia Commons"
+msgstr "From Wikimedia Commons"
 
 msgid "Auswahl"
-msgstr "Auswahl"
+msgstr "Selection"
 
 msgid "Auswahl fügt <code>[Name](indi:Ixxx)</code> an Cursor-Position ein. xref-Link kann auch von Hand geschrieben werden."
-msgstr "Auswahl fügt <code>[Name](indi:Ixxx)</code> an Cursor-Position ein. xref-Link kann auch von Hand geschrieben werden."
+msgstr "The selection inserts <code>[Name](indi:Ixxx)</code> at the cursor position. The xref link can also be written by hand."
 
 msgid "Auswahl löschen"
-msgstr "Auswahl löschen"
+msgstr "Clear selection"
 
 msgid "Auswahl-Spalte zum Mergen von zwei Orten ein-/ausblenden"
-msgstr "Auswahl-Spalte zum Mergen von zwei Orten ein-/ausblenden"
+msgstr "Show/hide the selection column for merging two places"
 
 msgid "Bearbeiten"
-msgstr "Bearbeiten"
+msgstr "Edit"
 
 msgid "Bei Deaktivierung werden keine externen API-Calls zu Wikidata/Commons gemacht."
-msgstr "Bei Deaktivierung werden keine externen API-Calls zu Wikidata/Commons gemacht."
+msgstr "When disabled, no external API calls to Wikidata/Commons are made."
 
 msgid "Beide nebeneinander"
-msgstr "Beide nebeneinander"
+msgstr "Both side by side"
 
 msgid "Beschreibung"
-msgstr "Beschreibung"
+msgstr "Description"
 
 msgid "Betroffene Datensätze"
-msgstr "Betroffene Datensätze"
+msgstr "Affected records"
 
 msgid "Bilder aus Wikimedia Commons, geo-validiert gegen GOV-Koordinaten. Click öffnet die Commons-Beschreibungsseite mit Lizenz-Details."
-msgstr "Bilder aus Wikimedia Commons, geo-validiert gegen GOV-Koordinaten. Click öffnet die Commons-Beschreibungsseite mit Lizenz-Details."
+msgstr "Images from Wikimedia Commons, geo-validated against GOV coordinates. Click opens the Commons description page with licence details."
 
 msgid "Bilder-Grid sichtbar"
-msgstr "Bilder-Grid sichtbar"
+msgstr "Image grid visible"
 
 msgid "Bitte wählen Sie einen Stammbaum aus."
-msgstr "Bitte wählen Sie einen Stammbaum aus."
+msgstr "Please select a family tree."
 
 msgid "Cache-Dauer für GOV-Daten (Sekunden)"
-msgstr "Cache-Dauer für GOV-Daten (Sekunden)"
+msgstr "Cache duration for GOV data (seconds)"
 
 msgid "Cache-Dauer für Wikimedia-Daten (Sekunden)"
-msgstr "Cache-Dauer für Wikimedia-Daten (Sekunden)"
+msgstr "Cache duration for Wikimedia data (seconds)"
 
 msgid "Click zum Bearbeiten"
-msgstr "Click zum Bearbeiten"
+msgstr "Click to edit"
 
 msgid "DDB-API-Key (Deutsche Digitale Bibliothek)"
-msgstr "DDB-API-Key (Deutsche Digitale Bibliothek)"
+msgstr "DDB API key (German Digital Library)"
 
 msgid "Datenquelle"
-msgstr "Datenquelle"
+msgstr "Data source"
 
 msgid "Default: Historisch. Bei „Beide\" wird die Hierarchie-Card etwas größer."
-msgstr "Default: Historisch. Bei „Beide\" wird die Hierarchie-Card etwas größer."
+msgstr "Default: Historical. With “Both”, the hierarchy card becomes a little larger."
 
 msgid "Deine Benutzereinstellung „Änderungen automatisch übernehmen\" ist nicht aktiv. Das Umbenennen würde fehlschlagen. Bitte in den Benutzereinstellungen aktivieren und erneut versuchen."
-msgstr "Deine Benutzereinstellung „Änderungen automatisch übernehmen\" ist nicht aktiv. Das Umbenennen würde fehlschlagen. Bitte in den Benutzereinstellungen aktivieren und erneut versuchen."
+msgstr "Your user preference “Automatically accept changes” is not enabled. The rename would fail. Please enable it in your user settings and try again."
 
 msgid "Deine Benutzereinstellung „Änderungen automatisch übernehmen\" ist nicht aktiv. Der Merge würde fehlschlagen. Bitte in den Benutzereinstellungen aktivieren und erneut versuchen."
-msgstr "Deine Benutzereinstellung „Änderungen automatisch übernehmen\" ist nicht aktiv. Der Merge würde fehlschlagen. Bitte in den Benutzereinstellungen aktivieren und erneut versuchen."
+msgstr "Your user preference “Automatically accept changes” is not enabled. The merge would fail. Please enable it in your user settings and try again."
 
 msgid "Den vollen Komma-Pfad bearbeiten (z. B. nur die Schreibweise korrigieren). Existiert der neue Name bereits als Ort, wird abgebrochen — dann ist Zusammenführen (Merge) das richtige Werkzeug. Vor der Ausführung wird ein Backup geschrieben; rückgängig machbar."
-msgstr "Den vollen Komma-Pfad bearbeiten (z. B. nur die Schreibweise korrigieren). Existiert der neue Name bereits als Ort, wird abgebrochen — dann ist Zusammenführen (Merge) das richtige Werkzeug. Vor der Ausführung wird ein Backup geschrieben; rückgängig machbar."
+msgstr "Edit the full comma path (e.g. just correct the spelling). If the new name already exists as a place, the operation is aborted — then merging is the right tool. A backup is written before execution; it can be undone."
 
 msgid "Detailseiten – Listen-Längen"
-msgstr "Detailseiten – Listen-Längen"
+msgstr "Detail pages – list lengths"
 
 msgid "Diese Hierarchie stammt aus dem PLAC-String und ist nicht durch GOV verifiziert."
-msgstr "Diese Hierarchie stammt aus dem PLAC-String und ist nicht durch GOV verifiziert."
+msgstr "This hierarchy comes from the PLAC string and is not verified by GOV."
 
 msgid "Dieser Ort wurde nicht gefunden."
-msgstr "Dieser Ort wurde nicht gefunden."
+msgstr "This place was not found."
 
 msgid "Eigene Digitalisate"
-msgstr "Eigene Digitalisate"
+msgstr "Own digitised items"
 
 msgid "Eigene Digitalisate (Filesystem-Folder)"
-msgstr "Eigene Digitalisate (Filesystem-Folder)"
+msgstr "Own digitised items (filesystem folder)"
 
 msgid "Ein „Endort\" ist die unterste in deinen Daten vorhandene Stufe eines Ortes — meist ein Dorf/Stadt (z. B. „Brackenheim\"), manchmal aber auch nur eine Verwaltungseinheit (z. B. „OA Brackenheim\"), wenn im Eintrag kein genauerer Ort steht. Ausgeblendet sind hier: übergeordnete Ebenen UND jeder Ort, unter dem ein noch genauerer Ort existiert (auch wenn der durch einen Eintrag wie „Stadtteil, Stadt, …\" erst entstanden ist). Vermisst du einen Ort, schalte auf „Alle Ebenen\"."
-msgstr "Ein „Endort\" ist die unterste in deinen Daten vorhandene Stufe eines Ortes — meist ein Dorf/Stadt (z. B. „Brackenheim\"), manchmal aber auch nur eine Verwaltungseinheit (z. B. „OA Brackenheim\"), wenn im Eintrag kein genauerer Ort steht. Ausgeblendet sind hier: übergeordnete Ebenen UND jeder Ort, unter dem ein noch genauerer Ort existiert (auch wenn der durch einen Eintrag wie „Stadtteil, Stadt, …\" erst entstanden ist). Vermisst du einen Ort, schalte auf „Alle Ebenen\"."
+msgstr "An “end place” is the lowest level of a place present in your data — usually a village/town (e.g. “Brackenheim”), but sometimes only an administrative unit (e.g. “OA Brackenheim”) if the entry contains no more specific place. Hidden here are: higher levels AND any place under which an even more specific place exists (even if it only arose from an entry like “District, Town, …”). If you are missing a place, switch to “All levels”."
 
 msgid "Entscheidung"
-msgstr "Entscheidung"
+msgstr "Decision"
 
 msgid "Ereignisse"
-msgstr "Ereignisse"
+msgstr "Events"
 
 msgid "Externe Ressourcen-Links auf Detailseiten"
-msgstr "Externe Ressourcen-Links auf Detailseiten"
+msgstr "External resource links on detail pages"
 
 msgid "Folder-Root unter dem Medien-Verzeichnis"
-msgstr "Folder-Root unter dem Medien-Verzeichnis"
+msgstr "Folder root below the media directory"
 
 msgid "GOV (Genealogisches Ortsverzeichnis)"
-msgstr "GOV (Genealogisches Ortsverzeichnis)"
+msgstr "GOV (Genealogical Gazetteer)"
 
 msgid "GOV hat keine „aktuell\"-Daten (located-in) für diesen Ort hinterlegt. Stattdessen wird die historische Kette gezeigt."
-msgstr "GOV hat keine „aktuell\"-Daten (located-in) für diesen Ort hinterlegt. Stattdessen wird die historische Kette gezeigt."
+msgstr "GOV has no “current” (located-in) data for this place. The historical chain is shown instead."
 
 msgid "GOV liefert keine „aktuell\"-Daten (located-in) für diesen Ort — nur die historische Kette."
-msgstr "GOV liefert keine „aktuell\"-Daten (located-in) für diesen Ort — nur die historische Kette."
+msgstr "GOV provides no “current” (located-in) data for this place – only the historical chain."
 
 msgid "GOV nicht erreichbar"
-msgstr "GOV nicht erreichbar"
+msgstr "GOV not reachable"
 
 msgid "GOV verknüpft"
-msgstr "GOV verknüpft"
+msgstr "GOV linked"
 
 msgid "GOV-ID %s verknüpft, aber Hierarchie konnte gerade nicht geladen werden (API-Fehler oder Cache leer)."
-msgstr "GOV-ID %s verknüpft, aber Hierarchie konnte gerade nicht geladen werden (API-Fehler oder Cache leer)."
+msgstr "GOV ID %s linked, but the hierarchy could not be loaded just now (API error or empty cache)."
 
 msgid "Geburten"
-msgstr "Geburten"
+msgstr "Births"
 
 msgid "Gesamt: %s"
-msgstr "Gesamt: %s"
+msgstr "Total: %s"
 
 msgid "Heiraten"
-msgstr "Heiraten"
+msgstr "Marriages"
 
 msgid "Heutige geografische Lage (z.B. „Baden-Württemberg\"). Klar für Orientierung."
-msgstr "Heutige geografische Lage (z.B. „Baden-Württemberg\"). Klar für Orientierung."
+msgstr "Present-day geographic location (e.g. “Baden-Württemberg”). Clear for orientation."
 
 msgid "Hierarchie"
-msgstr "Hierarchie"
+msgstr "Hierarchy"
 
 msgid "Hierarchie-Filter"
-msgstr "Hierarchie-Filter"
+msgstr "Hierarchy filter"
 
 msgid "Hierarchie-Modus auf Detailseite"
-msgstr "Hierarchie-Modus auf Detailseite"
+msgstr "Hierarchy mode on the detail page"
 
 msgid "Hinweis: Archion-Deep-Links (auf spezifisches Dekanat/Parochie) werden separat pro Ort gepflegt — geplant in Phase 3I-0."
-msgstr "Hinweis: Archion-Deep-Links (auf spezifisches Dekanat/Parochie) werden separat pro Ort gepflegt — geplant in Phase 3I-0."
+msgstr "Note: Archion deep links (to a specific deanery/parish) are maintained separately per place – planned in phase 3I-0."
 
 msgid "Historisch (part-of)"
-msgstr "Historisch (part-of)"
+msgstr "Historical (part-of)"
 
 msgid "Historisch (part-of, Zeitspannen)"
-msgstr "Historisch (part-of, Zeitspannen)"
+msgstr "Historical (part-of, time spans)"
 
 msgid "In webtrees öffnen"
-msgstr "In webtrees öffnen"
+msgstr "Open in webtrees"
 
 msgid "Jahr bis"
-msgstr "Jahr bis"
+msgstr "Year to"
 
 msgid "Jahr von"
-msgstr "Jahr von"
+msgstr "Year from"
 
 msgid "Jetzt mit GOV verknüpfen"
-msgstr "Jetzt mit GOV verknüpfen"
+msgstr "Link with GOV now"
 
 msgid "KB hinzufügen"
-msgstr "KB hinzufügen"
+msgstr "Add church book"
 
 msgid "Karte"
-msgstr "Karte"
+msgstr "Map"
 
 msgid "Kartenansicht"
-msgstr "Kartenansicht"
+msgstr "Map view"
 
 msgid "Keine"
-msgstr "Keine"
+msgstr "None"
 
 msgid "Keine Einträge"
-msgstr "Keine Einträge"
+msgstr "No entries"
 
 msgid "Keine Konflikte. Quell-Subtags werden opak übernommen."
-msgstr "Keine Konflikte. Quell-Subtags werden opak übernommen."
+msgstr "No conflicts. Source subtags are carried over opaquely."
 
 msgid "Keine Orte mit Koordinaten gefunden. Bitte erfassen Sie Koordinaten im webtrees-Ortsverzeichnis."
-msgstr "Keine Orte mit Koordinaten gefunden. Bitte erfassen Sie Koordinaten im webtrees-Ortsverzeichnis."
+msgstr "No places with coordinates found. Please enter coordinates in the webtrees gazetteer."
 
 msgid "Keine Treffer"
-msgstr "Keine Treffer"
+msgstr "No matches"
 
 msgid "Keine kuratierten Daten"
-msgstr "Keine kuratierten Daten"
+msgstr "No curated data"
 
 msgid "Kirchenbuch"
-msgstr "Kirchenbuch"
+msgstr "Church book"
 
 msgid "Kirchenbücher"
-msgstr "Kirchenbücher"
+msgstr "Church books"
 
 msgid "Konfiguration des Ortsregister-Moduls. Änderungen wirken sofort. Vorhandene Cache-Einträge bleiben aktiv bis sie ablaufen."
-msgstr "Konfiguration des Ortsregister-Moduls. Änderungen wirken sofort. Vorhandene Cache-Einträge bleiben aktiv bis sie ablaufen."
+msgstr "Configuration of the Ortsregister module. Changes take effect immediately. Existing cache entries stay active until they expire."
 
 msgid "Konvention: Dateien (Bilder, PDFs, Dokumente) im Ordner <code>media/%1$s/&lt;Ortsname&gt;/</code> erscheinen automatisch auf der Detailseite des Orts — KEIN webtrees-OBJE-Record nötig. Default: <code>orte</code>."
-msgstr "Konvention: Dateien (Bilder, PDFs, Dokumente) im Ordner <code>media/%1$s/&lt;Ortsname&gt;/</code> erscheinen automatisch auf der Detailseite des Orts — KEIN webtrees-OBJE-Record nötig. Default: <code>orte</code>."
+msgstr "Convention: files (images, PDFs, documents) in the folder <code>media/%1$s/&lt;place name&gt;/</code> appear automatically on the place's detail page – NO webtrees OBJE record needed. Default: <code>orte</code>."
 
 msgid "Koordinaten"
-msgstr "Koordinaten"
+msgstr "Coordinates"
 
 msgid "Koordinaten aus PLAC-Subtags ins place_location übernehmen"
-msgstr "Koordinaten aus PLAC-Subtags ins place_location übernehmen"
+msgstr "Import coordinates from PLAC subtags into place_location"
 
 msgid "Koordinaten-Import"
-msgstr "Koordinaten-Import"
+msgstr "Coordinate import"
 
 msgid "Legende"
-msgstr "Legende"
+msgstr "Legend"
 
 msgid "Logbuch"
-msgstr "Logbuch"
+msgstr "Log"
 
 msgid "Logbuch +"
-msgstr "Logbuch +"
+msgstr "Log +"
 
 msgid "Löschen"
-msgstr "Löschen"
+msgstr "Delete"
 
 msgid "Markdown + GFM-Task-Lists. Datei: <code><span id=\"ortsregister-notes-fileecho\">notes.md</span></code> — direkt auch mit Texteditor auf der NAS editierbar."
-msgstr "Markdown + GFM-Task-Lists. Datei: <code><span id=\"ortsregister-notes-fileecho\">notes.md</span></code> — direkt auch mit Texteditor auf der NAS editierbar."
+msgstr "Markdown + GFM task lists. File: <code><span id=\"ortsregister-notes-fileecho\">notes.md</span></code> – can also be edited directly with a text editor on the NAS."
 
 msgid "Markdown + GFM-Task-Lists. Datei: <code>_kb_&lt;id&gt;.md</code> im Ortsordner."
-msgstr "Markdown + GFM-Task-Lists. Datei: <code>_kb_&lt;id&gt;.md</code> im Ortsordner."
+msgstr "Markdown + GFM task lists. File: <code>_kb_&lt;id&gt;.md</code> in the place folder."
 
 msgid "Max. Distanz Wikidata ↔ GOV-Koordinaten (km)"
-msgstr "Max. Distanz Wikidata ↔ GOV-Koordinaten (km)"
+msgstr "Max. distance Wikidata – GOV coordinates (km)"
 
 msgid "Max. Suchradius für Auto-Match (km)"
-msgstr "Max. Suchradius für Auto-Match (km)"
+msgstr "Max. search radius for auto-match (km)"
 
 msgid "Merge ausführen"
-msgstr "Merge ausführen"
+msgstr "Run merge"
 
 msgid "Merge-Auswahl:"
-msgstr "Merge-Auswahl:"
+msgstr "Merge selection:"
 
 msgid "Merge-Modus"
-msgstr "Merge-Modus"
+msgstr "Merge mode"
 
 msgid "Mergen…"
-msgstr "Mergen…"
+msgstr "Merge"
 
 msgid "Neue Aufgabe — Enter zum Hinzufügen"
-msgstr "Neue Aufgabe — Enter zum Hinzufügen"
+msgstr "New task – Enter to add"
 
 msgid "Neuer Name (voller Pfad)"
-msgstr "Neuer Name (voller Pfad)"
+msgstr "New name (full path)"
 
 msgid "Noch keine Aufgaben — für Vor-Ort-Aktionen, externe Anfragen, Online-Recherche etc. KB-bezogene Aufgaben gehören ins KB-Logbuch."
-msgstr "Noch keine Aufgaben — für Vor-Ort-Aktionen, externe Anfragen, Online-Recherche etc. KB-bezogene Aufgaben gehören ins KB-Logbuch."
+msgstr "No tasks yet – for on-site actions, external enquiries, online research, etc. Church-book-related tasks belong in the church-book log."
 
 msgid "Noch keine KB-Einträge. „+ KB hinzufügen\" zum Anlegen."
-msgstr "Noch keine KB-Einträge. „+ KB hinzufügen\" zum Anlegen."
+msgstr "No church-book entries yet. Use “+ Add church book” to create one."
 
 msgid "Noch leer. „Bearbeiten\" zum Anlegen — Markdown + GFM-Task-Lists werden unterstützt. Personen verlinken via <code>[Name](indi:I123)</code>."
-msgstr "Noch leer. „Bearbeiten\" zum Anlegen — Markdown + GFM-Task-Lists werden unterstützt. Personen verlinken via <code>[Name](indi:I123)</code>."
+msgstr "Still empty. Click “Edit” to create – Markdown + GFM task lists are supported. Link individuals via <code>[Name](indi:I123)</code>."
 
 msgid "Notizen bearbeiten"
-msgstr "Notizen bearbeiten"
+msgstr "Edit notes"
 
 msgid "Notizen, Kirchenbücher, Aufgaben und Digitalisate des Quell-Orts werden ins Ziel übernommen. Der Merge ist über das Backup rückgängig machbar."
-msgstr "Notizen, Kirchenbücher, Aufgaben und Digitalisate des Quell-Orts werden ins Ziel übernommen. Der Merge ist über das Backup rückgängig machbar."
+msgstr "Notes, church books, tasks and digitised items of the source place are carried over to the target. The merge can be undone via the backup."
 
 msgid "Nur Endorte"
-msgstr "Nur Endorte"
+msgstr "Leaf places only"
 
 msgid "Nur Endorte zeigen (Blätter der Hierarchie). Übergeordnete Ebenen wie „Amt Kirchheim\" oder „Württemberg\" werden ausgeblendet."
-msgstr "Nur Endorte zeigen (Blätter der Hierarchie). Übergeordnete Ebenen wie „Amt Kirchheim\" oder „Württemberg\" werden ausgeblendet."
+msgstr "Show leaf places only (leaves of the hierarchy). Higher levels such as “Amt Kirchheim” or “Württemberg” are hidden."
 
 msgid "Optional. Kostenlos beantragbar unter %s. Wird benötigt sobald DDB-API-Integration (Treffer + Dokumenten-Galerie) aktiv ist — aktuell nur Vorbereitung."
-msgstr "Optional. Kostenlos beantragbar unter %s. Wird benötigt sobald DDB-API-Integration (Treffer + Dokumenten-Galerie) aktiv ist — aktuell nur Vorbereitung."
+msgstr "Optional. Can be requested for free at %s. Needed once the DDB API integration (results + document gallery) is active – currently only in preparation."
 
 msgid "Ort"
-msgstr "Ort"
+msgstr "Place"
 
 msgid "Ort nicht gefunden"
-msgstr "Ort nicht gefunden"
+msgstr "Place not found"
 
 msgid "Ort umbenennen"
-msgstr "Ort umbenennen"
+msgstr "Rename place"
 
 msgid "Orte"
-msgstr "Orte"
+msgstr "Places"
 
 msgid "Orte zusammenführen"
-msgstr "Orte zusammenführen"
+msgstr "Merge places"
 
 msgid "Ortskarte"
-msgstr "Ortskarte"
+msgstr "Place map"
 
 msgid "Ortsregister"
 msgstr "Ortsregister"
 
 msgid "Ortsregister – Einstellungen"
-msgstr "Ortsregister – Einstellungen"
+msgstr "Ortsregister – settings"
 
 msgid "Person einfügen:"
-msgstr "Person einfügen:"
+msgstr "Insert individual:"
 
 msgid "Personen mit Ereignissen an diesem Ort"
-msgstr "Personen mit Ereignissen an diesem Ort"
+msgstr "Individuals with events at this place"
 
 msgid "Personen sichtbar"
-msgstr "Personen sichtbar"
+msgstr "Individuals visible"
 
 msgid "Pfarreien jenseits dieses Radius werden ignoriert. Default: 10 km. Mutter-Pfarreien können in dünn besiedelten Regionen weiter weg sein — dann Radius erhöhen."
-msgstr "Pfarreien jenseits dieses Radius werden ignoriert. Default: 10 km. Mutter-Pfarreien können in dünn besiedelten Regionen weiter weg sein — dann Radius erhöhen."
+msgstr "Parishes beyond this radius are ignored. Default: 10 km. Mother parishes can be farther away in sparsely populated regions – then increase the radius."
 
 msgid "Propagiert auf alle %s betroffenen Datensätze. Kuratierte Daten (Notizen, KB, GOV, Digitalisate) wandern mit."
-msgstr "Propagiert auf alle %s betroffenen Datensätze. Kuratierte Daten (Notizen, KB, GOV, Digitalisate) wandern mit."
+msgstr "Propagates to all %s affected records. Curated data (notes, church books, GOV, digitised items) is carried along."
 
 msgid "Quelle"
-msgstr "Quelle"
+msgstr "Source"
 
 msgid "Quelle (wird aufgelöst)"
-msgstr "Quelle (wird aufgelöst)"
+msgstr "Source (will be dissolved)"
 
 msgid "Rest jeder Liste wird in einem Klapper „Alle N anzeigen\" versteckt. Default Personen 10, Medien 5, Bilder 12."
-msgstr "Rest jeder Liste wird in einem Klapper „Alle N anzeigen\" versteckt. Default Personen 10, Medien 5, Bilder 12."
+msgstr "The rest of each list is hidden in a “Show all N” collapsible. Default individuals 10, media 5, images 12."
 
 msgid "Schließen"
-msgstr "Schließen"
+msgstr "Close"
 
 msgid "Sie haben keine Berechtigung für diese Seite."
-msgstr "Sie haben keine Berechtigung für diese Seite."
+msgstr "You do not have permission for this page."
 
 msgid "Speichern"
-msgstr "Speichern"
+msgstr "Save"
 
 msgid "Subtag-Konflikte"
-msgstr "Subtag-Konflikte"
+msgstr "Subtag conflicts"
 
 msgid "Suchen:"
-msgstr "Suchen:"
+msgstr "Search:"
 
 msgid "Tag"
 msgstr "Tag"
 
 msgid "Titel"
-msgstr "Titel"
+msgstr "Title"
 
 msgid "Todesfälle"
-msgstr "Todesfälle"
+msgstr "Deaths"
 
 msgid "Treffer aus der Deutschen Digitalen Bibliothek — Suchstaffel „Pfarrbericht\" → „Pfarr\" → „<Ortsname>\". Click öffnet den DDB-Eintrag."
-msgstr "Treffer aus der Deutschen Digitalen Bibliothek — Suchstaffel „Pfarrbericht\" → „Pfarr\" → „<Ortsname>\". Click öffnet den DDB-Eintrag."
+msgstr "Results from the German Digital Library – search cascade “Pfarrbericht” → “Pfarr” → “<place name>”. Click opens the DDB entry."
 
 msgid "Typ"
-msgstr "Typ"
+msgstr "Type"
 
 msgid "Umbenennen"
-msgstr "Umbenennen"
+msgstr "Rename"
 
 msgid "Verwaltungs-Hierarchie mit Zeitspannen (z.B. „Württemberg 1806–1813\"). Genealogisch sinnvoll."
-msgstr "Verwaltungs-Hierarchie mit Zeitspannen (z.B. „Württemberg 1806–1813\"). Genealogisch sinnvoll."
+msgstr "Administrative hierarchy with time spans (e.g. “Württemberg 1806–1813”). Genealogically useful."
 
 msgid "Verwaltungs-Zugehörigkeit zur Zeit %s — kann zu anderen Epochen abweichen."
-msgstr "Verwaltungs-Zugehörigkeit zur Zeit %s — kann zu anderen Epochen abweichen."
+msgstr "Administrative affiliation at the time of %s – may differ for other periods."
 
 msgid "Verwerfen"
-msgstr "Verwerfen"
+msgstr "Discard"
 
 msgid "Vor der Ausführung wird ein Backup als JSON unter modules_v4/ortsregister/backups/ geschrieben. Quell-Place wird automatisch entfernt sobald keine Referenzen mehr darauf zeigen."
-msgstr "Vor der Ausführung wird ein Backup als JSON unter modules_v4/ortsregister/backups/ geschrieben. Quell-Place wird automatisch entfernt sobald keine Referenzen mehr darauf zeigen."
+msgstr "Before execution, a JSON backup is written to modules_v4/ortsregister/backups/. The source place is removed automatically once no references point to it any more."
 
 msgid "Weitere Ereignisse"
-msgstr "Weitere Ereignisse"
+msgstr "Other events"
 
 msgid "Weitere Medien"
-msgstr "Weitere Medien"
+msgstr "Other media"
 
 msgid "Weitere Medien sichtbar"
-msgstr "Weitere Medien sichtbar"
+msgstr "Other media visible"
 
 msgid "Welche Buttons in der „Externe Ressourcen\"-Box auf der Ort-Detailseite angezeigt werden. Alle nutzen den Ortsnamen als Suchparameter."
-msgstr "Welche Buttons in der „Externe Ressourcen\"-Box auf der Ort-Detailseite angezeigt werden. Alle nutzen den Ortsnamen als Suchparameter."
+msgstr "Which buttons are shown in the “External resources” box on the place detail page. All use the place name as the search parameter."
 
 msgid "Wenn diese KB schon als Quelle im Tree existiert, hier auswählen. Dessen Titel ersetzt dann den oben eingegebenen."
-msgstr "Wenn diese KB schon als Quelle im Tree existiert, hier auswählen. Dessen Titel ersetzt dann den oben eingegebenen."
+msgstr "If this church book already exists as a source in the tree, select it here. Its title then replaces the one entered above."
 
 msgid "Wenn ein Ort GOV-Koordinaten hat, wird in der Quellen-Zeile automatisch ein Deep-Link auf die nächste Archion-Pfarrei gesetzt — auch ohne manuelle Pflege. Manueller Override via <code>_archion.json</code> oder <code>_archion-urls.json</code> hat weiter Vorrang."
-msgstr "Wenn ein Ort GOV-Koordinaten hat, wird in der Quellen-Zeile automatisch ein Deep-Link auf die nächste Archion-Pfarrei gesetzt — auch ohne manuelle Pflege. Manueller Override via <code>_archion.json</code> oder <code>_archion-urls.json</code> hat weiter Vorrang."
+msgstr "If a place has GOV coordinates, a deep link to the nearest Archion parish is set automatically in the sources line – even without manual maintenance. A manual override via <code>_archion.json</code> or <code>_archion-urls.json</code> still takes precedence."
 
 msgid "Wenn ein webtrees-Quellen-Datensatz verknüpft ist, hat dessen Titel Vorrang in der Anzeige."
-msgstr "Wenn ein webtrees-Quellen-Datensatz verknüpft ist, hat dessen Titel Vorrang in der Anzeige."
+msgstr "If a webtrees source record is linked, its title takes precedence in the display."
 
 msgid "Wikidata-Eintrag"
-msgstr "Wikidata-Eintrag"
+msgstr "Wikidata entry"
 
 msgid "Wikidata-Kandidaten mit größerer Entfernung werden verworfen — verhindert falsche Treffer bei Namensgleichheit (z.B. „Brackenheim, Indiana\"). Default 30."
-msgstr "Wikidata-Kandidaten mit größerer Entfernung werden verworfen — verhindert falsche Treffer bei Namensgleichheit (z.B. „Brackenheim, Indiana\"). Default 30."
+msgstr "Wikidata candidates with a greater distance are discarded – prevents false matches for identical names (e.g. “Brackenheim, Indiana”). Default 30."
 
 msgid "Wikimedia / Wikipedia"
 msgstr "Wikimedia / Wikipedia"
 
 msgid "Wikimedia-Lookup aktivieren (Hauptbild + Commons-Galerie auf Detailseiten)"
-msgstr "Wikimedia-Lookup aktivieren (Hauptbild + Commons-Galerie auf Detailseiten)"
+msgstr "Enable Wikimedia lookup (main image + Commons gallery on detail pages)"
 
 msgid "Wird geladen …"
-msgstr "Wird geladen …"
+msgstr "Loading …"
 
 msgid "Zeigt beide Ketten — historisch oben, aktuell darunter."
-msgstr "Zeigt beide Ketten — historisch oben, aktuell darunter."
+msgstr "Shows both chains – historical on top, current below."
 
 msgid "Ziel"
-msgstr "Ziel"
+msgstr "Target"
 
 msgid "Ziel (Default)"
-msgstr "Ziel (Default)"
+msgstr "Target (default)"
 
 msgid "Ziel (gewinnt)"
-msgstr "Ziel (gewinnt)"
+msgstr "Target (wins)"
 
 msgid "Zur Liste"
-msgstr "Zur Liste"
+msgstr "To the list"
 
 msgid "Zur Zeit %s — kann zu anderen Epochen abweichen."
-msgstr "Zur Zeit %s — kann zu anderen Epochen abweichen."
+msgstr "At the time of %s – may differ for other periods."
 
 msgid "_MENU_ Einträge"
-msgstr "_MENU_ Einträge"
+msgstr "_MENU_ entries"
 
 msgid "_START_–_END_ von _TOTAL_"
-msgstr "_START_–_END_ von _TOTAL_"
+msgstr "_START_–_END_ of _TOTAL_"
 
 msgid "aus PLAC-String"
-msgstr "aus PLAC-String"
+msgstr "from PLAC string"
 
 msgid "erl."
-msgstr "erl."
+msgstr "done"
 
 msgid "neu"
-msgstr "neu"
+msgstr "new"
 
 msgid "offen"
-msgstr "offen"
+msgstr "open"
 
 msgid "ohne Koordinaten"
-msgstr "ohne Koordinaten"
+msgstr "without coordinates"
 
 msgid "webtrees-Quelle verknüpfen (optional)"
-msgstr "webtrees-Quelle verknüpfen (optional)"
+msgstr "Link webtrees source (optional)"
 
 msgid "„Nur Endorte\" aktiv — es sind Orte ausgeblendet."
-msgstr "„Nur Endorte\" aktiv — es sind Orte ausgeblendet."
+msgstr "“Leaf places only” active – some places are hidden."
 
