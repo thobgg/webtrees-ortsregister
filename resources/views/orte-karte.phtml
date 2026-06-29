@@ -36,7 +36,7 @@ use Fisharebest\Webtrees\I18N;
             </span>
             <?php if ($anzahlOhneKoordinaten > 0) : ?>
                 <span class="badge bg-secondary fs-6 d-flex align-items-center gap-1">
-                    <i class="fas fa-map-marker-slash"></i>
+                    <i class="fas fa-ban"></i>
                     <?= I18N::number($anzahlOhneKoordinaten) ?> <?= I18N::translate('ohne Koordinaten') ?>
                 </span>
             <?php endif ?>

@@ -37,12 +37,18 @@ use RuntimeException;
  */
 class PlaceOperationService
 {
-    private const BACKUP_VERSION = 1;
+    // v2: Backup enthält zusätzlich die Sidecar-Sektionen (place_meta + Ordner-Manifest).
+    private const BACKUP_VERSION = 2;
+
+    /** Ab so vielen betroffenen Records warnt analyzeMerge vor dem Single-Transaction-Merge. */
+    private const LARGE_MERGE_WARN = 500;
 
     public function __construct(
         private readonly ApcuCacheService        $cache,
         private readonly GedcomPlaceManipulator  $manipulator,
         private readonly string                  $backupDir,
+        private readonly PlaceSidecarMerger      $sidecarMerger,
+        private readonly PlaceSidecarInventory   $inventory,
     ) {}
 
     // ---------------------------------------------------------------
@@ -86,8 +92,49 @@ class PlaceOperationService
         $warnings = [];
         if (isset($sourceSubtags['_LOC']) || isset($targetSubtags['_LOC'])) {
             $warnings[] = 'Beteiligte PLACs verweisen auf Vesta-_LOC-Records. '
-                . 'Mit dem Merge können _LOC-Records verwaisen — separate Aufräum-Operation in Phase 3+.';
+                . 'Mit dem Merge können _LOC-Records verwaisen — separate Aufräum-Operation später.';
         }
+
+        // Großer Merge: läuft in EINER Transaktion ohne Batching (Härtung #1
+        // offen) → bei sehr vielen Records droht Timeout/Speicher + Riesen-Backup.
+        if (count($affected) > self::LARGE_MERGE_WARN) {
+            $warnings[] = sprintf(
+                'Großer Merge: %d betroffene Datensätze. Das läuft in einer einzigen Transaktion '
+                . '(kein Batching) — bei sehr großen Orten droht Timeout/Speicher. Vorher den Baum '
+                . 'sichern; im Zweifel an einem kleineren Ort testen.',
+                count($affected),
+            );
+        }
+
+        // Degenerierter Merge: Quelle und Ziel unterscheiden sich nur durch
+        // Satzzeichen/Whitespace/Groß-/Kleinschreibung (z.B. "X" vs "X.").
+        // Das ist fast immer ein Tippfehler — ein Rename wäre richtig, nicht ein
+        // Merge (der einen Phantom-Ort als Ziel zementiert).
+        if ($this->nearIdentical($srcValue, $dstValue)) {
+            $warnings[] = sprintf(
+                'Quelle „%s" und Ziel „%s" unterscheiden sich nur durch Schreibweise/Satzzeichen — '
+                . 'das ist fast immer ein Tippfehler. Achte darauf, die KORREKTE Schreibweise als Ziel '
+                . '(gewinnt) zu wählen. Ein reines Umbenennen wäre hier sauberer als ein Merge.',
+                $srcValue,
+                $dstValue,
+            );
+        }
+
+        // Richtungs-Heuristik (rein mechanisch, keine Ortsbedeutung): Ziel mit
+        // weniger Hierarchie-Ebenen als die Quelle → der Merge entfernt diese
+        // Detailtiefe von den betroffenen Ereignissen.
+        if (substr_count($dstValue, ',') < substr_count($srcValue, ',')) {
+            $warnings[] = sprintf(
+                'Das Ziel „%s" hat weniger Hierarchie-Ebenen als die Quelle „%s" — beim Merge verlieren '
+                . 'die betroffenen Ereignisse diese Detailtiefe. Bitte prüfen, ob die Richtung stimmt.',
+                $dstValue,
+                $srcValue,
+            );
+        }
+
+        // Kuratorischer Bestand beider Seiten — für die Richtungs-Entscheidung.
+        $sourceSidecar = $this->inventory->forPlace($tree, $srcId, $this->leafName($tree, $srcId));
+        $targetSidecar = $this->inventory->forPlace($tree, $dstId, $this->leafName($tree, $dstId));
 
         return new MergeAnalysis(
             sourcePlaceId:    $srcId,
@@ -97,6 +144,8 @@ class PlaceOperationService
             affectedCounts:   $counts,
             conflicts:        $conflicts,
             warnings:         $warnings,
+            sourceSidecar:    $sourceSidecar,
+            targetSidecar:    $targetSidecar,
         );
     }
 
@@ -134,15 +183,32 @@ class PlaceOperationService
             }
         }
 
+        // Sidecar-Vorbedingungen VOR der Mutation erfassen — places/place_id
+        // ändern sich danach durch das Core-Reindexing.
+        $srcLeaf          = $this->leafName($tree, $srcId);
+        $dstLeaf          = $this->leafName($tree, $dstId);
+        $srcLeafAmbiguous = $this->leafAmbiguous($tree, $srcLeaf);
+        $dstLeafAmbiguous = $this->leafAmbiguous($tree, $dstLeaf);
+        $coordWarning     = ($this->hasCoordinates($srcLeaf) && !$this->hasCoordinates($dstLeaf))
+            ? sprintf(
+                'Die Quelle „%s" hatte Koordinaten, das Ziel „%s" nicht — sie werden nicht '
+                . 'übernommen. Bitte am Ziel neu setzen.',
+                $srcLeaf,
+                $dstLeaf,
+            )
+            : null;
+
         $result = DB::connection()->transaction(function () use (
             $tree, $srcId, $dstId, $srcValue, $dstValue,
-            $affected, $targetSubtags, $resolutions
+            $affected, $targetSubtags, $resolutions,
+            $srcLeaf, $dstLeaf, $srcLeafAmbiguous, $dstLeafAmbiguous, $coordWarning
         ): MergeResult {
             // Backup einsammeln (BEFORE-Snapshot der GEDCOM-Strings)
             $backup = $this->buildBackup($tree, $srcId, $dstId, $srcValue, $dstValue, $affected);
 
             // Modifikationen anwenden
             $modified = 0;
+            $afterMap = [];   // xref → Nach-Merge-GEDCOM (für Undo-Stale-Check)
             foreach ($affected as $entry) {
                 $record = $this->loadRecord($tree, $entry['xref'], $entry['type']);
                 if ($record === null) {
@@ -163,12 +229,32 @@ class PlaceOperationService
 
                 // GEDCOM-persistent: webtrees-Core schreibt + re-indexed alles
                 $record->updateRecord($newGedcom, false);
+                $afterMap[$entry['xref']] = $newGedcom;
                 $modified++;
             }
 
-            // Hook für Phase 4: kuratorische Schicht mit-mergen.
-            // Heute: Tabelle leer, 0-Rows-UPDATE.
-            $this->mergePlaceMeta($tree, $srcId, $dstId);
+            // Nach-Merge-Stand ins Backup — Undo prüft damit, ob ein Record
+            // seither verändert wurde (Schutz vor Überschreiben fremder Edits).
+            $this->annotateBackupAfterState($backup, $afterMap);
+
+            // Kuratorische Schicht mit-mergen (DB place_meta + Sidecar-Ordner).
+            // Schreibt die Vorher-Snapshots in die Backup-Sektionen für Undo.
+            $sidecar = $this->sidecarMerger->apply(
+                $tree,
+                $srcId,
+                $dstId,
+                $srcLeaf,
+                $dstLeaf,
+                $srcLeafAmbiguous,
+                $dstLeafAmbiguous,
+            );
+            $backup['sections']['place_meta'] = $sidecar['place_meta'];
+            $backup['sections']['folders']    = $sidecar['folders'];
+
+            $warnings = $sidecar['warnings'];
+            if ($coordWarning !== null) {
+                $warnings[] = $coordWarning;
+            }
 
             // Backup persistieren + Log
             $backupPath = $this->writeBackup($backup);
@@ -180,6 +266,127 @@ class PlaceOperationService
                 modifiedRecords: $modified,
                 backupPath:      $backupPath,
                 logId:           $logId,
+                warnings:        $warnings,
+            );
+        });
+
+        $this->cache->flush();
+        return $result;
+    }
+
+    /**
+     * Leichte Vorschau fürs Rename-Modal: aktueller voller PLAC-Wert (für
+     * korrektes Pre-Fill) + Anzahl betroffener Records.
+     *
+     * @return array{fullName: string, affectedCount: int}
+     */
+    public function analyzeRename(Tree $tree, int $srcId): array
+    {
+        return [
+            'fullName'      => $this->fullPlaceName($tree, $srcId),
+            'affectedCount' => count($this->findAffectedRecords($tree, $srcId)),
+        ];
+    }
+
+    /**
+     * Benennt einen Ort um: ersetzt seinen vollen PLAC-Wert durch einen NEUEN
+     * (noch nicht existierenden) Wert über ALLE seine Records. Reine Hygiene-Op
+     * ohne Ziel-Ort — der einfachste Fall der Sidecar-Move-Schicht (der Ordner
+     * wird komplett umbenannt). Reuse der GATE-Maschinerie (Backup-v2, Undo,
+     * Leaf-Wächter). Undo läuft über denselben undoMerge-Pfad.
+     *
+     * Existiert der neue Name bereits als Ort → das wäre ein Merge, kein Rename
+     * → Exception (zur Merge-Route lenken).
+     */
+    public function executeRename(Tree $tree, int $srcId, string $newValue): MergeResult
+    {
+        $this->assertAutoAcceptEdits();
+
+        $newValue = trim($newValue);
+        if ($newValue === '') {
+            throw new RuntimeException('Der neue Name darf nicht leer sein.');
+        }
+
+        $srcValue = $this->fullPlaceName($tree, $srcId);
+        if ($srcValue === '') {
+            throw new RuntimeException('Quell-Place nicht gefunden.');
+        }
+        if ($srcValue === $newValue) {
+            throw new RuntimeException('Der neue Name ist mit dem alten identisch — nichts zu tun.');
+        }
+        if ($this->placeIdByFullName($tree, $newValue) !== null) {
+            throw new RuntimeException(sprintf(
+                'Ein Ort „%s" existiert bereits — bitte zusammenführen (Merge) statt umbenennen.',
+                $newValue,
+            ));
+        }
+
+        $affected = $this->findAffectedRecords($tree, $srcId);
+        if ($affected === []) {
+            throw new RuntimeException('Quell-Place hat keine verlinkten Records.');
+        }
+
+        // Sidecar-Vorbedingungen VOR der Mutation erfassen.
+        $srcLeaf          = $this->leafName($tree, $srcId);
+        $newLeaf          = explode(', ', $newValue)[0];
+        $srcLeafAmbiguous = $this->leafAmbiguous($tree, $srcLeaf);
+        $newLeafCollides  = $this->leafExists($tree, $newLeaf); // Interims-Wächter (Memo Z.75)
+
+        $result = DB::connection()->transaction(function () use (
+            $tree, $srcId, $srcValue, $newValue, $affected,
+            $srcLeaf, $newLeaf, $srcLeafAmbiguous, $newLeafCollides
+        ): MergeResult {
+            // dst_value = newValue für korrektes Undo (Namens-Auflösung).
+            $backup = $this->buildBackup($tree, $srcId, $srcId, $srcValue, $newValue, $affected);
+            $backup['operation'] = 'rename';
+
+            $modified = 0;
+            $afterMap = [];
+            foreach ($affected as $entry) {
+                $record = $this->loadRecord($tree, $entry['xref'], $entry['type']);
+                if ($record === null) {
+                    continue;
+                }
+                $oldGedcom = $record->gedcom();
+                $newGedcom = $this->manipulator->replacePlacBlock($oldGedcom, $srcValue, $newValue, [], []);
+                if ($newGedcom === $oldGedcom) {
+                    continue;
+                }
+                $record->updateRecord($newGedcom, false);
+                $afterMap[$entry['xref']] = $newGedcom;
+                $modified++;
+            }
+            $this->annotateBackupAfterState($backup, $afterMap);
+
+            // Neue place_id steht erst NACH dem Rewrite fest (Reindex).
+            $newId = $this->placeIdByFullName($tree, $newValue);
+
+            $warnings = [];
+            if ($newId !== null) {
+                // Sidecar (Ordner + place_meta) vom alten an den neuen Namen ziehen.
+                // Ziel hat weder Ordner noch place_meta → reiner Ordner-rename + Row-Umhängen.
+                $sidecar = $this->sidecarMerger->apply(
+                    $tree, $srcId, $newId, $srcLeaf, $newLeaf,
+                    $srcLeafAmbiguous, $newLeafCollides,
+                );
+                $backup['sections']['place_meta'] = $sidecar['place_meta'];
+                $backup['sections']['folders']    = $sidecar['folders'];
+                $warnings = $sidecar['warnings'];
+            } else {
+                $warnings[] = 'Der umbenannte Ort konnte nicht aufgelöst werden — kuratierte Daten '
+                    . 'wurden nicht verschoben, bitte manuell prüfen.';
+            }
+
+            $backupPath = $this->writeBackup($backup);
+            $logId      = $this->insertLogEntry($tree, 'rename', $srcId, $newId ?? $srcId, $backupPath);
+
+            return new MergeResult(
+                sourcePlaceId:   $srcId,
+                targetPlaceId:   $newId ?? $srcId,
+                modifiedRecords: $modified,
+                backupPath:      $backupPath,
+                logId:           $logId,
+                warnings:        $warnings,
             );
         });
 
@@ -195,12 +402,43 @@ class PlaceOperationService
     {
         $this->assertAutoAcceptEdits();
 
-        $backup = $this->readBackup($backupPath);
-        if (($backup['version'] ?? 0) !== self::BACKUP_VERSION) {
+        $backup  = $this->readBackup($backupPath);
+        $version = (int) ($backup['version'] ?? 0);
+        if ($version < 1 || $version > self::BACKUP_VERSION) {
             throw new RuntimeException('Unbekannte Backup-Version: ' . ($backup['version'] ?? '?'));
         }
 
         $gedcomSection = $backup['sections']['gedcom']['affected_records'] ?? [];
+        $metaSection   = $backup['sections']['place_meta'] ?? null;
+        $folderSection = $backup['sections']['folders'] ?? null;
+
+        // Stale-Schutz (Härtungspunkt #2): wurde ein betroffener Record seit der
+        // Operation verändert? Dann würde der Restore fremde Edits überschreiben
+        // → ALL-OR-NOTHING-Abbruch, NICHTS wird angefasst. (Alte Backups ohne
+        // after_gedcom überspringen die Prüfung — kein Schutz, aber kein Fehler.)
+        $changed = [];
+        foreach ($gedcomSection as $entry) {
+            $after = $entry['after_gedcom'] ?? null;
+            if ($after === null) {
+                continue;
+            }
+            $record = $this->loadRecord($tree, $entry['xref'], $entry['type']);
+            if ($record !== null
+                && $this->canonicalGedcom($record->gedcom()) !== $this->canonicalGedcom((string) $after)
+            ) {
+                $changed[] = (string) $entry['xref'];
+            }
+        }
+        if ($changed !== []) {
+            throw new RuntimeException(sprintf(
+                'Rückgängig abgebrochen: %d Datensatz/Datensätze wurde(n) seit der Operation '
+                . 'geändert (%s) — ein Zurücksetzen würde diese Änderungen überschreiben. '
+                . 'Es wurde NICHTS verändert. Bei Bedarf manuell aus dem Backup wiederherstellen.',
+                count($changed),
+                implode(', ', array_slice($changed, 0, 5)) . (count($changed) > 5 ? ' …' : ''),
+            ));
+        }
+
         $restored = 0;
 
         DB::connection()->transaction(function () use ($tree, $gedcomSection, &$restored): void {
@@ -213,6 +451,20 @@ class PlaceOperationService
                 $restored++;
             }
         });
+
+        // Aktuelle place_id von Quelle/Ziel nach dem GEDCOM-Restore auflösen
+        // (Härtungspunkt #7: place_id driftet nach Reindex → nach NAME auflösen).
+        $srcIdNow = $this->placeIdByFullName($tree, (string) ($backup['src_value'] ?? ''));
+        $dstIdNow = $this->placeIdByFullName($tree, (string) ($backup['dst_value'] ?? ''));
+
+        // Sidecar zurückspielen (place_meta + Ordner). Nur v2-Backups haben das.
+        $this->sidecarMerger->restore(
+            $tree,
+            is_array($metaSection) ? $metaSection : null,
+            is_array($folderSection) ? $folderSection : null,
+            $srcIdNow,
+            $dstIdNow,
+        );
 
         $this->cache->flush();
         return $restored;
@@ -399,6 +651,41 @@ class PlaceOperationService
     }
 
     /**
+     * Trägt den Nach-Operation-GEDCOM-Stand je betroffenem Record ins Backup.
+     * Undo vergleicht damit gegen den Live-Stand und bricht ab, falls ein Record
+     * seither verändert wurde (Schutz vor Überschreiben fremder Edits, #2).
+     *
+     * @param array<string, mixed>  $backup
+     * @param array<string, string> $afterMap xref → GEDCOM nach der Operation
+     */
+    private function annotateBackupAfterState(array &$backup, array $afterMap): void
+    {
+        if (!isset($backup['sections']['gedcom']['affected_records'])
+            || !is_array($backup['sections']['gedcom']['affected_records'])
+        ) {
+            return;
+        }
+        foreach ($backup['sections']['gedcom']['affected_records'] as &$rec) {
+            $xref = $rec['xref'] ?? null;
+            if ($xref !== null && isset($afterMap[$xref])) {
+                $rec['after_gedcom'] = $afterMap[$xref];
+            }
+        }
+        unset($rec);
+    }
+
+    /**
+     * Normalisiert GEDCOM wie webtrees' updateRecord (Zeilenenden + trim) —
+     * für den stabilen Stale-Vergleich beim Undo. Merge schreibt mit
+     * update_chan=false (kein CHAN-Bump), also matcht der gespeicherte
+     * after-Stand exakt; ein späterer echter Edit bumpt CHAN → erkannt.
+     */
+    private function canonicalGedcom(string $gedcom): string
+    {
+        return trim((string) preg_replace('/[\r\n]+/', "\n", $gedcom));
+    }
+
+    /**
      * @param array<string, mixed> $backup
      */
     private function writeBackup(array $backup): string
@@ -449,22 +736,98 @@ class PlaceOperationService
     }
 
     // ---------------------------------------------------------------
-    // Hook für Phase 4: kuratorische Schicht
+    // Sidecar-Vorbedingungen (Blattname, Mehrdeutigkeit, Koordinaten)
     // ---------------------------------------------------------------
 
     /**
-     * Migriert place_meta-Einträge der Quelle ans Ziel.
-     *
-     * Phase 1: Tabelle leer, UPDATE betrifft 0 Zeilen.
-     * Phase 4: hier wird Konflikt-Resolve-Logik für HTML/Foto/Galerie/Links
-     * eingefügt (Vereinigung der akkumulierenden Felder, User-Entscheidung
-     * für skalare Felder wie Hauptfoto).
+     * Reverse-Lookup: voller Komma-Pfad → aktuelle place_id (oder null).
+     * Disambiguiert mehrdeutige Blattnamen über den vollen Pfad. Für Undo
+     * nötig, weil die place_id nach Reindex driftet (Härtungspunkt #7).
      */
-    private function mergePlaceMeta(Tree $tree, int $srcId, int $dstId): void
+    private function placeIdByFullName(Tree $tree, string $value): ?int
     {
-        DB::table('ortsregister_place_meta')
-            ->where('tree_id', '=', $tree->id())
-            ->where('place_id', '=', $srcId)
-            ->update(['place_id' => $dstId]);
+        if ($value === '') {
+            return null;
+        }
+        $leaf = explode(', ', $value)[0];
+        $rows = DB::table('places')
+            ->where('p_file', '=', $tree->id())
+            ->where('p_place', '=', $leaf)
+            ->select(['p_id'])
+            ->get();
+        foreach ($rows as $row) {
+            $id = (int) $row->p_id;
+            if ($this->fullPlaceName($tree, $id) === $value) {
+                return $id;
+            }
+        }
+        return null;
+    }
+
+    /** Blatt-Name (p_place) eines Place-Records — Schlüssel für den Sidecar-Ordner. */
+    private function leafName(Tree $tree, int $placeId): string
+    {
+        $row = DB::table('places')
+            ->where('p_id', '=', $placeId)
+            ->where('p_file', '=', $tree->id())
+            ->select(['p_place'])
+            ->first();
+        return $row !== null ? (string) $row->p_place : '';
+    }
+
+    /**
+     * Teilt mehr als ein Ort im Baum diesen Blattnamen? Dann ist die
+     * Ordner-Zuordnung (am Blattnamen gekeyt) nicht eindeutig → Ordner-Merge
+     * wird übersprungen (Interims-Wächter, siehe Konzept-Memo Entscheidung 1).
+     */
+    private function leafAmbiguous(Tree $tree, string $leaf): bool
+    {
+        if ($leaf === '') {
+            return false;
+        }
+        return DB::table('places')
+            ->where('p_file', '=', $tree->id())
+            ->where('p_place', '=', $leaf)
+            ->count() > 1;
+    }
+
+    /**
+     * Sind zwei PLAC-Werte „fast identisch" — gleich nach Trimmen, Whitespace-
+     * Normalisierung, Entfernen von Rand-Satzzeichen und Groß-/Kleinschreibung?
+     * Erkennt Tippfehler-Paare wie „X" vs „X." rein mechanisch (keine Semantik).
+     */
+    private function nearIdentical(string $a, string $b): bool
+    {
+        $norm = static function (string $s): string {
+            $s = preg_replace('/\s+/', ' ', trim($s)) ?? $s;
+            $s = trim($s, " \t.,;");
+            return mb_strtolower($s);
+        };
+        return $a !== $b && $norm($a) === $norm($b);
+    }
+
+    /** Existiert (mindestens) ein Ort mit diesem Blattnamen im Baum? */
+    private function leafExists(Tree $tree, string $leaf): bool
+    {
+        if ($leaf === '') {
+            return false;
+        }
+        return DB::table('places')
+            ->where('p_file', '=', $tree->id())
+            ->where('p_place', '=', $leaf)
+            ->exists();
+    }
+
+    /** Hat dieser Blattname Koordinaten in webtrees' place_location? */
+    private function hasCoordinates(string $leaf): bool
+    {
+        if ($leaf === '') {
+            return false;
+        }
+        return DB::table('place_location')
+            ->where('place', '=', $leaf)
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->exists();
     }
 }

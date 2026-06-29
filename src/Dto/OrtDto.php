@@ -31,7 +31,16 @@ final class OrtDto
 
         /** Längengrad aus place_location (null wenn keine Koordinaten) */
         public readonly float|null $laengengrad = null,
+
+        /** Verknüpfte GOV-ID aus ortsregister_place_meta (null wenn nicht verknüpft) */
+        public readonly ?string $govId = null,
     ) {}
+
+    /** Gibt true zurück, wenn der Ort mit einer GOV-ID verknüpft ist. */
+    public function hatGov(): bool
+    {
+        return $this->govId !== null && $this->govId !== '';
+    }
 
     /**
      * Gibt den Anzeigetext für Listen und Dropdowns zurück.

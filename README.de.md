@@ -7,12 +7,29 @@
 | | |
 |---|---|
 | Modul-Name | `ortsregister` |
-| Version | 0.1.0 (in Entwicklung) |
+| Version | 0.2.0-alpha (Alpha — für Tester) |
 | webtrees | 2.2.x |
 | PHP | 8.2 – 8.4 |
 | Lizenz | GPL-3.0-or-later |
 
 ---
+
+## ⚠️ Alpha — für Tester
+
+**Dieses Modul schreibt in deinen Stammbaum.** *Merge* und *Umbenennen* schreiben
+die `PLAC` betroffener Datensätze über die native webtrees-Edit-API um. Behandle es als **Alpha**:
+
+- **Vorher vollständigen GEDCOM-Export sichern** (Verwaltung → Stammbäume → Export)
+  — nicht nur das modul-eigene JSON-Backup pro Operation.
+- **An einer Kopie** deines Baums testen, nicht am Produktivbaum.
+- Mit Orten **mit wenigen Ereignissen** beginnen (große Merges laufen in einer
+  Transaktion und werden gewarnt).
+- Nach jeder Operation betroffene Personen **stichprobenartig prüfen**.
+- **Rückgängig** ist direkt nach einer Operation sicher; es **bricht ab**, wenn ein
+  betroffener Datensatz zwischenzeitlich geändert wurde — es überschreibt nie spätere Edits.
+- Erfordert die Benutzereinstellung **„Änderungen automatisch übernehmen"**
+  (Operationen umgehen den Moderations-Workflow).
+- Problem gefunden? Bitte ein **GitHub-Issue** öffnen.
 
 ## Idee
 

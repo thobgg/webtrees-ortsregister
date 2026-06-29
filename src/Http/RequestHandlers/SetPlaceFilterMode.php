@@ -43,7 +43,8 @@ class SetPlaceFilterMode implements RequestHandlerInterface
             // Cache invalidieren, sonst zeigt die nächste Anfrage alte Liste
             $this->cache->flush();
         } catch (Throwable $e) {
-            return $this->json(['success' => false, 'message' => $e->getMessage()], 500);
+            // Status 200 mit success:false — sonst HTML-Fehlerseite → „JSON.parse".
+            return $this->json(['success' => false, 'message' => $e->getMessage()], 200);
         }
 
         return $this->json(['success' => true, 'mode' => $mode], 200);
@@ -55,7 +56,7 @@ class SetPlaceFilterMode implements RequestHandlerInterface
     private function json(array $payload, int $status): ResponseInterface
     {
         return Registry::responseFactory()->response(
-            json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
+            (string) json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE),
             $status,
             ['Content-Type' => 'application/json; charset=UTF-8'],
         );

@@ -79,7 +79,7 @@ class OrteDataTable extends AbstractDataTableHandler
     {
         // Auswahl-Spalte: Q/Z-Radios für Merge + GOV-Verknüpfen-Button
         $auswahlHtml = sprintf(
-            '<div class="d-flex gap-1 align-items-center ortsregister-select" data-place-id="%1$d">'
+            '<div class="d-flex flex-wrap gap-1 align-items-center ortsregister-select" data-place-id="%1$d">'
             . '<input type="radio" class="btn-check ortsregister-src" name="ortsregister-src" '
             .   'id="src-%1$d" value="%1$d" autocomplete="off">'
             . '<label class="btn btn-sm btn-outline-warning" for="src-%1$d" title="Als Quelle">Q</label>'
@@ -87,8 +87,9 @@ class OrteDataTable extends AbstractDataTableHandler
             .   'id="dst-%1$d" value="%1$d" autocomplete="off">'
             . '<label class="btn btn-sm btn-outline-success" for="dst-%1$d" title="Als Ziel">Z</label>'
             . '<button type="button" class="btn btn-sm btn-outline-info ms-1 ortsregister-gov-btn" '
-            .   'data-place-id="%1$d" title="GOV-Verknüpfung">'
-            . '<i class="fas fa-globe"></i></button>'
+            .   'data-place-id="%1$d" title="GOV-Verknüpfung">GOV</button>'
+            . '<button type="button" class="btn btn-sm btn-outline-secondary ortsregister-rename-btn" '
+            .   'data-place-id="%1$d" title="Umbenennen">Name</button>'
             . '</div>',
             $ort->id,
         );
@@ -118,6 +119,11 @@ class OrteDataTable extends AbstractDataTableHandler
             ? '<i class="fas fa-map-marker-alt text-success" title="' . e(sprintf('%.4f, %.4f', $ort->breitengrad, $ort->laengengrad)) . '"></i>'
             : '<span class="text-muted">&mdash;</span>';
 
-        return [$auswahlHtml, $ortHtml, $ereignisseHtml, $koordinatenHtml];
+        // GOV-Status-Spalte: grüner Haken wenn verknüpft, sonst —
+        $govHtml = $ort->hatGov()
+            ? '<i class="fas fa-check text-success" title="' . e('GOV: ' . (string) $ort->govId) . '"></i>'
+            : '<span class="text-muted">&mdash;</span>';
+
+        return [$auswahlHtml, $ortHtml, $ereignisseHtml, $koordinatenHtml, $govHtml];
     }
 }

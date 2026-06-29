@@ -45,7 +45,7 @@ class OrteRepository
     public function alleOrte(Tree $tree, string $filter = '', string $mode = self::MODE_ALL): array
     {
         $mode     = $this->normalizeMode($mode);
-        $cacheKey = sprintf('orte:%d:%s:%s', $tree->id(), $mode, md5($filter));
+        $cacheKey = sprintf('orte2:%d:%s:%s', $tree->id(), $mode, md5($filter));
 
         return $this->cache->remember($cacheKey, function () use ($tree, $filter, $mode) {
             return $this->queryAlleOrte($tree, $filter, $mode);
@@ -76,7 +76,7 @@ class OrteRepository
      */
     public function findeOrtById(Tree $tree, int $id): ?OrtDto
     {
-        $cacheKey = sprintf('ort:%d:%d', $tree->id(), $id);
+        $cacheKey = sprintf('ort2:%d:%d', $tree->id(), $id);
 
         return $this->cache->remember($cacheKey, function () use ($tree, $id) {
             return $this->queryOrtById($tree, $id);
@@ -114,10 +114,51 @@ class OrteRepository
             ->orderBy('p.p_place')
             ->get();
 
+        // Voller Komma-Pfad je Ort — damit zwei Orte mit gleichem Blatt+Elternteil
+        // (z.B. "Brisbane, Queensland, Australia" vs "…Australia.") in der Liste
+        // unterscheidbar sind. Einmal pro (gecachtem) Listenaufbau berechnet.
+        $pathMap = $this->buildPathMap($tree);
+
         return $rows
-            ->map(fn (object $row) => $this->rowToDto($row))
+            ->map(fn (object $row) => $this->rowToDto($row, $pathMap[(int) $row->p_id] ?? null))
             ->values()
             ->all();
+    }
+
+    /**
+     * Baut p_id → vollen Komma-Pfad für alle Orte des Baums (in-memory-Walk,
+     * eine Query). Zyklus-geschützt.
+     *
+     * @return array<int, string>
+     */
+    private function buildPathMap(Tree $tree): array
+    {
+        $rows = DB::table('places')
+            ->where('p_file', '=', $tree->id())
+            ->select(['p_id', 'p_place', 'p_parent_id'])
+            ->get();
+
+        $byId = [];
+        foreach ($rows as $r) {
+            $byId[(int) $r->p_id] = [
+                'place'  => (string) $r->p_place,
+                'parent' => (int) $r->p_parent_id,
+            ];
+        }
+
+        $paths = [];
+        foreach ($byId as $id => $_unused) {
+            $parts = [];
+            $cur   = $id;
+            $seen  = [];
+            while ($cur > 0 && isset($byId[$cur]) && !isset($seen[$cur])) {
+                $seen[$cur] = true;
+                $parts[]    = $byId[$cur]['place'];
+                $cur        = $byId[$cur]['parent'];
+            }
+            $paths[$id] = implode(', ', $parts);
+        }
+        return $paths;
     }
 
     private function queryAnzahlOrte(Tree $tree, string $filter, string $mode): int
@@ -184,11 +225,16 @@ class OrteRepository
                      ->where('pl.pl_file', '=', $tree->id());
             })
             ->leftJoin('place_location AS loc', 'loc.place', '=', 'p.p_place')
+            ->leftJoin('ortsregister_place_meta AS meta', function ($join) use ($tree) {
+                $join->on('meta.place_id', '=', 'p.p_id')
+                     ->where('meta.tree_id', '=', $tree->id());
+            })
             ->where('p.p_file', '=', $tree->id())
             ->select([
                 'p.p_id',
                 'p.p_place',
                 'parent.p_place AS parent_place',
+                'meta.gov_id',
             ])
             ->selectRaw("COUNT(DISTINCT {$prefix}pl.pl_gid)  AS anzahl_ereignisse")
             ->selectRaw("MAX({$prefix}loc.latitude)  AS breitengrad")
@@ -197,6 +243,7 @@ class OrteRepository
                 'p.p_id',
                 'p.p_place',
                 'parent.p_place',
+                'meta.gov_id',
             );
     }
 
@@ -204,11 +251,16 @@ class OrteRepository
     // Mapping
     // ---------------------------------------------------------------
 
-    private function rowToDto(object $row): OrtDto
+    private function rowToDto(object $row, ?string $fullPath = null): OrtDto
     {
-        $pfad = $row->p_place;
-        if (isset($row->parent_place) && $row->parent_place !== null) {
-            $pfad .= ', ' . $row->parent_place;
+        if ($fullPath !== null && $fullPath !== '') {
+            $pfad = $fullPath;
+        } else {
+            // Fallback: Blatt + direktes Elternteil (z.B. Einzel-Lookup).
+            $pfad = $row->p_place;
+            if (isset($row->parent_place) && $row->parent_place !== null) {
+                $pfad .= ', ' . $row->parent_place;
+            }
         }
 
         return new OrtDto(
@@ -218,6 +270,7 @@ class OrteRepository
             anzahlEreignisse:   (int) ($row->anzahl_ereignisse ?? 0),
             breitengrad:        isset($row->breitengrad)  ? (float) $row->breitengrad  : null,
             laengengrad:        isset($row->laengengrad) ? (float) $row->laengengrad : null,
+            govId:              isset($row->gov_id) && $row->gov_id !== null ? (string) $row->gov_id : null,
         );
     }
 }
