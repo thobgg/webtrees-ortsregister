@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Dokumentation lesen
+    url: https://github.com/thobgg/webtrees-ortsregister/blob/main/README.de.md
+    about: Allgemeine Fragen? Erst die README (DE/EN) lesen, dann gern ein Issue öffnen.

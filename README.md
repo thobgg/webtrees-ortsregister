@@ -2,7 +2,11 @@
 
 🇬🇧 **English** · [🇩🇪 Deutsch](README.de.md)
 
-**Visual landing page per place with main photo, media linking and (planned) GOV integration.**
+**🏡 Your growing place archive for webtrees.** Every place in your family tree becomes
+an archive page that grows richer with each piece of research: digitised records, church
+books, sources, maps and a research log in one place.
+
+🌍 GOV-anchored · 🧹 spelling variants safely merged (preview · backup · undo) · 🔓 open formats, no lock-in.
 
 | | |
 |---|---|
@@ -31,29 +35,35 @@ of affected records through the native webtrees edit API. Treat it as **alpha**:
   bypass the moderation workflow).
 - Found a problem? Please open a **GitHub issue**.
 
-## Idea
+## What it does
 
-webtrees is strictly GEDCOM-conformant and only offers a very plain place
-administration. `Ortsregister` adds the **emotional, family-centric view** on places:
+**Every place in your family tree becomes an archive page that grows richer with each piece of research.** Whatever you gather about a village, a parish, a town collects in one place — permanent, ordered, findable.
 
-- **Visual landing page** per place: main photo, description, gallery
-- **Person events** at this place (births, marriages, deaths)
-- **Media linking**: associate photos with a place
-- **GOV integration** (planned): historical administrative hierarchy, parishes,
-  archive links – possibly via the Vesta module
+🗂️ **Your archive gets a home.** Digitised records, church books, sources, maps, notes and your research log — right where you look for them. No more finds scattered across folders, e-mails and sticky notes.
 
-The module **does not compete** with the standard webtrees places module or the
-Vesta module family, but focuses on the UX layer on top of them.
+🧹 **So your archive stays cleanly addressed.** “Brackenheim”, “Brakenheim”, “Brackenheim a.N.” — same place, three spellings? Ortsregister recognises places that belong together and merges them safely: with preview, full backup and undo. Your curated data travels along — no note, no scan is lost.
+
+🌍 **Watertight anchoring.** The GOV link connects your places to the official historical gazetteer: stable identifier, historical name variants, hierarchy and coordinates. Plus hits from Archion, the German Digital Library and Wikimedia, right on the place page.
+
+🔎 **Shows you where the work is.** Which places still lack coordinates? No GOV ID? Which look like duplicates? Ortsregister turns your place list into a work queue.
+
+🔓 **Your data stays your data.** Everything lives in the open standard of its kind — in the tree or as a readable file in the place folder. The database is just an index, rebuildable any time. No proprietary format, no vendor lock-in.
+
+The module **does not compete** with the standard webtrees places module or the Vesta family — it is the UX and archive layer on top.
 
 ## Feature list (current state)
 
-- List view of all places with server-side DataTables pagination
-- **Hierarchy filter** (see below): "All levels" vs. "Leaves only"
-- Full-text filter
+- Place list (server-side DataTables pagination, full-text filter)
+- **Hierarchy filter**: "All levels" vs. "Leaves only" (see below)
+- **GOV status column** + per-place GOV linking, GOV hierarchy on the detail page
 - Leaflet map with MarkerCluster
-- Place detail page with person/family lists
-- **Merge operation** with JSON backup, opaque subtag handling, suffix-match
-  across intermediate hierarchy levels
+- **Detail page** per place: event statistics (births/marriages/deaths), media gallery
+  with lightbox, notes/tasks/church-book log (Markdown)
+- **Place hygiene**: merge & rename with preview, JSON backup and undo; curated data
+  (notes/church books/GOV/digitised items) travels along
+- **External hits** on the detail page: Wikimedia/Commons, German Digital Library,
+  Archion auto parish lookup
+- **Coordinate import** from PLAC subtags into the webtrees `place_location` table
 
 ### Hierarchy filter
 
@@ -69,14 +79,26 @@ Only the leaves remain — typically the real localities. Persists per user
 Default: "All levels" (no data-loss feeling, conservative). Toggle above the
 list.
 
+## Known limitations (alpha)
+
+- **Same-named places share one data folder.** Two "Neustadt" on different hierarchy
+  levels use the same `media/orte/Neustadt/` folder. Merge/rename warns in this case
+  and skips the folder operation.
+- **Filesystem operations are not transactional.** If an operation aborts after the
+  GEDCOM change but during the folder move, the sidecar layer can be left inconsistent
+  (DB/GEDCOM roll back cleanly).
+- **Auto-accept required.** Merge/rename need "Automatically accept changes" and bypass
+  the moderation / pending-changes workflow.
+- **Very large merges** (e.g. whole countries) run in a single transaction without
+  batching — thousands of records risk timeout/memory (you are warned).
+- **Undo** is safe right after an operation; if a record changed since, it aborts
+  (overwrites nothing) — not a full version history.
+
 ## Roadmap
 
-| Step | Content |
-|---|---|
-| 1 | Own data model: `ortsregister_ort`, `ortsregister_ort_medium` |
-| 2 | Photo linking: 📍 button in lightbox "Assign to this place" |
-| 3 | Visual landing page with main photo and gallery |
-| 4 | GOV integration (standalone or via Vesta API) |
+Current feature state is in the [CHANGELOG](CHANGELOG.md). The alpha is gathering tester
+feedback; next up: record-level split (detaching single events from a collective place)
+and expanding duplicate detection.
 
 ## Requirements
 
