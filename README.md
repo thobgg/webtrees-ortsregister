@@ -110,7 +110,7 @@ ortsregister/
 │   └── Service/I18nService.php     ← Translation helper
 ├── resources/
 │   ├── menu-icon.png               ← Menu icon (transparent on-the-fly)
-│   ├── lang/de.po, en.po           ← Translations (de + en)
+│   ├── lang/de.po, en.po, nl.po    ← Translations (de + en + nl)
 │   └── views/                       ← orte.phtml, orte-karte.phtml, ort-detail.phtml
 └── docs/                            ← (later) screenshots and docs
 ```
@@ -133,9 +133,9 @@ ortsregister/
 
 ## Localisation
 
-The UI ships with **German and English** (`resources/lang/de.po`, `en.po`, 167
-strings each). webtrees picks the catalogue matching the user's language; `.mo`
-files are compiled on demand at runtime (and are git-ignored).
+The UI ships with **German, English and Dutch** (`resources/lang/de.po`, `en.po`,
+`nl.po`, 167 strings each). webtrees picks the catalogue matching the user's
+language; `.mo` files are compiled on demand at runtime (and are git-ignored).
 
 ## License
 

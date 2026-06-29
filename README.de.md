@@ -110,7 +110,7 @@ ortsregister/
 │   └── Service/I18nService.php        ← Übersetzung-Helper
 ├── resources/
 │   ├── menu-icon.png                  ← Menü-Icon (transparent on-the-fly)
-│   ├── lang/de.po, en.po              ← Übersetzungen (de + en)
+│   ├── lang/de.po, en.po, nl.po       ← Übersetzungen (de + en + nl)
 │   └── views/                          ← orte.phtml, orte-karte.phtml, ort-detail.phtml
 └── tests/                              ← PHPUnit 11
 ```
@@ -133,9 +133,9 @@ ortsregister/
 
 ## Lokalisierung
 
-Die Oberfläche liegt in **Deutsch und Englisch** vor (`resources/lang/de.po`,
-`en.po`, je 167 Strings). webtrees wählt anhand der Benutzersprache; `.mo`-Dateien
-werden zur Laufzeit kompiliert (und sind git-ignored).
+Die Oberfläche liegt in **Deutsch, Englisch und Niederländisch** vor
+(`resources/lang/de.po`, `en.po`, `nl.po`, je 167 Strings). webtrees wählt anhand
+der Benutzersprache; `.mo`-Dateien werden zur Laufzeit kompiliert (git-ignored).
 
 ## Lizenz
 

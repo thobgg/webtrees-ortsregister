@@ -30,6 +30,9 @@ class I18nService
         'en'    => 'en',
         'en_US' => 'en',
         'en_GB' => 'en',
+        'nl'    => 'nl',
+        'nl_NL' => 'nl',
+        'nl_BE' => 'nl',
     ];
 
     public function __construct(
