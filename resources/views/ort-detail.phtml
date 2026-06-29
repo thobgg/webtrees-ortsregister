@@ -397,21 +397,14 @@ foreach ($bilder as $medium) {
         <?php endif ?>
 
         <?php
-        // Forschung-Card kombiniert recherche.md + _tasks.json visuell in einer Card.
-        // Den recherche.md-Slot aus dem normalen Cards-Loop ausnehmen, separat rendern.
-        $rechercheSlot = null;
-        foreach ($note_slots as $s) {
-            if ($s['filename'] === 'recherche.md') { $rechercheSlot = $s; break; }
-        }
-        $regularSlots = array_filter($note_slots, fn($s) => $s['filename'] !== 'recherche.md' && ($s['html'] !== '' || $can_edit));
-        $showForschungCard = $can_edit
-            || $tasks !== []
-            || ($rechercheSlot !== null && $rechercheSlot['html'] !== '');
+        // Beschreibung + ggf. Custom-MD-Slots (notes.md ist Default, alle weiteren *.md die User
+        // angelegt hat erscheinen als zusätzliche Cards — z.B. pfarrer.md, schultes.md).
+        $visibleSlots = array_values(array_filter($note_slots, fn($s) => $s['html'] !== '' || $can_edit));
         ?>
-        <?php if ($regularSlots !== [] || $showForschungCard) : ?>
+        <?php if ($visibleSlots !== []) : ?>
         <div class="row g-3 mb-4">
-            <?php foreach ($regularSlots as $slot) : ?>
-                <div class="col-12 col-md-6">
+            <?php foreach ($visibleSlots as $slot) : ?>
+                <div class="col-12 <?= count($visibleSlots) > 1 ? 'col-md-6' : '' ?>">
                     <div class="card h-100">
                         <div class="card-header fw-semibold d-flex align-items-center">
                             <?= e($slot['title']) ?>
@@ -440,95 +433,6 @@ foreach ($bilder as $medium) {
                     </div>
                 </div>
             <?php endforeach ?>
-
-<?php if ($showForschungCard) : ?>
-                <div class="col-12 col-md-6">
-                    <div class="card h-100 ortsregister-tasks-card"
-                         data-tasks-url="<?= e(route('ortsregister.tasks.update', ['tree' => $tree->name(), 'place_id' => $place_id])) ?>"
-                         data-csrf="<?= e(csrf_token()) ?>">
-                        <div class="card-header fw-semibold d-flex align-items-center">
-                            <?= I18N::translate('Forschung') ?>
-                            <small class="text-muted ms-2" style="font-size:.7rem">
-                                <code>recherche.md</code> + <code>_tasks.json</code>
-                            </small>
-                            <span class="badge bg-secondary ms-auto ortsregister-tasks-counter">
-                                <?= (int) $task_counts['open'] ?> <?= I18N::translate('offen') ?>
-                                <?php if ((int) $task_counts['done'] > 0) : ?> / <?= (int) $task_counts['done'] ?> <?= I18N::translate('erl.') ?><?php endif ?>
-                            </span>
-                        </div>
-                        <div class="card-body p-0">
-                            <?php /* Oben: Recherche-Notizen (Markdown) */ ?>
-                            <?php if ($rechercheSlot !== null) : ?>
-                                <div class="p-3 border-bottom">
-                                    <div class="d-flex align-items-center mb-2">
-                                        <small class="text-muted text-uppercase fw-semibold" style="font-size:.7rem;letter-spacing:.05em">
-                                            <?= I18N::translate('Notizen') ?>
-                                        </small>
-                                        <?php if ($can_edit) : ?>
-                                            <button type="button" class="btn btn-sm btn-link p-0 ms-auto ortsregister-notes-edit-btn"
-                                                    data-filename="<?= e($rechercheSlot['filename']) ?>"
-                                                    data-title="<?= e($rechercheSlot['title']) ?>"
-                                                    data-placeholder="<?= e($rechercheSlot['placeholder']) ?>"
-                                                    data-markdown="<?= e($rechercheSlot['markdown']) ?>"
-                                                    data-mtime="<?= $rechercheSlot['mtime'] ?>"
-                                                    data-person-picker="<?= $rechercheSlot['person_picker'] ? '1' : '0' ?>"
-                                                    style="font-size:.8rem">
-                                                ✎ <?= I18N::translate('Bearbeiten') ?>
-                                            </button>
-                                        <?php endif ?>
-                                    </div>
-                                    <div class="ortsregister-prose" data-notes-display="<?= e($rechercheSlot['filename']) ?>" style="font-size:.92rem">
-                                        <?php if ($rechercheSlot['html'] !== '') : ?>
-                                            <?= $rechercheSlot['html'] ?>
-                                        <?php else : ?>
-                                            <p class="text-muted mb-0 fst-italic small">
-                                                <?= I18N::translate('Noch leer. „Bearbeiten" für Recherche-Notizen — Markdown, Personen via Picker.') ?>
-                                            </p>
-                                        <?php endif ?>
-                                    </div>
-                                </div>
-                            <?php endif ?>
-
-                            <?php /* Unten: strukturierte Aufgaben */ ?>
-                            <div class="px-3 pt-2 pb-1">
-                                <small class="text-muted text-uppercase fw-semibold" style="font-size:.7rem;letter-spacing:.05em">
-                                    <?= I18N::translate('Aufgaben') ?>
-                                </small>
-                            </div>
-                            <ul class="list-group list-group-flush ortsregister-tasks-list mb-0">
-                                <?php foreach ($tasks as $t) : ?>
-                                    <li class="list-group-item d-flex align-items-center gap-2 ortsregister-task" data-id="<?= e($t->id) ?>">
-                                        <input type="checkbox" class="form-check-input mt-0 ortsregister-task-toggle"
-                                               <?= $t->isOpen() ? '' : 'checked' ?>
-                                               <?= $can_edit ? '' : 'disabled' ?>>
-                                        <span class="ortsregister-task-text flex-grow-1<?= $t->isOpen() ? '' : ' text-muted text-decoration-line-through' ?>"
-                                              <?= $can_edit ? 'role="button" title="' . e(I18N::translate('Click zum Bearbeiten')) . '"' : '' ?>><?= e($t->text) ?></span>
-                                        <?php if ($can_edit) : ?>
-                                            <button type="button" class="btn btn-sm btn-link text-danger p-0 ortsregister-task-delete"
-                                                    style="opacity:.0; transition:opacity .15s" title="<?= e(I18N::translate('Löschen')) ?>">×</button>
-                                        <?php endif ?>
-                                    </li>
-                                <?php endforeach ?>
-                                <?php if ($tasks === []) : ?>
-                                    <li class="list-group-item text-muted fst-italic small">
-                                        <?= I18N::translate('Noch keine Aufgaben.') ?>
-                                    </li>
-                                <?php endif ?>
-                            </ul>
-                            <?php if ($can_edit) : ?>
-                                <div class="p-2 border-top">
-                                    <form class="d-flex gap-2 ortsregister-task-add-form" onsubmit="return false">
-                                        <input type="text"
-                                               class="form-control form-control-sm ortsregister-task-add-input"
-                                               placeholder="<?= e(I18N::translate('Neue Aufgabe — Enter zum Hinzufügen')) ?>">
-                                        <button type="submit" class="btn btn-sm btn-primary px-3">+</button>
-                                    </form>
-                                </div>
-                            <?php endif ?>
-                        </div>
-                    </div>
-                </div>
-            <?php endif ?>
         </div>
         <?php endif ?>
 
@@ -537,6 +441,79 @@ foreach ($bilder as $medium) {
         .ortsregister-task .ortsregister-task-delete:hover { opacity: 1 !important; }
         .ortsregister-task-text[role="button"]:hover { background: rgba(0,0,0,.04); border-radius: 3px; padding: 0 .25rem; margin: 0 -.25rem; }
         </style>
+
+        <?php
+        // ---- Kirchenbücher pro Ort (Phase 3T) ----
+        $showKbsCard = $can_edit || $kbs !== [];
+        ?>
+        <?php if ($showKbsCard) : ?>
+        <div class="card mb-4 ortsregister-kbs-card" data-collapsible data-card-key="kbs"
+             data-kbs-url="<?= e(route('ortsregister.kbs.update', ['tree' => $tree->name(), 'place_id' => $place_id])) ?>"
+             data-csrf="<?= e(csrf_token()) ?>"
+             data-tree-name="<?= e($tree->name()) ?>"
+             data-source-route="<?= e(route(\Fisharebest\Webtrees\Http\RequestHandlers\TomSelectSource::class, ['tree' => $tree->name(), 'at' => ''])) ?>">
+            <div class="card-header fw-semibold d-flex align-items-center">
+                <?= I18N::translate('Kirchenbücher') ?>
+                <span class="badge bg-secondary ms-2 ortsregister-kbs-counter"><?= count($kbs) ?></span>
+                <small class="text-muted ms-2" style="font-size:.7rem"><code>_kb_list.json</code></small>
+                <?php if ($can_edit) : ?>
+                    <button type="button" class="btn btn-sm btn-outline-primary ms-auto ortsregister-kb-add-btn">
+                        + <?= I18N::translate('KB hinzufügen') ?>
+                    </button>
+                <?php endif ?>
+            </div>
+            <div class="card-body">
+                <?php if ($kbs === []) : ?>
+                    <p class="text-muted fst-italic mb-0 small">
+                        <?= I18N::translate('Noch keine KB-Einträge. „+ KB hinzufügen" zum Anlegen.') ?>
+                    </p>
+                <?php endif ?>
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-2 ortsregister-kbs-grid">
+                    <?php foreach ($kbs as $kbRow) : $kb = $kbRow['kb']; ?>
+                        <div class="col">
+                            <div class="border rounded p-2 h-100 ortsregister-kb-tile"
+                                 data-kb-id="<?= e($kb->id) ?>"
+                                 data-kb-title="<?= e($kb->title) ?>"
+                                 data-kb-type="<?= e($kb->type) ?>"
+                                 data-kb-year-from="<?= $kb->yearFrom ?? '' ?>"
+                                 data-kb-year-to="<?= $kb->yearTo ?? '' ?>"
+                                 data-kb-archion-url="<?= e($kb->archionUrl ?? '') ?>"
+                                 data-kb-sour-xref="<?= e($kb->sourXref ?? '') ?>">
+                                <div class="d-flex align-items-start gap-2">
+                                    <div class="flex-grow-1 min-w-0">
+                                        <div class="fw-semibold text-truncate" title="<?= e($kbRow['display_title']) ?>"><?= e($kbRow['display_title']) ?></div>
+                                        <div class="small text-muted">
+                                            <?= e(\Ortsregister\Dto\PlaceKb::TYPES[$kb->type] ?? $kb->type) ?>
+                                            <?php $ts = $kb->timespanLabel(); ?>
+                                            <?php if ($ts !== '') : ?> · <?= e($ts) ?><?php endif ?>
+                                        </div>
+                                        <div class="d-flex gap-2 mt-1 small">
+                                            <?php if ($kb->archionUrl !== null) : ?>
+                                                <a href="<?= e($kb->archionUrl) ?>" target="_blank" rel="noopener" class="text-decoration-none" title="Archion-Deep-Link">📖 Archion</a>
+                                            <?php endif ?>
+                                            <?php if ($kb->sourXref !== null) : ?>
+                                                <a href="<?= e(route(\Fisharebest\Webtrees\Http\RequestHandlers\SourcePage::class, ['tree' => $tree->name(), 'xref' => $kb->sourXref])) ?>"
+                                                   target="_blank" class="text-decoration-none" title="webtrees-Quelle">🌳 <?= e($kb->sourXref) ?></a>
+                                            <?php endif ?>
+                                            <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none ms-auto ortsregister-kb-log-btn" title="Logbuch öffnen">
+                                                📓 <?= $kbRow['has_log'] ? I18N::translate('Logbuch') : I18N::translate('Logbuch +') ?>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <?php if ($can_edit) : ?>
+                                        <div class="d-flex flex-column gap-1">
+                                            <button type="button" class="btn btn-sm btn-link p-0 ortsregister-kb-edit-btn" title="Bearbeiten">✎</button>
+                                            <button type="button" class="btn btn-sm btn-link text-danger p-0 ortsregister-kb-delete-btn" title="Löschen">×</button>
+                                        </div>
+                                    <?php endif ?>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach ?>
+                </div>
+            </div>
+        </div>
+        <?php endif ?>
 
         <?php if ($folder_files !== []) : ?>
         <?php
@@ -644,6 +621,55 @@ foreach ($bilder as $medium) {
         // Wikipedia/Commons-Galerie (3J-1) liefert in der Zwischenzeit Bilder
         // VOM Ort.
         ?>
+
+        <?php /* Aufgaben — eigene Card, weniger prominent als KB-Kacheln. Für non-KB-bound Tasks (Friedhof besuchen, Stadtarchiv anfragen etc.) */ ?>
+        <?php $showTasksCard = $can_edit || $tasks !== []; ?>
+        <?php if ($showTasksCard) : ?>
+        <div class="card mb-4 ortsregister-tasks-card" data-collapsible data-card-key="aufgaben"
+             data-tasks-url="<?= e(route('ortsregister.tasks.update', ['tree' => $tree->name(), 'place_id' => $place_id])) ?>"
+             data-csrf="<?= e(csrf_token()) ?>">
+            <div class="card-header fw-semibold d-flex align-items-center">
+                <?= I18N::translate('Aufgaben') ?>
+                <small class="text-muted ms-2" style="font-size:.7rem"><code>_tasks.json</code></small>
+                <span class="badge bg-secondary ms-2 ortsregister-tasks-counter">
+                    <?= (int) $task_counts['open'] ?> <?= I18N::translate('offen') ?>
+                    <?php if ((int) $task_counts['done'] > 0) : ?> / <?= (int) $task_counts['done'] ?> <?= I18N::translate('erl.') ?><?php endif ?>
+                </span>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush ortsregister-tasks-list mb-0">
+                    <?php foreach ($tasks as $t) : ?>
+                        <li class="list-group-item d-flex align-items-center gap-2 ortsregister-task" data-id="<?= e($t->id) ?>">
+                            <input type="checkbox" class="form-check-input mt-0 ortsregister-task-toggle"
+                                   <?= $t->isOpen() ? '' : 'checked' ?>
+                                   <?= $can_edit ? '' : 'disabled' ?>>
+                            <span class="ortsregister-task-text flex-grow-1<?= $t->isOpen() ? '' : ' text-muted text-decoration-line-through' ?>"
+                                  <?= $can_edit ? 'role="button" title="' . e(I18N::translate('Click zum Bearbeiten')) . '"' : '' ?>><?= e($t->text) ?></span>
+                            <?php if ($can_edit) : ?>
+                                <button type="button" class="btn btn-sm btn-link text-danger p-0 ortsregister-task-delete"
+                                        style="opacity:.0; transition:opacity .15s" title="<?= e(I18N::translate('Löschen')) ?>">×</button>
+                            <?php endif ?>
+                        </li>
+                    <?php endforeach ?>
+                    <?php if ($tasks === []) : ?>
+                        <li class="list-group-item text-muted fst-italic small">
+                            <?= I18N::translate('Noch keine Aufgaben — für Vor-Ort-Aktionen, externe Anfragen, Online-Recherche etc. KB-bezogene Aufgaben gehören ins KB-Logbuch.') ?>
+                        </li>
+                    <?php endif ?>
+                </ul>
+                <?php if ($can_edit) : ?>
+                    <div class="p-2 border-top">
+                        <form class="d-flex gap-2 ortsregister-task-add-form" onsubmit="return false">
+                            <input type="text"
+                                   class="form-control form-control-sm ortsregister-task-add-input"
+                                   placeholder="<?= e(I18N::translate('Neue Aufgabe — Enter zum Hinzufügen')) ?>">
+                            <button type="submit" class="btn btn-sm btn-primary px-3">+</button>
+                        </form>
+                    </div>
+                <?php endif ?>
+            </div>
+        </div>
+        <?php endif ?>
 
         <?php if ($wiki->galerie !== []) : ?>
         <div class="card mb-4" data-collapsible data-card-key="wikimedia">
@@ -831,6 +857,93 @@ foreach ($bilder as $medium) {
 </div>
 
 <?php if ($ort !== null && $tree !== null && $can_edit) : ?>
+<!-- KB-Edit-Modal (Phase 3T) -->
+<div class="modal fade" id="ortsregister-kb-edit-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><?= I18N::translate('Kirchenbuch') ?> — <span id="ortsregister-kb-edit-title-suffix"><?= I18N::translate('neu') ?></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="ortsregister-kb-edit-form" onsubmit="return false">
+                    <input type="hidden" id="ortsregister-kb-edit-id" value="">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label"><?= I18N::translate('Titel') ?> *</label>
+                            <input type="text" class="form-control" id="ortsregister-kb-edit-title" required
+                                   placeholder="z.B. KB Brackenheim Taufen 1700-1750">
+                            <div class="form-text"><?= I18N::translate('Wenn ein webtrees-Quellen-Datensatz verknüpft ist, hat dessen Titel Vorrang in der Anzeige.') ?></div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label"><?= I18N::translate('Typ') ?></label>
+                            <select class="form-select" id="ortsregister-kb-edit-type">
+                                <?php foreach (\Ortsregister\Dto\PlaceKb::TYPES as $val => $label) : ?>
+                                    <option value="<?= e($val) ?>"><?= e($label) ?></option>
+                                <?php endforeach ?>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label"><?= I18N::translate('Jahr von') ?></label>
+                            <input type="number" class="form-control" id="ortsregister-kb-edit-year-from" min="1000" max="2100" placeholder="z.B. 1700">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label"><?= I18N::translate('Jahr bis') ?></label>
+                            <input type="number" class="form-control" id="ortsregister-kb-edit-year-to" min="1000" max="2100" placeholder="z.B. 1750">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label"><?= I18N::translate('Archion-URL (optional)') ?></label>
+                            <input type="url" class="form-control" id="ortsregister-kb-edit-archion-url"
+                                   placeholder="https://www.archion.de/...">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label"><?= I18N::translate('webtrees-Quelle verknüpfen (optional)') ?></label>
+                            <?= view('components/select-source', [
+                                'id'     => 'ortsregister-kb-edit-sour',
+                                'name'   => 'ortsregister-kb-edit-sour',
+                                'tree'   => $tree,
+                                'source' => null,
+                            ]) ?>
+                            <div class="form-text"><?= I18N::translate('Wenn diese KB schon als Quelle im Tree existiert, hier auswählen. Dessen Titel ersetzt dann den oben eingegebenen.') ?></div>
+                        </div>
+                    </div>
+                    <div id="ortsregister-kb-edit-status" class="small mt-2"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?= I18N::translate('Abbrechen') ?></button>
+                <button type="button" class="btn btn-primary" id="ortsregister-kb-edit-save"><?= I18N::translate('Speichern') ?></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- KB-Logbuch-Modal (Phase 3T) -->
+<div class="modal fade" id="ortsregister-kb-log-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><?= I18N::translate('Logbuch') ?> — <span id="ortsregister-kb-log-title-suffix"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="ortsregister-kb-log-id" value="">
+                <textarea id="ortsregister-kb-log-textarea" class="form-control" rows="14"
+                          style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .9rem"
+                          placeholder="## 2026-06-15&#10;- Hans Fischer gesucht in 1700-1715, nichts gefunden&#10;&#10;## 2026-06-22&#10;- Anna Müller, Taufe 1715 gefunden"></textarea>
+                <div class="form-text mt-2">
+                    <?= I18N::translate('Markdown + GFM-Task-Lists. Datei: <code>_kb_&lt;id&gt;.md</code> im Ortsordner.') ?>
+                </div>
+                <div id="ortsregister-kb-log-status" class="small mt-2"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?= I18N::translate('Schließen') ?></button>
+                <button type="button" class="btn btn-primary" id="ortsregister-kb-log-save"><?= I18N::translate('Speichern') ?></button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="ortsregister-notes-modal" tabindex="-1" aria-hidden="true"
      data-save-url="<?= e(route('ortsregister.notes.save', ['tree' => $tree->name(), 'place_id' => $place_id])) ?>"
      data-toggle-url="<?= e(route('ortsregister.notes.toggle-task', ['tree' => $tree->name(), 'place_id' => $place_id])) ?>"
@@ -1362,6 +1475,168 @@ foreach ($bilder as $medium) {
                 if (ev.key === 'Escape') { commit(false); }
             });
             input.addEventListener('blur', () => commit(true));
+        }
+    });
+})();
+</script>
+<?php endif ?>
+
+<?php if ($ort !== null && $tree !== null && $can_edit) : ?>
+<script>
+// ---- KB-Kacheln Phase 3T ----
+(function () {
+    const card = document.querySelector('.ortsregister-kbs-card');
+    if (!card) return;
+    const kbsUrl = card.dataset.kbsUrl;
+    const csrf   = card.dataset.csrf;
+
+    const editModalEl = document.getElementById('ortsregister-kb-edit-modal');
+    const logModalEl  = document.getElementById('ortsregister-kb-log-modal');
+    let bsEdit = null, bsLog = null;
+    const getEdit = () => bsEdit ??= new bootstrap.Modal(editModalEl);
+    const getLog  = () => bsLog  ??= new bootstrap.Modal(logModalEl);
+
+    // Edit-Form-Refs
+    const fId        = document.getElementById('ortsregister-kb-edit-id');
+    const fTitle     = document.getElementById('ortsregister-kb-edit-title');
+    const fType      = document.getElementById('ortsregister-kb-edit-type');
+    const fYearFrom  = document.getElementById('ortsregister-kb-edit-year-from');
+    const fYearTo    = document.getElementById('ortsregister-kb-edit-year-to');
+    const fArchion   = document.getElementById('ortsregister-kb-edit-archion-url');
+    const fSour      = document.getElementById('ortsregister-kb-edit-sour');
+    const titleSuffix= document.getElementById('ortsregister-kb-edit-title-suffix');
+    const editStatus = document.getElementById('ortsregister-kb-edit-status');
+    const saveBtn    = document.getElementById('ortsregister-kb-edit-save');
+
+    // Log-Modal-Refs
+    const logId       = document.getElementById('ortsregister-kb-log-id');
+    const logTextarea = document.getElementById('ortsregister-kb-log-textarea');
+    const logTitleSuf = document.getElementById('ortsregister-kb-log-title-suffix');
+    const logStatus   = document.getElementById('ortsregister-kb-log-status');
+    const logSaveBtn  = document.getElementById('ortsregister-kb-log-save');
+
+    function fillEditForm(data) {
+        fId.value       = data.id || '';
+        fTitle.value    = data.title || '';
+        fType.value     = data.type || 'sonstige';
+        fYearFrom.value = data.year_from || '';
+        fYearTo.value   = data.year_to || '';
+        fArchion.value  = data.archion_url || '';
+        if (fSour.tomselect) fSour.tomselect.clear();
+        if (data.sour_xref) {
+            if (fSour.tomselect) {
+                fSour.tomselect.addOption({ value: data.sour_xref, text: data.sour_xref });
+                fSour.tomselect.setValue(data.sour_xref);
+            } else {
+                fSour.value = data.sour_xref;
+            }
+        }
+        editStatus.textContent = '';
+    }
+
+    async function send(action, params) {
+        const fd = new FormData();
+        fd.append('action', action);
+        for (const k in params) fd.append(k, params[k] ?? '');
+        const r = await fetch(kbsUrl, { method: 'POST', body: fd, headers: { 'X-CSRF-TOKEN': csrf }});
+        return r.json();
+    }
+
+    // Add-Button
+    card.querySelector('.ortsregister-kb-add-btn')?.addEventListener('click', () => {
+        fillEditForm({});
+        titleSuffix.textContent = 'neu';
+        getEdit().show();
+    });
+
+    // Edit / Delete / Log (Event-Delegation auf der Card)
+    card.addEventListener('click', async (e) => {
+        const tile = e.target.closest('.ortsregister-kb-tile');
+        if (!tile) return;
+        const editBtn   = e.target.closest('.ortsregister-kb-edit-btn');
+        const deleteBtn = e.target.closest('.ortsregister-kb-delete-btn');
+        const logBtn    = e.target.closest('.ortsregister-kb-log-btn');
+
+        if (editBtn) {
+            fillEditForm({
+                id:          tile.dataset.kbId,
+                title:       tile.dataset.kbTitle,
+                type:        tile.dataset.kbType,
+                year_from:   tile.dataset.kbYearFrom,
+                year_to:     tile.dataset.kbYearTo,
+                archion_url: tile.dataset.kbArchionUrl,
+                sour_xref:   tile.dataset.kbSourXref,
+            });
+            titleSuffix.textContent = tile.dataset.kbTitle.substring(0, 40);
+            getEdit().show();
+            return;
+        }
+        if (deleteBtn) {
+            if (!confirm('Diesen KB-Eintrag und sein Logbuch wirklich löschen?')) return;
+            const data = await send('delete', { id: tile.dataset.kbId });
+            if (data.success) location.reload();
+            else alert(data.message || 'Fehler');
+            return;
+        }
+        if (logBtn) {
+            logId.value = tile.dataset.kbId;
+            logTitleSuf.textContent = tile.dataset.kbTitle.substring(0, 40);
+            logStatus.textContent = '';
+            logTextarea.value = '…';
+            const data = await send('read-log', { id: tile.dataset.kbId });
+            if (data.success) {
+                logTextarea.value = data.markdown || '';
+            } else {
+                logTextarea.value = '';
+                logStatus.innerHTML = '<span class="text-danger">' + (data.message || 'Fehler') + '</span>';
+            }
+            getLog().show();
+        }
+    });
+
+    // Save Edit
+    saveBtn.addEventListener('click', async () => {
+        if (!fTitle.value.trim()) { editStatus.innerHTML = '<span class="text-danger">Titel erforderlich.</span>'; return; }
+        saveBtn.disabled = true;
+        const action = fId.value === '' ? 'add' : 'edit';
+        const params = {
+            id:          fId.value,
+            title:       fTitle.value,
+            type:        fType.value,
+            year_from:   fYearFrom.value,
+            year_to:     fYearTo.value,
+            archion_url: fArchion.value,
+            sour_xref:   fSour.value || '',
+        };
+        try {
+            const data = await send(action, params);
+            if (data.success) {
+                location.reload(); // einfach + zuverlässig — Tile-Daten + Sortierung
+            } else {
+                editStatus.innerHTML = '<span class="text-danger">' + (data.message || 'Fehler') + '</span>';
+            }
+        } catch (err) {
+            editStatus.innerHTML = '<span class="text-danger">Netzwerkfehler: ' + err + '</span>';
+        } finally {
+            saveBtn.disabled = false;
+        }
+    });
+
+    // Save Logbuch
+    logSaveBtn.addEventListener('click', async () => {
+        logSaveBtn.disabled = true;
+        try {
+            const data = await send('save-log', { id: logId.value, markdown: logTextarea.value });
+            if (data.success) {
+                getLog().hide();
+                location.reload(); // Indikator "📓 Logbuch" / "📓 Logbuch +" aktualisieren
+            } else {
+                logStatus.innerHTML = '<span class="text-danger">' + (data.message || 'Fehler') + '</span>';
+            }
+        } catch (err) {
+            logStatus.innerHTML = '<span class="text-danger">Netzwerkfehler: ' + err + '</span>';
+        } finally {
+            logSaveBtn.disabled = false;
         }
     });
 })();

@@ -14,6 +14,7 @@ use Ortsregister\Service\GovLinkingService;
 use Ortsregister\Service\PlaceEventCounter;
 use Ortsregister\Service\ArchionLinker;
 use Ortsregister\Service\PlaceFolderScanner;
+use Ortsregister\Service\PlaceKbListService;
 use Ortsregister\Service\PlaceNotesService;
 use Ortsregister\Service\PlaceTasksService;
 use Ortsregister\Service\WikimediaPlaceClient;
@@ -43,6 +44,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
         private readonly PlaceNotesService    $notesService,
         private readonly ArchionLinker        $archionLinker,
         private readonly PlaceTasksService    $tasksService,
+        private readonly PlaceKbListService   $kbService,
         private readonly OrtsregisterModule   $module,
     ) {}
 
@@ -83,6 +85,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
                 'archion_url'  => null,
                 'tasks'        => [],
                 'task_counts'  => ['open' => 0, 'done' => 0],
+                'kbs'          => [],
                 'can_edit'     => false,
                 'module'       => $this->module,
             ], $defaults));
@@ -111,6 +114,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
                 'archion_url'  => null,
                 'tasks'        => [],
                 'task_counts'  => ['open' => 0, 'done' => 0],
+                'kbs'          => [],
                 'can_edit'     => false,
                 'module'       => $this->module,
             ], $defaults));
@@ -186,11 +190,8 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
                 'placeholder' => "# " . $ort->name . "\n\nKurze Beschreibung des Orts, historische/geografische Hinweise, Kirchen-/Pfarrei-Zugehörigkeit…",
                 'person_picker' => false,
             ],
-            'recherche.md' => [
-                'title'       => \Fisharebest\Webtrees\I18N::translate('Forschungs-Notizen'),
-                'placeholder' => "## Was ich gefunden / gemacht habe\n\n- Hans Müller [I123] gefunden in KB Taufen 1715\n- Friedhof besucht 2026-06-28\n\n## Hinweise / Fragen\n\n- *Warum heißt das Dorf eigentlich so?*\n",
-                'person_picker' => true,
-            ],
+            // recherche.md ist nach Phase 3T (KB-Kacheln) KEIN Default-Slot mehr.
+            // Wird als Custom-MD-Slot weiter unten angezeigt falls User-File existiert.
         ];
         $extraSlots = [];
         try {
@@ -247,6 +248,33 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
             }
         } catch (Throwable) {}
 
+        // Kirchenbücher pro Ort (Modul-eigene Liste + optional SOUR-verlinkt)
+        $kbs = [];
+        try {
+            $rawKbs = $this->kbService->read($tree, $ort->name);
+            // chronologisch sortieren (yearFrom asc, null ans Ende)
+            usort($rawKbs, function ($a, $b) {
+                $av = $a->yearFrom ?? PHP_INT_MAX;
+                $bv = $b->yearFrom ?? PHP_INT_MAX;
+                return $av <=> $bv;
+            });
+            foreach ($rawKbs as $kb) {
+                // Tree-Titel hat Vorrang wenn SOUR verknüpft + existent
+                $displayTitle = $kb->title;
+                if ($kb->sourXref !== null) {
+                    $sour = \Fisharebest\Webtrees\Registry::sourceFactory()->make($kb->sourXref, $tree);
+                    if ($sour !== null) {
+                        $displayTitle = strip_tags((string) $sour->fullName());
+                    }
+                }
+                $kbs[] = [
+                    'kb'            => $kb,
+                    'display_title' => $displayTitle,
+                    'has_log'       => $this->kbService->readLogbook($tree, $ort->name, $kb->id) !== '',
+                ];
+            }
+        } catch (Throwable) {}
+
         return $this->viewResponse($this->viewName('ort-detail'), array_merge([
             'title'        => $ort->name,
             'tree'         => $tree,
@@ -266,6 +294,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
             'archion_url'  => $archionUrl,
             'tasks'        => $tasks,
             'task_counts'  => $taskCounts,
+            'kbs'          => $kbs,
             'can_edit'     => \Fisharebest\Webtrees\Auth::isEditor($tree),
             'module'       => $this->module,
         ], $defaults));

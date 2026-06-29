@@ -10,6 +10,7 @@ use Ortsregister\Http\RequestHandlers\CoordinateImportPage;
 use Ortsregister\Http\RequestHandlers\PlaceFileServe;
 use Ortsregister\Http\RequestHandlers\PlaceNotesSave;
 use Ortsregister\Http\RequestHandlers\PlaceNotesToggleTask;
+use Ortsregister\Http\RequestHandlers\PlaceKbsUpdate;
 use Ortsregister\Http\RequestHandlers\PlaceTasksUpdate;
 use Ortsregister\Http\RequestHandlers\GovLinkPage;
 use Ortsregister\Http\RequestHandlers\MergeExecute;
@@ -30,6 +31,7 @@ use Ortsregister\Service\PlaceEventCounter;
 use Ortsregister\Service\ArchionLinker;
 use Ortsregister\Service\PlaceFolderScanner;
 use Ortsregister\Service\PlaceNotesService;
+use Ortsregister\Service\PlaceKbListService;
 use Ortsregister\Service\PlaceTasksService;
 use Ortsregister\Service\PlaceOperationService;
 use Ortsregister\Service\WikimediaPlaceClient;
@@ -141,6 +143,7 @@ class OrtsregisterModule extends AbstractModule implements
         $router->post('ortsregister.notes.save',         '/tree/{tree}/orte/{place_id}/notizen',        PlaceNotesSave::class);
         $router->post('ortsregister.notes.toggle-task',  '/tree/{tree}/orte/{place_id}/notizen/toggle', PlaceNotesToggleTask::class);
         $router->post('ortsregister.tasks.update',       '/tree/{tree}/orte/{place_id}/aufgaben',       PlaceTasksUpdate::class);
+        $router->post('ortsregister.kbs.update',         '/tree/{tree}/orte/{place_id}/kbs',            PlaceKbsUpdate::class);
         $router->get('ortsregister.orte.detail',   '/tree/{tree}/orte/{place_id}',     OrteDetailPage::class);
         $router->get('ortsregister.admin.config',  '/ortsregister/admin/config',       AdminConfigPage::class)
                ->allows('POST');
@@ -222,6 +225,10 @@ class OrtsregisterModule extends AbstractModule implements
             PlaceTasksService::class,
             new PlaceTasksService($this->folderRoot()),
         );
+        $container->set(
+            PlaceKbListService::class,
+            new PlaceKbListService($this->folderRoot()),
+        );
         // AdminConfigPage: braucht das Modul selbst
         $container->set(
             AdminConfigPage::class,
@@ -241,6 +248,7 @@ class OrtsregisterModule extends AbstractModule implements
                 $container->get(PlaceNotesService::class),
                 $container->get(ArchionLinker::class),
                 $container->get(PlaceTasksService::class),
+                $container->get(PlaceKbListService::class),
                 $this,
             ),
         );
