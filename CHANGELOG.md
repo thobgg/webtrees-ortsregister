@@ -22,6 +22,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
   Liste (macht namensgleiche Orte unterscheidbar), dismissbarer Endorte-Hinweis.
 - **Tests**: `GedcomPlaceMergeEdgeCasesTest` (Compound-PLAC, Suffix-Over-Capture,
   Trailing-Dot, Substring-Falle). PHP-8.5-Lauf: alle 75 Tests grün, Lint sauber.
+- **Englische Lokalisierung**: vollständige `en.po` (167 Strings, Deutsch→Englisch),
+  `de.po` auf den aktuellen String-Satz resynct. `msgfmt --check-format` grün
+  (Format-Platzhalter konsistent). `.mo` werden zur Laufzeit kompiliert (git-ignored).
 
 ### Hinzugefügt
 - **Merge-Operation für Orte**: `PlaceOperationService` mit analyzeMerge /

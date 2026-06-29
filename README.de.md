@@ -110,7 +110,7 @@ ortsregister/
 │   └── Service/I18nService.php        ← Übersetzung-Helper
 ├── resources/
 │   ├── menu-icon.png                  ← Menü-Icon (transparent on-the-fly)
-│   ├── lang/de.po, de.mo              ← Übersetzungen
+│   ├── lang/de.po, en.po              ← Übersetzungen (de + en)
 │   └── views/                          ← orte.phtml, orte-karte.phtml, ort-detail.phtml
 └── tests/                              ← PHPUnit 11
 ```
@@ -130,6 +130,12 @@ ortsregister/
 |---|---|---|
 | **webtrees Core** | Standard-Orte-Verwaltung (GEDCOM) | bleibt aktiv |
 | **Vesta Gov4Webtrees** | GOV-Daten holen + cachen | optional, kann parallel laufen |
+
+## Lokalisierung
+
+Die Oberfläche liegt in **Deutsch und Englisch** vor (`resources/lang/de.po`,
+`en.po`, je 167 Strings). webtrees wählt anhand der Benutzersprache; `.mo`-Dateien
+werden zur Laufzeit kompiliert (und sind git-ignored).
 
 ## Lizenz
 
