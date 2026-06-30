@@ -56,7 +56,6 @@ final class ArchionLinkerTest extends TestCase
     private function method(string $name): ReflectionMethod
     {
         $m = new ReflectionMethod(ArchionLinker::class, $name);
-        $m->setAccessible(true);
         return $m;
     }
 }

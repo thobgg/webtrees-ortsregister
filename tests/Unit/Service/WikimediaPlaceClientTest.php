@@ -16,7 +16,6 @@ final class WikimediaPlaceClientTest extends TestCase
     {
         $client = $this->makeClient();
         $m = new ReflectionMethod(WikimediaPlaceClient::class, 'distanceKm');
-        $m->setAccessible(true);
         // Hamburg ~53.55, 9.99 — Berlin ~52.52, 13.40
         $km = $m->invoke($client, 53.55, 9.99, 52.52, 13.40);
         self::assertGreaterThan(240.0, $km);
@@ -27,7 +26,6 @@ final class WikimediaPlaceClientTest extends TestCase
     {
         $client = $this->makeClient();
         $m = new ReflectionMethod(WikimediaPlaceClient::class, 'distanceKm');
-        $m->setAccessible(true);
         $km = $m->invoke($client, 48.0, 9.0, 48.0, 9.0);
         self::assertSame(0.0, $km);
     }
@@ -36,7 +34,6 @@ final class WikimediaPlaceClientTest extends TestCase
     {
         $client = $this->makeClient();
         $m = new ReflectionMethod(WikimediaPlaceClient::class, 'parseImageInfo');
-        $m->setAccessible(true);
         $page = [
             'title' => 'File:Brackenheim_Marktplatz.jpg',
             'imageinfo' => [[
@@ -59,7 +56,6 @@ final class WikimediaPlaceClientTest extends TestCase
     {
         $client = $this->makeClient();
         $m = new ReflectionMethod(WikimediaPlaceClient::class, 'parseImageInfo');
-        $m->setAccessible(true);
         self::assertNull($m->invoke($client, ['title' => 'File:X.jpg']));
         self::assertNull($m->invoke($client, ['title' => 'File:X.jpg', 'imageinfo' => []]));
     }

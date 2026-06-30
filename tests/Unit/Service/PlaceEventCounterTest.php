@@ -19,7 +19,6 @@ final class PlaceEventCounterTest extends TestCase
     {
         $this->counter = new PlaceEventCounter();
         $this->extract = new ReflectionMethod(PlaceEventCounter::class, 'extractEventTags');
-        $this->extract->setAccessible(true);
     }
 
     public function testExtractsBirtAndDeatForMatchingLeaf(): void

@@ -11,17 +11,18 @@ Quellen, Karten und Forschungstagebuch an einem Ort.
 | | |
 |---|---|
 | Modul-Name | `ortsregister` |
-| Version | 0.2.0-alpha (Alpha — für Tester) |
+| Version | 1.0.0 |
 | webtrees | 2.2.x |
 | PHP | 8.2 – 8.4 |
 | Lizenz | GPL-3.0-or-later |
 
 ---
 
-## ⚠️ Alpha — für Tester
+## ⚠️ Vorab — dieses Modul schreibt in deinen Stammbaum
 
 **Dieses Modul schreibt in deinen Stammbaum.** *Merge* und *Umbenennen* schreiben
-die `PLAC` betroffener Datensätze über die native webtrees-Edit-API um. Behandle es als **Alpha**:
+die `PLAC` betroffener Datensätze über die native webtrees-Edit-API um. Da es
+Datensätze verändert, triff die üblichen Vorsichtsmaßnahmen:
 
 - **Vorher vollständigen GEDCOM-Export sichern** (Verwaltung → Stammbäume → Export)
   — nicht nur das modul-eigene JSON-Backup pro Operation.
@@ -81,7 +82,7 @@ haben. Es bleiben nur die Blätter der Hierarchie übrig — typischerweise die
 Default: „Alle Ebenen" (kein Datenverlust-Eindruck, konservativ). Toggle
 oberhalb der Liste.
 
-## Bekannte Einschränkungen (Alpha)
+## Bekannte Einschränkungen
 
 - **Namensgleiche Orte teilen einen Daten-Ordner.** Zwei „Neustadt" auf verschiedenen
   Hierarchie-Ebenen nutzen denselben `media/orte/Neustadt/`-Ordner. Merge/Umbenennen
@@ -98,7 +99,7 @@ oberhalb der Liste.
 
 ## Roadmap
 
-Aktueller Funktionsstand: [CHANGELOG](CHANGELOG.md). Die Alpha sammelt Tester-Feedback;
+Aktueller Funktionsstand: [CHANGELOG](CHANGELOG.md). Feedback ist willkommen;
 als Nächstes: record-genauer Split (einzelne Ereignisse von einem Sammel-Ort lösen) und
 Ausbau der Dubletten-Erkennung.
 

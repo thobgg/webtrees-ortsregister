@@ -1,6 +1,6 @@
 ---
 name: Fehler melden
-about: Ein Problem mit Ortsregister (Alpha) melden
+about: Ein Problem mit Ortsregister melden
 title: "[bug] "
 labels: bug
 ---
@@ -16,7 +16,7 @@ labels: bug
 3.
 
 ## Umgebung
-- Ortsregister-Version: <!-- z. B. 0.2.0-alpha -->
+- Ortsregister-Version: <!-- z. B. 1.0.0 -->
 - webtrees-Version:
 - PHP-Version:
 - Operation: <!-- Merge / Umbenennen / Undo / GOV / Liste / Detailseite / sonstiges -->

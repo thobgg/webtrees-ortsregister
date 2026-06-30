@@ -122,8 +122,8 @@ class OrtsregisterModule extends AbstractModule implements
     public function title(): string { return 'Ortsregister'; }
     public function description(): string { return 'Ortsregister mit visueller Landing-Page, Medien-Verknüpfung und (geplant) GOV-Integration.'; }
     public function customModuleAuthorName(): string { return 'Thomas Bugge'; }
-    public function customModuleVersion(): string { return '0.2.0-alpha'; }
-    public function customModuleLatestVersion(): string { return '0.1.0'; }
+    public function customModuleVersion(): string { return '1.0.0'; }
+    public function customModuleLatestVersion(): string { return '1.0.0'; }
     public function customModuleSupportUrl(): string { return ''; }
 
     public function boot(): void

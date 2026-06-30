@@ -11,17 +11,18 @@ books, sources, maps and a research log in one place.
 | | |
 |---|---|
 | Module name | `ortsregister` |
-| Version | 0.2.0-alpha (alpha — for testers) |
+| Version | 1.0.0 |
 | webtrees | 2.2.x |
 | PHP | 8.2 – 8.4 |
 | License | GPL-3.0-or-later |
 
 ---
 
-## ⚠️ Alpha — for testers
+## ⚠️ Before you start — this module writes to your tree
 
 **This module writes to your family tree.** *Merge* and *Rename* rewrite the `PLAC`
-of affected records through the native webtrees edit API. Treat it as **alpha**:
+of affected records through the native webtrees edit API. Because it changes records,
+take the usual precautions:
 
 - **Make a full GEDCOM backup first** (Control panel → manage trees → export) —
   not just the module's per-operation JSON backup.
@@ -79,7 +80,7 @@ Only the leaves remain — typically the real localities. Persists per user
 Default: "All levels" (no data-loss feeling, conservative). Toggle above the
 list.
 
-## Known limitations (alpha)
+## Known limitations
 
 - **Same-named places share one data folder.** Two "Neustadt" on different hierarchy
   levels use the same `media/orte/Neustadt/` folder. Merge/rename warns in this case
@@ -96,8 +97,8 @@ list.
 
 ## Roadmap
 
-Current feature state is in the [CHANGELOG](CHANGELOG.md). The alpha is gathering tester
-feedback; next up: record-level split (detaching single events from a collective place)
+Current feature state is in the [CHANGELOG](CHANGELOG.md). Feedback is welcome; next up:
+record-level split (detaching single events from a collective place)
 and expanding duplicate detection.
 
 ## Requirements

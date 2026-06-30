@@ -2,7 +2,14 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung: [SemVer](https://semver.org/lang/de/).
 
-## [0.2.0-alpha] – 2026-06-29
+## [Unreleased]
+
+## [1.0.0] – 2026-06-30
+
+Erstes stabiles, öffentliches Release. Funktional auf dem Stand der bisherigen
+internen Entwicklung (Phasen 1–4), nun als stabil deklariert und mit
+Qualitätssicherung abgesichert: statische Analyse (PHPStan, Level 5) und
+75 automatisierte Tests.
 
 ### Phase 4 — Orts-Hygiene-Cockpit (Merge / Rename / Undo)
 - **Sidecar-Vereinigung beim Merge**: Notizen, Kirchenbücher, GOV-Verknüpfung,
