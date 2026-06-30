@@ -6,7 +6,7 @@
 zur Archiv-Seite, die mit jeder Recherche reicher wird: Digitalisate, Kirchenbücher,
 Quellen, Karten und Forschungstagebuch an einem Ort.
 
-🌍 GOV-verankert · 🧹 Schreibvarianten sicher zusammengeführt (Vorschau · Backup · Undo) · 🔓 offene Formate, kein Lock-in.
+🧹 Sichere Orts-Hygiene — Schreibvarianten zusammenführen mit Vorschau · Backup · Undo · 🗂️ jeder Ort eine Archiv-Seite · 🌍 GOV als Referenz-Schicht · 🔓 offene Formate, kein Lock-in.
 
 | | |
 |---|---|
@@ -50,8 +50,7 @@ Datensätze verändert, triff die üblichen Vorsichtsmaßnahmen:
 
 🔓 **Deine Daten bleiben deine Daten.** Alles liegt im offenen Standard seiner Art — im Stammbaum oder als lesbare Datei im Orts-Ordner. Die Datenbank ist nur ein Index, jederzeit neu aufbaubar. Kein proprietäres Format, kein Vendor-Lock-in.
 
-Das Modul tritt **nicht in Konkurrenz** zum Standard-Orte-Modul von webtrees oder
-zur Vesta-Familie — es ist die UX- und Archiv-Schicht darüber.
+**Das ist kein „weiteres GOV-Modul".** GOV-Daten liefert auch die Vesta-Familie — hier sind sie nur eine Referenz-Schicht. Der eigene Wert von Ortsregister ist die **Orts-als-Archivseite und die sichere Merge-/Umbenennen-Hygiene**: die UX- und Archiv-Schicht über den webtrees-Orten, kein Ortsverzeichnis. Es ergänzt das Standard-Orte-Modul und Vesta, statt mit ihnen zu konkurrieren.
 
 ## Screenshots
 

@@ -6,7 +6,7 @@
 an archive page that grows richer with each piece of research: digitised records, church
 books, sources, maps and a research log in one place.
 
-🌍 GOV-anchored · 🧹 spelling variants safely merged (preview · backup · undo) · 🔓 open formats, no lock-in.
+🧹 Safe place hygiene — merge spelling variants with preview · backup · undo · 🗂️ every place an archive page · 🌍 GOV as a reference layer · 🔓 open formats, no lock-in.
 
 | | |
 |---|---|
@@ -50,7 +50,7 @@ take the usual precautions:
 
 🔓 **Your data stays your data.** Everything lives in the open standard of its kind — in the tree or as a readable file in the place folder. The database is just an index, rebuildable any time. No proprietary format, no vendor lock-in.
 
-The module **does not compete** with the standard webtrees places module or the Vesta family — it is the UX and archive layer on top.
+**This is not "another GOV module."** GOV data is also provided by the Vesta family — here it is just one reference layer. Ortsregister's distinct value is the **place-as-archive-page and the safe merge/rename hygiene**: the UX and archive layer on top of webtrees' places, not a gazetteer. It complements the standard places module and Vesta rather than competing with them.
 
 ## Screenshots
 
