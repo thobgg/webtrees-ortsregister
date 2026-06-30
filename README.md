@@ -52,6 +52,24 @@ take the usual precautions:
 
 The module **does not compete** with the standard webtrees places module or the Vesta family — it is the UX and archive layer on top.
 
+## Screenshots
+
+A place archive page — GOV-anchored hierarchy, event counts, external sources, notes and gallery in one view:
+
+![Ortsregister place archive page](docs/images/ortsregister-landing.png)
+
+Merge places safely — source → target with the affected-record count, warnings and an automatic JSON backup before anything is written:
+
+![Ortsregister merge dialog](docs/images/ortsregister-merge.png)
+
+A per-place research log in Markdown, with task lists and one-click links to individuals in the tree:
+
+![Ortsregister research log editor](docs/images/ortsregister-research-log.png)
+
+Leaflet / OpenStreetMap view, the place located from its coordinates:
+
+![Ortsregister map view](docs/images/ortsregister-place-map.png)
+
 ## Feature list (current state)
 
 - Place list (server-side DataTables pagination, full-text filter)
@@ -135,7 +153,7 @@ ortsregister/
 │   ├── menu-icon.png               ← Menu icon (transparent on-the-fly)
 │   ├── lang/de.po, en.po, nl.po    ← Translations (de + en + nl)
 │   └── views/                       ← orte.phtml, orte-karte.phtml, ort-detail.phtml
-└── docs/                            ← (later) screenshots and docs
+└── docs/images/                     ← screenshots for this README
 ```
 
 ## Routing

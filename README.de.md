@@ -53,6 +53,24 @@ Datensätze verändert, triff die üblichen Vorsichtsmaßnahmen:
 Das Modul tritt **nicht in Konkurrenz** zum Standard-Orte-Modul von webtrees oder
 zur Vesta-Familie — es ist die UX- und Archiv-Schicht darüber.
 
+## Screenshots
+
+Eine Orts-Archivseite — GOV-verankerte Hierarchie, Ereigniszähler, externe Quellen, Notizen und Galerie auf einen Blick:
+
+![Ortsregister Orts-Archivseite](docs/images/ortsregister-landing.png)
+
+Orte sicher zusammenführen — Quelle → Ziel mit Anzahl betroffener Datensätze, Warnungen und automatischem JSON-Backup, bevor etwas geschrieben wird:
+
+![Ortsregister Merge-Dialog](docs/images/ortsregister-merge.png)
+
+Ein Recherche-Log pro Ort in Markdown, mit Task-Lists und Ein-Klick-Verlinkung zu Personen im Stammbaum:
+
+![Ortsregister Recherche-Editor](docs/images/ortsregister-research-log.png)
+
+Leaflet-/OpenStreetMap-Ansicht, der Ort aus seinen Koordinaten verortet:
+
+![Ortsregister Kartenansicht](docs/images/ortsregister-place-map.png)
+
 ## Funktionsumfang (aktueller Stand)
 
 - Listenansicht aller Orte (Server-seitige DataTables-Paginierung, Volltextfilter)
