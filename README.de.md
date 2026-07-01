@@ -82,7 +82,6 @@ Leaflet-/OpenStreetMap-Ansicht, der Ort aus seinen Koordinaten verortet:
   Daten (Notizen/KB/GOV/Digitalisate) wandern mit
 - **Externe Treffer** auf der Detailseite: Wikimedia/Commons, Deutsche Digitale
   Bibliothek, Archion-Auto-Pfarrei-Lookup
-- **Koordinaten-Import** aus PLAC-Subtags ins webtrees-`place_location`
 
 ### Hierarchie-Filter
 

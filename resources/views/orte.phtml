@@ -62,10 +62,13 @@ $filterMode      = $filterMode ?? 'all';
             <a href="<?= $kartenUrl ?>" class="btn btn-outline-primary btn-sm">
                 <i class="fas fa-map me-1"></i><?= I18N::translate('Kartenansicht') ?>
             </a>
-            <a href="<?= $coordImportUrl ?>" class="btn btn-outline-secondary btn-sm"
-               title="<?= e(I18N::translate('Koordinaten aus PLAC-Subtags ins place_location übernehmen')) ?>">
-                <i class="fas fa-location-dot me-1"></i><?= I18N::translate('Koordinaten-Import') ?>
-            </a>
+            <?php /* Koordinaten-Import (Alpha) deaktiviert: schrieb GEDCOM-Event-
+                Koordinaten (PLAC.MAP) in webtrees' tree-übergreifend geteilten
+                Orts-Gazetteer (place_location). webtrees trennt Event- und
+                Orts-Koordinaten aber bewusst (FAQ „locations"); die Vermischung
+                ist konzeptionell falsch (Issue #1). Route ist ebenfalls gesperrt.
+                Bis zu einem Rework als „Vorschlag pro Ort zur manuellen Übernahme"
+                bleibt der Einstieg raus. */ ?>
         </div>
         <?php endif ?>
     </div>

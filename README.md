@@ -82,7 +82,6 @@ Leaflet / OpenStreetMap view, the place located from its coordinates:
   (notes/church books/GOV/digitised items) travels along
 - **External hits** on the detail page: Wikimedia/Commons, German Digital Library,
   Archion auto parish lookup
-- **Coordinate import** from PLAC subtags into the webtrees `place_location` table
 
 ### Hierarchy filter
 
