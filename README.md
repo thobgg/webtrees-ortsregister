@@ -2,16 +2,12 @@
 
 🇬🇧 **English** · [🇩🇪 Deutsch](README.de.md)
 
-**🏡 Your growing place archive for webtrees.** Every place in your family tree becomes
-an archive page that grows richer with each piece of research: digitised records, church
-books, sources, maps and a research log in one place.
-
-🧹 Safe place hygiene — merge spelling variants with preview · backup · undo · 🗂️ every place an archive page · 🌍 GOV as a reference layer · 🔓 open formats, no lock-in.
+**Your family archive in webtrees, organised by place.** Every place in the tree becomes an archive page with photos, church books, sources, a map and notes. Plus tools to keep the places themselves tidy (merge and rename with preview, backup and undo).
 
 | | |
 |---|---|
 | Module name | `ortsregister` |
-| Version | 1.0.0 |
+| Version | 1.0.1 |
 | webtrees | 2.2.x |
 | PHP | 8.2 – 8.4 |
 | License | GPL-3.0-or-later |
@@ -36,21 +32,13 @@ take the usual precautions:
   bypass the moderation workflow).
 - Found a problem? Please open a **GitHub issue**.
 
-## What it does
+## Why it exists
 
-**Every place in your family tree becomes an archive page that grows richer with each piece of research.** Whatever you gather about a village, a parish, a town collects in one place — permanent, ordered, findable.
+I wanted my family archive inside webtrees, not next to it. My research used to live in Ahnenblatt or Gramps, and the photos, documents and digitised records somewhere else. webtrees manages the tree cleanly and comes with a well-designed permission system. It has media management too, but that only shows what is entered as a media object in the GEDCOM.
 
-🗂️ **Your archive gets a home.** Digitised records, church books, sources, maps, notes and your research log — right where you look for them. No more finds scattered across folders, e-mails and sticky notes.
+Ortsregister organises the archive by place. The files sit in folders and are shown without each one having to be imported into the tree first. Every place becomes a page that gathers what you have about it: photos, church books, sources, a map, notes, a research log. Plus tools to keep the places tidy, that is merging spelling variants or renaming, with preview and backup.
 
-🧹 **So your archive stays cleanly addressed.** “Brackenheim”, “Brakenheim”, “Brackenheim a.N.” — same place, three spellings? Ortsregister recognises places that belong together and merges them safely: with preview, full backup and undo. Your curated data travels along — no note, no scan is lost.
-
-🌍 **Watertight anchoring.** The GOV link connects your places to the official historical gazetteer: stable identifier, historical name variants, hierarchy and coordinates. Plus hits from Archion, the German Digital Library and Wikimedia, right on the place page.
-
-🔎 **Shows you where the work is.** Which places still lack coordinates? No GOV ID? Which look like duplicates? Ortsregister turns your place list into a work queue.
-
-🔓 **Your data stays your data.** Everything lives in the open standard of its kind — in the tree or as a readable file in the place folder. The database is just an index, rebuildable any time. No proprietary format, no vendor lock-in.
-
-**This is not "another GOV module."** GOV data is also provided by the Vesta family — here it is just one reference layer. Ortsregister's distinct value is the **place-as-archive-page and the safe merge/rename hygiene**: the UX and archive layer on top of webtrees' places, not a gazetteer. It complements the standard places module and Vesta rather than competing with them.
+Everything stays in open formats, as a file in the folder or in the tree. The database is just an index. For me this is a platform that is mine and that I can grow into whenever I have more time for research again. The sister module Sammlungen does the same, only organised by theme instead of by place.
 
 ## Screenshots
 
@@ -111,6 +99,11 @@ list.
   batching — thousands of records risk timeout/memory (you are warned).
 - **Undo** is safe right after an operation; if a record changed since, it aborts
   (overwrites nothing) — not a full version history.
+- **Curated archive data is not stored in the GEDCOM.** Notes, church-book logs, tasks
+  and digitised items live as files in the place folder (`media/orte/…`) plus a DB index —
+  **not** in the tree. A GEDCOM export therefore does not carry them; back up the place
+  folder separately. (Deliberate choice: open, readable files instead of proprietary
+  GEDCOM extensions.)
 
 ## Roadmap
 
