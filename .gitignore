@@ -14,6 +14,8 @@ resources/lang/*.mo
 .DS_Store
 .idea/
 .vscode/
+# Lokale Claude-Code-Config (maschinenspezifisch, enthält lokale Pfade)
+.claude/settings.local.json
 Bildschirmfoto_*.png
 Bildschirmfoto_*.jpg
 Screenshot_*.png

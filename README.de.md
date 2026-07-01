@@ -2,16 +2,12 @@
 
 [🇬🇧 English](README.md) · 🇩🇪 **Deutsch**
 
-**🏡 Dein mitwachsendes Orts-Archiv für webtrees.** Jeder Ort deines Stammbaums wird
-zur Archiv-Seite, die mit jeder Recherche reicher wird: Digitalisate, Kirchenbücher,
-Quellen, Karten und Forschungstagebuch an einem Ort.
-
-🧹 Sichere Orts-Hygiene — Schreibvarianten zusammenführen mit Vorschau · Backup · Undo · 🗂️ jeder Ort eine Archiv-Seite · 🌍 GOV als Referenz-Schicht · 🔓 offene Formate, kein Lock-in.
+**Dein Familienarchiv in webtrees, geordnet nach Orten.** Jeder Ort im Stammbaum wird zu einer Archiv-Seite mit Fotos, Kirchenbüchern, Quellen, Karte und Notizen. Dazu Werkzeug, um die Orte selbst in Ordnung zu halten (Zusammenführen und Umbenennen mit Vorschau, Backup und Undo).
 
 | | |
 |---|---|
 | Modul-Name | `ortsregister` |
-| Version | 1.0.0 |
+| Version | 1.0.1 |
 | webtrees | 2.2.x |
 | PHP | 8.2 – 8.4 |
 | Lizenz | GPL-3.0-or-later |
@@ -36,21 +32,13 @@ Datensätze verändert, triff die üblichen Vorsichtsmaßnahmen:
   (Operationen umgehen den Moderations-Workflow).
 - Problem gefunden? Bitte ein **GitHub-Issue** öffnen.
 
-## Was es kann
+## Warum es das gibt
 
-**Jeder Ort in deinem Stammbaum wird zur Archiv-Seite, die mit jeder Recherche reicher wird.** Was du über ein Dorf, eine Pfarrei, eine Stadt zusammenträgst, sammelt sich an einem Ort — dauerhaft, geordnet, auffindbar.
+Ich wollte mein Familienarchiv in webtrees, nicht daneben. Vorher lag die Forschung in Ahnenblatt oder Gramps, die Fotos, Urkunden und Digitalisate irgendwo sonst. webtrees verwaltet den Stammbaum sauber und bringt ein durchdachtes Rechtesystem mit. Eine Medienverwaltung hat es auch, aber die zeigt nur, was als Medienobjekt im GEDCOM steckt.
 
-🗂️ **Dein Archiv bekommt ein Zuhause.** Digitalisate, Kirchenbücher, Quellen, Karten, Notizen und dein Forschungstagebuch — direkt am Ort, wo du sie suchst. Schluss mit verstreuten Funden in Ordnern, Mails und Notizzetteln.
+Ortsregister ordnet das Archiv nach Orten. Die Dateien liegen in Ordnern und werden angezeigt, ohne dass jede erst in den Stammbaum importiert sein muss. Jeder Ort wird zu einer Seite, auf der zusammenkommt, was du über ihn hast: Fotos, Kirchenbücher, Quellen, Karte, Notizen, ein Recherche-Tagebuch. Dazu Werkzeug, um die Orte in Ordnung zu halten, also Schreibvarianten zusammenzuführen oder umzubenennen, mit Vorschau und Backup.
 
-🧹 **Damit dein Archiv sauber adressiert bleibt.** „Brackenheim", „Brakenheim", „Brackenheim a.N." — derselbe Ort, drei Schreibweisen? Ortsregister erkennt zusammengehörige Orte und führt sie sicher zusammen: mit Vorschau, vollständigem Backup und Rückgängig-Funktion. Deine kuratierten Daten reisen mit — keine Notiz, kein Digitalisat geht verloren.
-
-🌍 **Wasserdicht verankert.** Die GOV-Anbindung verknüpft deine Orte mit dem offiziellen historischen Ortsverzeichnis: stabile Kennung, historische Namensvarianten, Hierarchie und Koordinaten. Dazu Treffer aus Archion, Deutscher Digitaler Bibliothek und Wikimedia, direkt auf der Ortsseite.
-
-🔎 **Zeigt dir, wo Arbeit liegt.** Welche Orte haben noch keine Koordinaten? Keine GOV-Kennung? Welche sehen nach Dubletten aus? Ortsregister macht aus deiner Ortsliste eine Arbeits-Warteschlange.
-
-🔓 **Deine Daten bleiben deine Daten.** Alles liegt im offenen Standard seiner Art — im Stammbaum oder als lesbare Datei im Orts-Ordner. Die Datenbank ist nur ein Index, jederzeit neu aufbaubar. Kein proprietäres Format, kein Vendor-Lock-in.
-
-**Das ist kein „weiteres GOV-Modul".** GOV-Daten liefert auch die Vesta-Familie — hier sind sie nur eine Referenz-Schicht. Der eigene Wert von Ortsregister ist die **Orts-als-Archivseite und die sichere Merge-/Umbenennen-Hygiene**: die UX- und Archiv-Schicht über den webtrees-Orten, kein Ortsverzeichnis. Es ergänzt das Standard-Orte-Modul und Vesta, statt mit ihnen zu konkurrieren.
+Alles bleibt in offenen Formaten, als Datei im Ordner oder im Stammbaum. Die Datenbank ist nur ein Index. Für mich ist das eine Plattform, die mir gehört und in die ich reinwachse, wenn ich wieder mehr Zeit für die Forschung habe. Das Schwestermodul Sammlungen macht dasselbe, nur nach Themen statt nach Orten.
 
 ## Screenshots
 
@@ -112,6 +100,11 @@ oberhalb der Liste.
   bei tausenden Datensätzen droht Timeout/Speicher (es wird gewarnt).
 - **Undo** ist sicher direkt nach einer Operation; wurde ein Datensatz seither geändert,
   bricht es ab (überschreibt nichts) — kein vollständiges Versions-Undo.
+- **Kuratierte Archiv-Daten liegen nicht im GEDCOM.** Notizen, Kirchenbuch-Logbücher,
+  Aufgaben und Digitalisate liegen als Dateien im Orts-Ordner (`media/orte/…`) plus einem
+  DB-Index — **nicht** im Stammbaum. Ein GEDCOM-Export trägt sie also nicht mit; sichere
+  den Orts-Ordner separat. (Bewusste Entscheidung: offene, lesbare Dateien statt
+  proprietärer GEDCOM-Erweiterungen.)
 
 ## Roadmap
 
