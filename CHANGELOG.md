@@ -4,6 +4,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+### Behoben / Geändert
+- **Koordinaten-Import deaktiviert** (Issue #1, Kritik H. Hartenthaler). Der Import
+  schrieb GEDCOM-Koordinaten (`PLAC/MAP/LATI/LONG`) in webtrees' baumübergreifend
+  geteilten Orts-Gazetteer (`place_location`). Diese Koordinaten beschreiben aber den
+  Ort eines **Ereignisses** (z. B. ein Grab), nicht den Ortsmittelpunkt — webtrees
+  hält Ereignis- und Orts-Koordinaten laut eigener Doku (FAQ „locations") **bewusst
+  getrennt**; die Vermischung ist konzeptionell falsch. UI-Button + Handler-Einstieg
+  gesperrt. Vorhandene Koordinaten wurden nie überschrieben (idempotent + Backup) —
+  „zerstört" wurde also nichts, aber der Ansatz war falsch. Rework als „Vorschlag pro
+  Ort zur manuellen Übernahme" geplant.
+
 ## [1.0.0] – 2026-06-30
 
 Erstes stabiles, öffentliches Release. Funktional auf dem Stand der bisherigen

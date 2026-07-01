@@ -35,6 +35,26 @@ class CoordinateImportPage extends AbstractOrtsregisterHandler
             );
         }
 
+        // DEAKTIVIERT (Alpha, Issue #1): Der Import schrieb GEDCOM-Koordinaten
+        // (PLAC/MAP/LATI/LONG) in webtrees' tree-übergreifend geteilten Orts-
+        // Gazetteer (place_location). Diese Koordinaten beschreiben aber den Ort
+        // eines EREIGNISSES (z. B. ein Grab), nicht den Ortsmittelpunkt — und
+        // webtrees hält Ereignis- und Orts-Koordinaten bewusst getrennt
+        // (webtrees-FAQ „locations"). Schreibpfad gesperrt bis zum Rework
+        // („Vorschlag pro Ort zur manuellen Übernahme"). Code unten bleibt erhalten.
+        return $this->fullPage(
+            $tree,
+            'Koordinaten-Import deaktiviert',
+            '<div class="alert alert-info"><i class="fas fa-circle-info me-1"></i> '
+            . '<strong>Der Koordinaten-Import ist vorübergehend deaktiviert.</strong></div>'
+            . '<p>GEDCOM-Koordinaten (<code>PLAC / MAP / LATI / LONG</code>) beschreiben den Ort '
+            . 'eines <em>Ereignisses</em> — nicht den Mittelpunkt des Orts. webtrees pflegt '
+            . 'Orts-Koordinaten bewusst getrennt in einem baumübergreifenden Gazetteer. Ein '
+            . 'automatisches Befüllen aus Ereignissen kann unpassende Koordinaten setzen.</p>'
+            . '<p><a href="' . e(route('ortsregister.orte', ['tree' => $tree->name()])) . '" '
+            . 'class="btn btn-primary">Zur Ortsliste</a></p>',
+        );
+
         $method = strtoupper($request->getMethod());
         $autoAccept = Auth::user()->getPreference(UserInterface::PREF_AUTO_ACCEPT_EDITS) === '1';
 
