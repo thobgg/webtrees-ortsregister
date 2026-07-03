@@ -4,6 +4,23 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+## [1.0.2] – 2026-07-03
+
+### Behoben
+- **Modulname wird jetzt lokalisiert dargestellt.** `title()` und `description()`
+  gaben literale Strings zurück und riefen `I18N::translate()` nie auf — die
+  msgids in `de.po` / `en.po` / `nl.po` griffen also nie. Fix: beide Methoden
+  wickeln den String in `I18N::translate()`. Damit erscheint das Modul in
+  niederländischen webtrees-Instanzen jetzt als „Plaatsregister" statt
+  „Ortsregister" (Reporter: @TheDutchJewel).
+
+### Hinzugefügt
+- **Aktualisierte niederländische Übersetzung** (`nl.po`) — PR #2 von
+  @TheDutchJewel. `msgid "Ortsregister"` → `msgstr "Plaatsregister"` und
+  weitere Feinschliffe.
+
+## [1.0.1] – 2026-07-01
+
 ### Behoben / Geändert
 - **Koordinaten-Import deaktiviert** (Issue #1, Kritik H. Hartenthaler). Der Import
   schrieb GEDCOM-Koordinaten (`PLAC/MAP/LATI/LONG`) in webtrees' baumübergreifend
@@ -14,6 +31,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
   gesperrt. Vorhandene Koordinaten wurden nie überschrieben (idempotent + Backup) —
   „zerstört" wurde also nichts, aber der Ansatz war falsch. Rework als „Vorschlag pro
   Ort zur manuellen Übernahme" geplant.
+
+### Dokumentation
+- README neu positioniert (Hygiene + Archiv-UX statt „GOV-Modul"), ehrlicher
+  Ich-Einstieg („Warum es das gibt") + GEDCOM-Portabilitäts-Hinweise.
 
 ## [1.0.0] – 2026-06-30
 
