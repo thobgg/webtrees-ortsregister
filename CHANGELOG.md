@@ -4,6 +4,33 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+## [1.0.7] – 2026-07-04
+
+### Behoben (kritisch)
+- **Übersichtskarte blieb auf manchen Installationen komplett leer (weißer
+  Kasten).** Das Modul lud Leaflet und MarkerCluster von einem externen CDN
+  (`unpkg.com`) per `<script>` mitten im Seiteninhalt — das Karten-Script lief
+  damit, *bevor* die Bibliothek geladen war, und hatte keinen Rückhalt außer
+  dem CDN. Wo `unpkg.com` nicht erreichbar ist (Proxy, restriktive CSP,
+  Adblocker, kein Internet am Server), war `L` undefined, `L.map()` warf, und
+  die Karte blieb leer. Auf Installationen mit CDN-Zugriff fiel es nicht auf.
+  Fix: Das Modul nutzt jetzt das Leaflet-Bundle, das webtrees ohnehin auf jeder
+  Seite mitliefert (`vendor.min.js`/`.css`, inkl. MarkerCluster), und hängt das
+  Karten-Script über `View::push('javascript')` **hinter** dieses Bundle. Kein
+  externes CDN mehr — die Karte funktioniert damit auch offline und unter
+  strenger CSP. Das GeoJSON wird direkt ins Script geschrieben statt in ein
+  `data`-Attribut, was zugleich die Attribut-Escaping-Problematik aus #5
+  (v1.0.5) endgültig gegenstandslos macht. Schließt #5. Danke @TheDutchJewel
+  für den beharrlichen Bugreport und die Screenshots.
+- **Auch die Detailseiten-Karte lädt Leaflet jetzt aus dem webtrees-Bundle**
+  statt von einem CDN (jsdelivr). Sie hatte zwar einen Fallback-Hinweis, hing
+  aber am selben externen Risiko — jetzt ebenfalls CDN-frei und CSP-fest.
+
+### Geändert
+- **Übersichtskarte nutzt jetzt die Tiles von OSM Deutschland**
+  (`tile.openstreetmap.de`) statt `openstreetmap.org` — dieselbe Quelle wie die
+  Detailseite, weil `openstreetmap.org` schneller rate-limitet („no access").
+
 ## [1.0.6] – 2026-07-04
 
 ### Behoben
