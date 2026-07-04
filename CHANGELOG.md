@@ -4,6 +4,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+## [1.0.8] – 2026-07-04
+
 ### Behoben
 - **Das „x" am „Nur Endorte"-Hinweis schloss nicht.** Die Markup war eine
   Bootstrap-`alert-dismissible`-Box, aber ohne `data-bs-dismiss="alert"` — das
@@ -34,6 +36,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
   (3) Stale-Schutz meldet fremd geänderte Records → **All-or-Nothing**-Abbruch.
 
 ### Geändert
+- Toten Code des deaktivierten Koordinaten-Imports entfernt
+  (`CoordinateImportPage`): Die abgeschaltete Alpha-Implementierung lag als
+  unerreichbarer Code hinter einem early return und zog eine ungenutzte
+  Service-Abhängigkeit nach. Entfernt → PHPStan-sauber; die „deaktiviert"-
+  Hinweisseite bleibt, ein Rework holt die Logik aus der Git-History.
 - Hardcodiertes `customModuleLatestVersion() { return '1.0.0'; }` entfernt — es
   meldete dauerhaft „latest = 1.0.0" und hätte einen Update-Hinweis ohnehin nie
   ausgelöst. webtrees' Trait-Default greift jetzt (gibt die installierte Version
