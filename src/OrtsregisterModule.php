@@ -27,6 +27,7 @@ use Ortsregister\Service\CoordinateImportService;
 use Ortsregister\Service\DdbClient;
 use Ortsregister\Service\GedcomCoordinateExtractor;
 use Ortsregister\Service\GedcomPlaceManipulator;
+use Ortsregister\Service\PlaceRecordMutator;
 use Ortsregister\Service\GovApiClient;
 use Ortsregister\Service\GovHierarchyResolver;
 use Ortsregister\Service\GovLinkingService;
@@ -293,6 +294,7 @@ class OrtsregisterModule extends AbstractModule implements
                 __DIR__ . '/../backups',
                 $container->get(PlaceSidecarMerger::class),
                 $container->get(PlaceSidecarInventory::class),
+                new PlaceRecordMutator($container->get(GedcomPlaceManipulator::class)),
             ),
         );
         // AdminConfigPage: braucht das Modul selbst

@@ -4,6 +4,18 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+### Intern
+- **Merge-Sicherheitsnetz jetzt integrationstestbar + getestet.** Die
+  datensatz-bezogene Kernlogik von Merge/Undo (PLAC-Ersetzung anwenden,
+  Undo-Restore, Stale-Erkennung) hinter eine schmale Naht gezogen
+  (`RecordStore`-Interface + `PlaceRecordMutator`); Produktion nutzt
+  `WebtreesRecordStore` (dünner Wrapper um `GedcomRecord::updateRecord`),
+  Verhalten unverändert. Neuer Integrationstest (`PlaceRecordMutatorTest`, DB-frei
+  über In-Memory-Store) belegt die drei bisher ungeprüften Garantien: (1)
+  Rollback — ein Schreibfehler mitten im Merge lässt in der Transaktion **keinen**
+  Teilzustand zurück; (2) Undo stellt den Vor-Merge-Stand **byte-identisch** her;
+  (3) Stale-Schutz meldet fremd geänderte Records → **All-or-Nothing**-Abbruch.
+
 ### Geändert
 - Hardcodiertes `customModuleLatestVersion() { return '1.0.0'; }` entfernt — es
   meldete dauerhaft „latest = 1.0.0" und hätte einen Update-Hinweis ohnehin nie
