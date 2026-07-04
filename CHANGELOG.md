@@ -4,6 +4,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+### Hinzugefügt
+- **„Letzte Zusammenführungen" mit Rückgängig direkt auf der Ortsliste.** Bisher
+  war der Undo-Button nur im Merge-Ergebnis-Popup erreichbar — nach dem Schließen
+  war er weg, obwohl die Operation (samt Backup) rückrollbar blieb. Jetzt listet
+  ein Abschnitt die letzten Merges/Umbenennungen (aus `ortsregister_merge_log`)
+  mit Datum, Quelle → Ziel und einem „Rückgängig"-Knopf; bereits zurückgerollte
+  Operationen sind markiert. Nutzt den bestehenden, jetzt getesteten Undo-Pfad;
+  der Undo-Handler funktioniert dadurch aus Liste **und** Popup. de/en/nl.
+
 ### Intern
 - **Merge-Sicherheitsnetz jetzt integrationstestbar + getestet.** Die
   datensatz-bezogene Kernlogik von Merge/Undo (PLAC-Ersetzung anwenden,

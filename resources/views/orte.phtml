@@ -132,6 +132,48 @@ $filterMode      = $filterMode ?? 'all';
             </table>
         </div>
 
+        <?php $letzteOps = $letzteOps ?? []; ?>
+        <?php if ($letzteOps !== []) : ?>
+        <!-- Verlauf: letzte Merges/Renames mit Rückgängig (nutzt den globalen Undo-Handler) -->
+        <div class="card mt-4">
+            <div class="card-header py-2 d-flex align-items-center gap-2">
+                <i class="fas fa-clock-rotate-left text-muted"></i>
+                <span class="fw-semibold"><?= I18N::translate('Letzte Zusammenführungen') ?></span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle small mb-0">
+                    <tbody>
+                    <?php foreach ($letzteOps as $op) : ?>
+                        <tr>
+                            <td class="text-nowrap text-muted" style="width:1%"><?= e($op['created_at']) ?></td>
+                            <td class="text-nowrap" style="width:1%">
+                                <?= $op['operation'] === 'rename'
+                                    ? I18N::translate('Umbenennen')
+                                    : I18N::translate('Zusammenführen') ?>
+                            </td>
+                            <td>
+                                <code><?= e($op['src']) ?></code>
+                                <i class="fas fa-arrow-right text-muted mx-1"></i>
+                                <code><?= e($op['dst']) ?></code>
+                            </td>
+                            <td class="text-end text-nowrap" style="width:1%">
+                                <?php if ($op['status'] === 'completed') : ?>
+                                    <button type="button" class="btn btn-sm btn-outline-danger ortsregister-merge-undo"
+                                            data-log-id="<?= (int) $op['id'] ?>">
+                                        <i class="fas fa-arrow-left me-1"></i><?= I18N::translate('Rückgängig') ?>
+                                    </button>
+                                <?php else : ?>
+                                    <span class="badge bg-secondary"><?= I18N::translate('rückgängig gemacht') ?></span>
+                                <?php endif ?>
+                            </td>
+                        </tr>
+                    <?php endforeach ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <?php endif ?>
+
         <!-- Modal-Container für Merge-Vorschau (Inhalt wird per AJAX geladen) -->
         <div class="modal fade" id="ortsregister-merge-modal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-lg modal-dialog-scrollable">
@@ -505,12 +547,15 @@ document.addEventListener('DOMContentLoaded', function () {
         })
         .then(r => r.json())
         .then(data => {
-            const content = document.getElementById('ortsregister-merge-modal-content');
-            content.innerHTML = '<div class="modal-header"><h5 class="modal-title ' + (data.success ? 'text-success' : 'text-danger') + '">'
-                + '<i class="fas ' + (data.success ? 'fa-check' : 'fa-exclamation-triangle') + ' me-2"></i>'
-                + (data.success ? 'Rückgängig gemacht' : 'Fehler') + '</h5></div>'
-                + '<div class="modal-body"><p>' + data.message + '</p></div>'
-                + '<div class="modal-footer"><button class="btn btn-primary" onclick="location.reload()">Liste neu laden</button></div>';
+            if (data.success) {
+                // Funktioniert aus dem Merge-Popup UND aus der Verlaufsliste:
+                // neu laden → Ort ist zurück, Verlaufszeile zeigt „rückgängig gemacht".
+                location.reload();
+            } else {
+                // Wichtig: Stale-Abbruch-Meldung sichtbar machen (kein stiller Fehlschlag).
+                undoBtn.disabled = false;
+                alert(data.message || 'Rückgängig fehlgeschlagen.');
+            }
         })
         .catch(err => {
             undoBtn.disabled = false;
