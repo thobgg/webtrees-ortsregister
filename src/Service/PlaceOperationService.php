@@ -49,6 +49,7 @@ class PlaceOperationService
         private readonly string                  $backupDir,
         private readonly PlaceSidecarMerger      $sidecarMerger,
         private readonly PlaceSidecarInventory   $inventory,
+        private readonly PlaceRecordMutator      $mutator,
     ) {}
 
     // ---------------------------------------------------------------
@@ -203,35 +204,23 @@ class PlaceOperationService
             $affected, $targetSubtags, $resolutions,
             $srcLeaf, $dstLeaf, $srcLeafAmbiguous, $dstLeafAmbiguous, $coordWarning
         ): MergeResult {
+            $store = new WebtreesRecordStore($tree);
+
             // Backup einsammeln (BEFORE-Snapshot der GEDCOM-Strings)
             $backup = $this->buildBackup($tree, $srcId, $dstId, $srcValue, $dstValue, $affected);
 
-            // Modifikationen anwenden
-            $modified = 0;
-            $afterMap = [];   // xref → Nach-Merge-GEDCOM (für Undo-Stale-Check)
-            foreach ($affected as $entry) {
-                $record = $this->loadRecord($tree, $entry['xref'], $entry['type']);
-                if ($record === null) {
-                    continue;
-                }
-                $oldGedcom = $record->gedcom();
-                $newGedcom = $this->manipulator->replacePlacBlock(
-                    $oldGedcom,
-                    $srcValue,
-                    $dstValue,
-                    $targetSubtags,
-                    $resolutions,
-                );
-
-                if ($newGedcom === $oldGedcom) {
-                    continue;
-                }
-
-                // GEDCOM-persistent: webtrees-Core schreibt + re-indexed alles
-                $record->updateRecord($newGedcom, false);
-                $afterMap[$entry['xref']] = $newGedcom;
-                $modified++;
-            }
+            // Modifikationen anwenden — DB-freie Kernlogik im PlaceRecordMutator.
+            // Wirft bei Schreibfehler → diese Transaktion rollt alles zurück.
+            // afterMap: xref → Nach-Merge-GEDCOM (für Undo-Stale-Check).
+            $afterMap = $this->mutator->applyMerge(
+                $store,
+                $affected,
+                $srcValue,
+                $dstValue,
+                $targetSubtags,
+                $resolutions,
+            );
+            $modified = count($afterMap);
 
             // Nach-Merge-Stand ins Backup — Undo prüft damit, ob ein Record
             // seither verändert wurde (Schutz vor Überschreiben fremder Edits).
@@ -408,27 +397,18 @@ class PlaceOperationService
             throw new RuntimeException('Unbekannte Backup-Version: ' . ($backup['version'] ?? '?'));
         }
 
+        /** @var list<array{xref: string, type: string, before_gedcom: string, after_gedcom?: string}> $gedcomSection */
         $gedcomSection = $backup['sections']['gedcom']['affected_records'] ?? [];
         $metaSection   = $backup['sections']['place_meta'] ?? null;
         $folderSection = $backup['sections']['folders'] ?? null;
+
+        $store = new WebtreesRecordStore($tree);
 
         // Stale-Schutz (Härtungspunkt #2): wurde ein betroffener Record seit der
         // Operation verändert? Dann würde der Restore fremde Edits überschreiben
         // → ALL-OR-NOTHING-Abbruch, NICHTS wird angefasst. (Alte Backups ohne
         // after_gedcom überspringen die Prüfung — kein Schutz, aber kein Fehler.)
-        $changed = [];
-        foreach ($gedcomSection as $entry) {
-            $after = $entry['after_gedcom'] ?? null;
-            if ($after === null) {
-                continue;
-            }
-            $record = $this->loadRecord($tree, $entry['xref'], $entry['type']);
-            if ($record !== null
-                && $this->canonicalGedcom($record->gedcom()) !== $this->canonicalGedcom((string) $after)
-            ) {
-                $changed[] = (string) $entry['xref'];
-            }
-        }
+        $changed = $this->mutator->detectStale($store, $gedcomSection);
         if ($changed !== []) {
             throw new RuntimeException(sprintf(
                 'Rückgängig abgebrochen: %d Datensatz/Datensätze wurde(n) seit der Operation '
@@ -441,15 +421,8 @@ class PlaceOperationService
 
         $restored = 0;
 
-        DB::connection()->transaction(function () use ($tree, $gedcomSection, &$restored): void {
-            foreach ($gedcomSection as $entry) {
-                $record = $this->loadRecord($tree, $entry['xref'], $entry['type']);
-                if ($record === null) {
-                    continue;
-                }
-                $record->updateRecord((string) $entry['before_gedcom'], false);
-                $restored++;
-            }
+        DB::connection()->transaction(function () use ($store, $gedcomSection, &$restored): void {
+            $restored = $this->mutator->restore($store, $gedcomSection);
         });
 
         // Aktuelle place_id von Quelle/Ziel nach dem GEDCOM-Restore auflösen
@@ -672,17 +645,6 @@ class PlaceOperationService
             }
         }
         unset($rec);
-    }
-
-    /**
-     * Normalisiert GEDCOM wie webtrees' updateRecord (Zeilenenden + trim) —
-     * für den stabilen Stale-Vergleich beim Undo. Merge schreibt mit
-     * update_chan=false (kein CHAN-Bump), also matcht der gespeicherte
-     * after-Stand exakt; ein späterer echter Edit bumpt CHAN → erkannt.
-     */
-    private function canonicalGedcom(string $gedcom): string
-    {
-        return trim((string) preg_replace('/[\r\n]+/', "\n", $gedcom));
     }
 
     /**
