@@ -83,7 +83,7 @@ $filterMode      = $filterMode ?? 'all';
                 <strong><?= I18N::translate('„Nur Endorte" aktiv — es sind Orte ausgeblendet.') ?></strong><br>
                 <?= I18N::translate('Ein „Endort" ist die unterste in deinen Daten vorhandene Stufe eines Ortes — meist ein Dorf/Stadt (z. B. „Brackenheim"), manchmal aber auch nur eine Verwaltungseinheit (z. B. „OA Brackenheim"), wenn im Eintrag kein genauerer Ort steht. Ausgeblendet sind hier: übergeordnete Ebenen UND jeder Ort, unter dem ein noch genauerer Ort existiert (auch wenn der durch einen Eintrag wie „Stadtteil, Stadt, …" erst entstanden ist). Vermisst du einen Ort, schalte auf „Alle Ebenen".') ?>
             </div>
-            <button type="button" class="btn-close ortsregister-hint-close" aria-label="<?= e(I18N::translate('Schließen')) ?>"></button>
+            <button type="button" class="btn-close ortsregister-hint-close" data-bs-dismiss="alert" aria-label="<?= e(I18N::translate('Schließen')) ?>"></button>
         </div>
 
         <!-- Merge-Selection-Bar -->
@@ -324,23 +324,25 @@ document.addEventListener('DOMContentLoaded', function () {
     // ---- Endorte-Hinweis: nur bei „Nur Endorte", schließbar + per-Browser gemerkt ----
     const endorteHint = document.getElementById('ortsregister-endorte-hint');
     const ENDORTE_HINT_KEY = 'ortsregister-endorte-hint-hidden';
+    // In-Memory-Flag ist die Quelle der Wahrheit — sonst „hängt" das Ausblenden,
+    // wenn localStorage blockiert ist (Privacy-Modus, partitioniert): der Klick
+    // würde nichts merken und updateEndorteHint() den Kasten sofort wieder zeigen.
+    let endorteHintDismissed = false;
+    try { endorteHintDismissed = localStorage.getItem(ENDORTE_HINT_KEY) === '1'; } catch (e) {}
     function updateEndorteHint() {
         if (!endorteHint) return;
         const checked = document.querySelector('.ortsregister-filter-mode:checked');
         const isLeaves = checked && checked.value === 'leaves';
-        let dismissed = false;
-        try { dismissed = localStorage.getItem(ENDORTE_HINT_KEY) === '1'; } catch (e) {}
-        endorteHint.style.display = (isLeaves && !dismissed) ? '' : 'none';
+        endorteHint.style.display = (isLeaves && !endorteHintDismissed) ? '' : 'none';
     }
-    if (endorteHint) {
-        const closeBtn = endorteHint.querySelector('.ortsregister-hint-close');
-        if (closeBtn) {
-            closeBtn.addEventListener('click', function () {
-                try { localStorage.setItem(ENDORTE_HINT_KEY, '1'); } catch (e) {}
-                updateEndorteHint();
-            });
-        }
-    }
+    // Merken übernimmt eine Delegation am document (robust wie der Undo-Handler);
+    // das Schließen selbst kommt zusätzlich nativ über data-bs-dismiss="alert".
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('.ortsregister-hint-close')) return;
+        endorteHintDismissed = true;
+        try { localStorage.setItem(ENDORTE_HINT_KEY, '1'); } catch (e2) {}
+        updateEndorteHint();
+    });
     updateEndorteHint();
 
     // ---- Merge-Selection State ----
