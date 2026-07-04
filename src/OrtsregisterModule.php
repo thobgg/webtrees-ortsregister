@@ -122,9 +122,30 @@ class OrtsregisterModule extends AbstractModule implements
     public function title(): string { return I18N::translate('Ortsregister'); }
     public function description(): string { return I18N::translate('Ortsregister mit visueller Landing-Page, Medien-Verknüpfung und (geplant) GOV-Integration.'); }
     public function customModuleAuthorName(): string { return 'Thomas Bugge'; }
-    public function customModuleVersion(): string { return '1.0.2'; }
+    public function customModuleVersion(): string { return '1.0.3'; }
     public function customModuleLatestVersion(): string { return '1.0.0'; }
     public function customModuleSupportUrl(): string { return ''; }
+
+    /**
+     * Modul-spezifische Uebersetzungen aus resources/lang/<lang>.mo (bevorzugt) oder .po.
+     * webtrees ruft dies pro Sprache auf und merged das Ergebnis in den Translator.
+     * Sprachtag ist z.B. "nl", "de", "en-GB" — fallback auf 2-Buchstaben-Praefix.
+     *
+     * @return array<string,string>
+     */
+    public function customTranslations(string $language): array
+    {
+        $dir = __DIR__ . '/../resources/lang/';
+        foreach ([$language, explode('-', $language)[0]] as $tag) {
+            foreach (['mo', 'po'] as $ext) {
+                $file = $dir . $tag . '.' . $ext;
+                if (is_file($file)) {
+                    return (new \Fisharebest\Localization\Translation($file))->asArray();
+                }
+            }
+        }
+        return [];
+    }
 
     public function boot(): void
     {
