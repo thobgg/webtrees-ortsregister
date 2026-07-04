@@ -4,6 +4,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+### Geändert
+- Hardcodiertes `customModuleLatestVersion() { return '1.0.0'; }` entfernt — es
+  meldete dauerhaft „latest = 1.0.0" und hätte einen Update-Hinweis ohnehin nie
+  ausgelöst. webtrees' Trait-Default greift jetzt (gibt die installierte Version
+  zurück → Control Panel zeigt sauber „aktuell"). Kein Verhalten für Nutzer
+  geändert, nur irreführender toter Code weg.
+
 ## [1.0.7] – 2026-07-04
 
 ### Behoben (kritisch)
