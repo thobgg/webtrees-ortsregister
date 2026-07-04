@@ -517,3 +517,15 @@ msgid "%s Ort mit Koordinaten"
 msgid_plural "%s Orte mit Koordinaten"
 msgstr[0] "%s Ort mit Koordinaten"
 msgstr[1] "%s Orte mit Koordinaten"
+
+msgid "Letzte Zusammenführungen"
+msgstr "Letzte Zusammenführungen"
+
+msgid "Zusammenführen"
+msgstr "Zusammenführen"
+
+msgid "Rückgängig"
+msgstr "Rückgängig"
+
+msgid "rückgängig gemacht"
+msgstr "rückgängig gemacht"

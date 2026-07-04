@@ -68,6 +68,7 @@ class OrtePage extends AbstractOrtsregisterHandler
             'totalOrte'  => $gesamtAnzahl,
             'orte'       => $orte,
             'filterMode' => $mode,
+            'letzteOps'  => $this->orteRepository->letzteOperationen($tree, 10),
         ]);
     }
 

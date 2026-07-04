@@ -518,3 +518,15 @@ msgid "%s Ort mit Koordinaten"
 msgid_plural "%s Orte mit Koordinaten"
 msgstr[0] "%s plaats met coördinaten"
 msgstr[1] "%s plaatsen met coördinaten"
+
+msgid "Letzte Zusammenführungen"
+msgstr "Recente samenvoegingen"
+
+msgid "Zusammenführen"
+msgstr "Samenvoegen"
+
+msgid "Rückgängig"
+msgstr "Ongedaan maken"
+
+msgid "rückgängig gemacht"
+msgstr "ongedaan gemaakt"

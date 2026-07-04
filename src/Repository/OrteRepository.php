@@ -91,6 +91,64 @@ class OrteRepository
         $this->cache->flush();
     }
 
+    /**
+     * Letzte Merge-/Rename-Operationen des Baums, neueste zuerst — für die
+     * Verlaufs-/Undo-Liste auf der Ortsseite. Lesbare Ortsnamen kommen aus der
+     * Backup-JSON (die Quell-place_id existiert nach dem Merge nicht mehr).
+     * Nicht gecacht: die Liste soll nach jedem Merge/Undo sofort aktuell sein.
+     *
+     * @return list<array{id: int, operation: string, status: string, created_at: string, src: string, dst: string}>
+     */
+    public function letzteOperationen(Tree $tree, int $limit = 10): array
+    {
+        $rows = DB::table('ortsregister_merge_log')
+            ->where('tree_id', '=', $tree->id())
+            ->orderByDesc('id')
+            ->limit($limit)
+            ->get();
+
+        $ops = [];
+        foreach ($rows as $row) {
+            [$src, $dst] = $this->labelForOperation($row);
+            $ops[] = [
+                'id'         => (int) $row->id,
+                'operation'  => (string) $row->operation,
+                'status'     => (string) $row->status,
+                'created_at' => (string) $row->created_at,
+                'src'        => $src,
+                'dst'        => $dst,
+            ];
+        }
+
+        return $ops;
+    }
+
+    /**
+     * Lesbare Quell-/Ziel-Namen aus der Backup-JSON; Fallback auf die place_ids,
+     * falls die Datei fehlt (z. B. manuell aufgeräumt).
+     *
+     * @return array{0: string, 1: string} [src, dst]
+     */
+    private function labelForOperation(object $row): array
+    {
+        $path = (string) ($row->backup_path ?? '');
+        if ($path !== '' && is_file($path)) {
+            $raw = file_get_contents($path);
+            if ($raw !== false) {
+                $data = json_decode($raw, true);
+                if (is_array($data)) {
+                    $src = (string) ($data['src_value'] ?? '');
+                    $dst = (string) ($data['dst_value'] ?? '');
+                    if ($src !== '' || $dst !== '') {
+                        return [$src, $dst];
+                    }
+                }
+            }
+        }
+
+        return ['#' . ($row->src_place_id ?? '?'), '#' . ($row->dst_place_id ?? '?')];
+    }
+
     // ---------------------------------------------------------------
     // Interne Queries
     // ---------------------------------------------------------------
