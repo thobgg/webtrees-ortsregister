@@ -4,6 +4,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+### Behoben
+- **Das „x" am „Nur Endorte"-Hinweis schloss nicht.** Die Markup war eine
+  Bootstrap-`alert-dismissible`-Box, aber ohne `data-bs-dismiss="alert"` — das
+  Schließen hing allein an einem eigenen JS-Handler. Jetzt schließt Bootstrap den
+  Hinweis nativ (zuverlässig, ohne JS-Abhängigkeit); das Merken (nicht erneut
+  zeigen) läuft über eine robuste Event-Delegation + In-Memory-Flag, sodass es
+  auch bei blockiertem `localStorage` (Privacy-Modus) sofort wirkt.
+
 ### Hinzugefügt
 - **„Letzte Zusammenführungen" mit Rückgängig direkt auf der Ortsliste.** Bisher
   war der Undo-Button nur im Merge-Ergebnis-Popup erreichbar — nach dem Schließen
