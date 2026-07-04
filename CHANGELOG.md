@@ -4,6 +4,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+## [1.0.4] – 2026-07-04
+
+### Verbessert
+- **Niederländische Übersetzung verfeinert** (PR #4 von @TheDutchJewel):
+  Beispiele im „Endort"-Hilfetext auf einen für NL-User verständlicheren
+  Kontext angepasst. Rein sprachliche Politur, keine Funktionsänderung.
+
 ## [1.0.3] – 2026-07-04
 
 ### Behoben (kritisch)
