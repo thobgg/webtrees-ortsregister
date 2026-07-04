@@ -4,6 +4,22 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+## [1.0.5] – 2026-07-04
+
+### Behoben (kritisch)
+- **Übersichtskarte zeigte rohes GeoJSON statt der Karte, sobald ein Ortsname
+  ein Apostroph enthielt.** Das GeoJSON wurde in ein einfach-quotiertes
+  `data-geojson='…'`-Attribut geschrieben; der erste Apostroph in den Daten
+  (z. B. niederländische Namen wie `'s-Gravenhage`, `'t Zand`) beendete das
+  Attribut vorzeitig, der Rest kippte als Text in die Seite. Da die komplette
+  Karte in einem Attribut steckt, brach ein **einziger** betroffener Ort die
+  **ganze** Kartenansicht. Fix: Das JSON wird jetzt mit `e()` HTML-escaped
+  ausgegeben (`data-geojson="…"`). Der Bug war seit v1.0.0 latent und traf
+  jeden Baum mit Apostroph-Ortsnamen (u. a. NL, FR, IT, IE, EN) — bei rein
+  deutschen Daten fiel er nur nie auf. Gemeldet aus dem NL-Test
+  (@TheDutchJewel). Die Detail-Karte war nicht betroffen (nutzt
+  `json_encode` im `<script>`).
+
 ## [1.0.4] – 2026-07-04
 
 ### Verbessert
