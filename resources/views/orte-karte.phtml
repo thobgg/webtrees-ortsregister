@@ -61,7 +61,7 @@ use Fisharebest\Webtrees\I18N;
         <!-- Karte -->
         <div id="ortsregister-leaflet"
              style="height: 560px; border-radius: .375rem; border: 1px solid var(--bs-border-color);"
-             data-geojson='<?= $geoJson /* JSON ist HTML-safe durch JSON_UNESCAPED_UNICODE */ ?>'>
+             data-geojson="<?= e($geoJson) /* e() escaped ", ', <, >, & — sonst brechen z.B. NL-Namen wie 's-Graveland das Attribut */ ?>">
         </div>
 
         <!-- Leaflet -->
