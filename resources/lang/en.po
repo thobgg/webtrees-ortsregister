@@ -512,3 +512,8 @@ msgstr "Link webtrees source (optional)"
 msgid "„Nur Endorte\" aktiv — es sind Orte ausgeblendet."
 msgstr "“Leaf places only” active – some places are hidden."
 
+
+msgid "%s Ort mit Koordinaten"
+msgid_plural "%s Orte mit Koordinaten"
+msgstr[0] "%s place with coordinates"
+msgstr[1] "%s places with coordinates"
