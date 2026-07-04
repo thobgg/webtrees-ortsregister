@@ -4,6 +4,18 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+## [1.0.6] – 2026-07-04
+
+### Behoben
+- **Plural-Badge „%s Orte mit Koordinaten" auf der Kartenseite war nicht
+  übersetzbar.** Es ist der einzige echte `I18N::plural()`-String des Moduls
+  und fehlte im Übersetzungskatalog (`resources/lang/*.po`) — deshalb zeigte
+  das Badge auch bei anderer UI-Sprache den deutschen Quelltext (im NL-UI
+  sichtbar neben „zonder coördinaten"). msgid jetzt in `de`/`en`/`nl`
+  aufgenommen, NL übersetzt (`%s plaats(en) met coördinaten`), `nl.mo` neu
+  kompiliert. Schließt #6 (aus #5 abgespalten). Danke @TheDutchJewel für den
+  Hinweis.
+
 ## [1.0.5] – 2026-07-04
 
 ### Behoben (kritisch)

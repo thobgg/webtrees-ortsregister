@@ -512,3 +512,8 @@ msgstr "webtrees-Quelle verknüpfen (optional)"
 msgid "„Nur Endorte\" aktiv — es sind Orte ausgeblendet."
 msgstr "„Nur Endorte\" aktiv — es sind Orte ausgeblendet."
 
+
+msgid "%s Ort mit Koordinaten"
+msgid_plural "%s Orte mit Koordinaten"
+msgstr[0] "%s Ort mit Koordinaten"
+msgstr[1] "%s Orte mit Koordinaten"

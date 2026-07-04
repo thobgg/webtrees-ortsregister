@@ -513,3 +513,8 @@ msgstr "webtrees-bron koppelen (optioneel)"
 
 msgid "„Nur Endorte\" aktiv — es sind Orte ausgeblendet."
 msgstr "“Alleen eindplaatsen” actief – sommige plaatsen zijn verborgen."
+
+msgid "%s Ort mit Koordinaten"
+msgid_plural "%s Orte mit Koordinaten"
+msgstr[0] "%s plaats met coördinaten"
+msgstr[1] "%s plaatsen met coördinaten"
