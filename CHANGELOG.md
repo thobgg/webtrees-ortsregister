@@ -4,6 +4,18 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+## [1.0.3] – 2026-07-04
+
+### Behoben (kritisch)
+- **Modul-UI wurde in KEINER Sprache übersetzt.** Das Modul implementiert nun
+  `customTranslations()`, sodass webtrees die msgstrs aus
+  `resources/lang/<lang>.mo`/`.po` überhaupt einliest. Bisher gab der
+  `ModuleCustomTrait`-Default ein leeres Array zurück — das gesamte UI zeigte
+  daher permanent die deutschen msgid-Strings, egal welche Sprache im
+  webtrees-Menü gewählt war. Danke an @TheDutchJewel für den detaillierten
+  Reproschritt-Bericht ("nu wordt er niets meer vertaald") — der Bug war seit
+  v1.0.0 latent und fiel erst durch den v1.0.2-i18n-Fix am Modulnamen auf.
+
 ## [1.0.2] – 2026-07-03
 
 ### Behoben
