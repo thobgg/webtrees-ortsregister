@@ -20,3 +20,6 @@ Bildschirmfoto_*.png
 Bildschirmfoto_*.jpg
 Screenshot_*.png
 Screenshot_*.jpg
+# Lokale Chat-Notizen (nicht im Repo)
+ortsregister_chats.md
+ortsregister_chats*.md
