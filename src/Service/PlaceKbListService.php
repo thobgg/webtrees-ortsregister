@@ -6,7 +6,6 @@ namespace Ortsregister\Service;
 
 use Ortsregister\Dto\PlaceKb;
 use Fisharebest\Webtrees\Tree;
-use Fisharebest\Webtrees\Webtrees;
 use RuntimeException;
 
 /**
@@ -27,7 +26,7 @@ class PlaceKbListService
     public const SCHEMA_VERSION = 1;
 
     public function __construct(
-        private readonly string $folderRoot = 'orte',
+        private readonly PlaceFolderLocator $folderLocator = new PlaceFolderLocator(),
     ) {}
 
     /**
@@ -221,16 +220,7 @@ class PlaceKbListService
 
     private function placeFolder(Tree $tree, string $placeName): ?string
     {
-        $placeName = trim($placeName);
-        if ($placeName === ''
-            || str_contains($placeName, '/')
-            || str_contains($placeName, '\\')
-            || str_contains($placeName, '..')
-        ) {
-            return null;
-        }
-        $mediaDir = $tree->getPreference('MEDIA_DIRECTORY', 'media/');
-        return Webtrees::DATA_DIR . $mediaDir . trim($this->folderRoot, '/') . '/' . $placeName;
+        return $this->folderLocator->folder($tree, $placeName);
     }
 
     private function generateId(): string
