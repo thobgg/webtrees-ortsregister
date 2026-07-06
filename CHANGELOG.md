@@ -4,6 +4,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+## [1.0.9] – 2026-07-06
+
 ### Hinzugefügt
 - **Aufgaben tragen jetzt Bearbeiter und Datum.** Eine Orts-Aufgabe (`_tasks.json`)
   speichert beim Anlegen den Anzeigenamen des webtrees-Nutzers und das Erstellungs-
