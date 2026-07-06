@@ -16,6 +16,9 @@ use Ortsregister\Http\RequestHandlers\GovLinkPage;
 use Ortsregister\Http\RequestHandlers\MergeExecute;
 use Ortsregister\Http\RequestHandlers\MergeModalPage;
 use Ortsregister\Http\RequestHandlers\MergeUndo;
+use Ortsregister\Http\RequestHandlers\LocWritePreview;
+use Ortsregister\Http\RequestHandlers\LocWriteExecute;
+use Ortsregister\Http\RequestHandlers\LocWriteUndo;
 use Ortsregister\Http\RequestHandlers\RenameExecute;
 use Ortsregister\Http\RequestHandlers\RenameModalPage;
 use Ortsregister\Http\RequestHandlers\OrteDataTable;
@@ -35,6 +38,8 @@ use Ortsregister\Service\PlaceEventCounter;
 use Ortsregister\Service\ArchionLinker;
 use Ortsregister\Service\ArchionParishLookup;
 use Ortsregister\Service\LocationReader;
+use Ortsregister\Service\LocationWriter;
+use Ortsregister\Service\OperationBackup;
 use Ortsregister\Service\PlaceFolderLocator;
 use Ortsregister\Service\PlaceFolderScanner;
 use Ortsregister\Service\PlaceSidecarInventory;
@@ -180,6 +185,9 @@ class OrtsregisterModule extends AbstractModule implements
         $router->post('ortsregister.notes.toggle-task',  '/tree/{tree}/orte/{place_id}/notizen/toggle', PlaceNotesToggleTask::class);
         $router->post('ortsregister.tasks.update',       '/tree/{tree}/orte/{place_id}/aufgaben',       PlaceTasksUpdate::class);
         $router->post('ortsregister.kbs.update',         '/tree/{tree}/orte/{place_id}/kbs',            PlaceKbsUpdate::class);
+        $router->get('ortsregister.loc.preview',         '/tree/{tree}/orte/{place_id}/loc-write/preview', LocWritePreview::class);
+        $router->post('ortsregister.loc.write',          '/tree/{tree}/orte/{place_id}/loc-write',         LocWriteExecute::class);
+        $router->post('ortsregister.loc.undo',           '/tree/{tree}/orte/{place_id}/loc-write/undo',    LocWriteUndo::class);
         $router->get('ortsregister.orte.detail',   '/tree/{tree}/orte/{place_id}',     OrteDetailPage::class);
         $router->get('ortsregister.admin.config',  '/ortsregister/admin/config',       AdminConfigPage::class)
                ->allows('POST');
@@ -299,6 +307,40 @@ class OrtsregisterModule extends AbstractModule implements
                 $container->get(PlaceSidecarInventory::class),
                 new PlaceRecordMutator($container->get(GedcomPlaceManipulator::class)),
                 new LocationReader(),
+            ),
+        );
+        // _LOC-Writer-Stack (W1): Identitäts-Record schreiben/aktualisieren.
+        $container->set(LocationReader::class, new LocationReader());
+        $container->set(OperationBackup::class, new OperationBackup(__DIR__ . '/../backups'));
+        $container->set(
+            LocationWriter::class,
+            new LocationWriter(
+                $container->get(LocationReader::class),
+                $container->get(OperationBackup::class),
+            ),
+        );
+        $container->set(
+            LocWritePreview::class,
+            new LocWritePreview(
+                $container->get(LocationWriter::class),
+                $container->get(\Ortsregister\Repository\OrteRepository::class),
+                $container->get(GovLinkingService::class),
+            ),
+        );
+        $container->set(
+            LocWriteExecute::class,
+            new LocWriteExecute(
+                $container->get(LocationWriter::class),
+                $container->get(\Ortsregister\Repository\OrteRepository::class),
+                $container->get(GovLinkingService::class),
+                $container->get(OperationBackup::class),
+            ),
+        );
+        $container->set(
+            LocWriteUndo::class,
+            new LocWriteUndo(
+                $container->get(LocationWriter::class),
+                $container->get(OperationBackup::class),
             ),
         );
         // AdminConfigPage: braucht das Modul selbst
