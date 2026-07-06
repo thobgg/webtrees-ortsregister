@@ -654,6 +654,9 @@ foreach ($bilder as $medium) {
                                    <?= $can_edit ? '' : 'disabled' ?>>
                             <span class="ortsregister-task-text flex-grow-1<?= $t->isOpen() ? '' : ' text-muted text-decoration-line-through' ?>"
                                   <?= $can_edit ? 'role="button" title="' . e(I18N::translate('Click zum Bearbeiten')) . '"' : '' ?>><?= e($t->text) ?></span>
+                            <?php if ($t->created !== '' || $t->author !== '') : ?>
+                                <small class="text-muted ortsregister-task-date" title="<?= e(I18N::translate('Angelegt')) ?>"><?= e(trim($t->created . ($t->author !== '' ? ' · ' . $t->author : ''))) ?></small>
+                            <?php endif ?>
                             <?php if ($can_edit) : ?>
                                 <button type="button" class="btn btn-sm btn-link text-danger p-0 ortsregister-task-delete"
                                         style="opacity:.0; transition:opacity .15s" title="<?= e(I18N::translate('Löschen')) ?>">×</button>
@@ -1408,6 +1411,14 @@ foreach ($bilder as $medium) {
                 span.title = 'Click zum Bearbeiten';
                 span.textContent = t.text;
                 li.appendChild(span);
+
+                const meta = (t.created || '') + (t.author ? ' · ' + t.author : '');
+                if (meta) {
+                    const date = document.createElement('small');
+                    date.className = 'text-muted ortsregister-task-date';
+                    date.textContent = meta;
+                    li.appendChild(date);
+                }
 
                 const del = document.createElement('button');
                 del.type = 'button';

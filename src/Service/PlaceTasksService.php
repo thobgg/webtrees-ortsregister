@@ -56,14 +56,24 @@ class PlaceTasksService
         return $tasks;
     }
 
-    public function add(Tree $tree, string $placeName, string $text): PlaceTask
+    /**
+     * @param string $author  webtrees-Anzeigename des Bearbeiters (optional)
+     * @param string $created Erstellungsdatum YYYY-MM-DD; leer → heute
+     */
+    public function add(Tree $tree, string $placeName, string $text, string $author = '', string $created = ''): PlaceTask
     {
         $text = trim($text);
         if ($text === '') {
             throw new RuntimeException('Leere Aufgabe.');
         }
         $tasks = $this->read($tree, $placeName);
-        $task  = new PlaceTask($this->generateId(), $text, PlaceTask::STATUS_OPEN);
+        $task  = new PlaceTask(
+            $this->generateId(),
+            $text,
+            PlaceTask::STATUS_OPEN,
+            $created !== '' ? $created : date('Y-m-d'),
+            trim($author),
+        );
         $tasks[] = $task;
         $this->writeAll($tree, $placeName, $tasks);
         return $task;
