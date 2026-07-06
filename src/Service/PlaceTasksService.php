@@ -6,7 +6,6 @@ namespace Ortsregister\Service;
 
 use Ortsregister\Dto\PlaceTask;
 use Fisharebest\Webtrees\Tree;
-use Fisharebest\Webtrees\Webtrees;
 use RuntimeException;
 
 /**
@@ -23,7 +22,7 @@ class PlaceTasksService
     public const FILENAME = '_tasks.json';
 
     public function __construct(
-        private readonly string $folderRoot = 'orte',
+        private readonly PlaceFolderLocator $folderLocator = new PlaceFolderLocator(),
     ) {}
 
     /**
@@ -159,16 +158,8 @@ class PlaceTasksService
 
     private function absolutePath(Tree $tree, string $placeName): ?string
     {
-        $placeName = trim($placeName);
-        if ($placeName === ''
-            || str_contains($placeName, '/')
-            || str_contains($placeName, '\\')
-            || str_contains($placeName, '..')
-        ) {
-            return null;
-        }
-        $mediaDir = $tree->getPreference('MEDIA_DIRECTORY', 'media/');
-        return Webtrees::DATA_DIR . $mediaDir . trim($this->folderRoot, '/') . '/' . $placeName . '/' . self::FILENAME;
+        $dir = $this->folderLocator->folder($tree, $placeName);
+        return $dir === null ? null : $dir . '/' . self::FILENAME;
     }
 
     private function generateId(): string

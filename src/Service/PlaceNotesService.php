@@ -8,7 +8,6 @@ use Ortsregister\Dto\PlaceNotes;
 use Fisharebest\Webtrees\Http\RequestHandlers\IndividualPage;
 use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\Tree;
-use Fisharebest\Webtrees\Webtrees;
 use League\CommonMark\GithubFlavoredMarkdownConverter;
 use RuntimeException;
 
@@ -38,7 +37,7 @@ class PlaceNotesService
     private ?GithubFlavoredMarkdownConverter $converter = null;
 
     public function __construct(
-        private readonly string $folderRoot = 'orte',
+        private readonly PlaceFolderLocator $folderLocator = new PlaceFolderLocator(),
     ) {}
 
     public function read(Tree $tree, string $placeName, string $filename = 'notes.md'): PlaceNotes
@@ -257,16 +256,7 @@ class PlaceNotesService
 
     private function placeFolder(Tree $tree, string $placeName): ?string
     {
-        $placeName = trim($placeName);
-        if ($placeName === ''
-            || str_contains($placeName, '/')
-            || str_contains($placeName, '\\')
-            || str_contains($placeName, '..')
-        ) {
-            return null;
-        }
-        $mediaDir = $tree->getPreference('MEDIA_DIRECTORY', 'media/');
-        return Webtrees::DATA_DIR . $mediaDir . trim($this->folderRoot, '/') . '/' . $placeName;
+        return $this->folderLocator->folder($tree, $placeName);
     }
 
     private function absolutePath(Tree $tree, string $placeName, string $filename): ?string

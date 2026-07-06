@@ -123,7 +123,7 @@ class OrtsregisterModule extends AbstractModule implements
     public function title(): string { return I18N::translate('Ortsregister'); }
     public function description(): string { return I18N::translate('Ortsregister mit visueller Landing-Page, Medien-Verknüpfung und (geplant) GOV-Integration.'); }
     public function customModuleAuthorName(): string { return 'Thomas Bugge'; }
-    public function customModuleVersion(): string { return '1.0.9'; }
+    public function customModuleVersion(): string { return '1.0.10'; }
     public function customModuleSupportUrl(): string { return ''; }
 
     /**
@@ -192,6 +192,8 @@ class OrtsregisterModule extends AbstractModule implements
     private function registerServices(): void
     {
         $container = Registry::container();
+        // PlaceFolderLocator: kanonische Ort->Ordner-Naht, von den Sidecar-Services geteilt.
+        $folderLocator = new PlaceFolderLocator($this->folderRoot());
         // PlaceOperationService + Sidecar-Merge-Stack werden am ENDE registriert
         // (sie brauchen die weiter unten gesetzten Sidecar-/GOV-Services).
         $container->set(
@@ -244,7 +246,7 @@ class OrtsregisterModule extends AbstractModule implements
         );
         $container->set(
             PlaceNotesService::class,
-            new PlaceNotesService($this->folderRoot()),
+            new PlaceNotesService($folderLocator),
         );
         $container->set(
             ArchionParishLookup::class,
@@ -260,17 +262,17 @@ class OrtsregisterModule extends AbstractModule implements
         );
         $container->set(
             PlaceTasksService::class,
-            new PlaceTasksService($this->folderRoot()),
+            new PlaceTasksService($folderLocator),
         );
         $container->set(
             PlaceKbListService::class,
-            new PlaceKbListService($this->folderRoot()),
+            new PlaceKbListService($folderLocator),
         );
         // Sidecar-Merge-Stack (Phase-4-GATE): nutzt die oben registrierten
         // Sidecar-Services + GovLinkingService, daher erst hier.
         $container->set(
             PlaceFolderLocator::class,
-            new PlaceFolderLocator($this->folderRoot()),
+            $folderLocator,
         );
         $container->set(
             PlaceSidecarMerger::class,

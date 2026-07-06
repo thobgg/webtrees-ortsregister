@@ -4,6 +4,18 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+## [1.0.10] – 2026-07-06
+
+### Intern
+- **Ort→Ordner-Auflösung konsolidiert.** Die Sidecar-Services `PlaceNotesService`,
+  `PlaceTasksService` und `PlaceKbListService` trugen je eine eigene, byte-identische
+  Kopie der Ordner-Auflösung (`media/<root>/<ort>/` inkl. Path-Traversal-Schutz). Alle
+  drei delegieren jetzt an die eine kanonische `PlaceFolderLocator`-Naht; die doppelten
+  Pfad-/Prüf-Blöcke und der ungenutzte `Webtrees`-Import sind weg. Kein Verhalten für
+  Nutzer geändert (Tests unverändert grün) — es ist die Vorbedingung für die kommende
+  `_LOC`-Identitätsschicht, die genau an dieser einen Naht ansetzt. (`PlaceFolderScanner`
+  und `ArchionLinker` folgen separat, sie brauchen zusätzlich relative bzw. Root-Pfade.)
+
 ## [1.0.9] – 2026-07-06
 
 ### Hinzugefügt
