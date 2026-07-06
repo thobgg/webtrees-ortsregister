@@ -361,6 +361,20 @@ foreach ($bilder as $medium) {
         </div>
         <?php endif ?>
 
+        <?php if ($can_edit && $ort !== null && $tree !== null) : ?>
+        <div class="mb-4" id="ortsregister-loc-write"
+             data-preview-url="<?= e(route('ortsregister.loc.preview', ['tree' => $tree->name(), 'place_id' => $place_id])) ?>"
+             data-write-url="<?= e(route('ortsregister.loc.write', ['tree' => $tree->name(), 'place_id' => $place_id])) ?>"
+             data-csrf="<?= e(csrf_token()) ?>">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="ortsregister-loc-write-btn">
+                <span aria-hidden="true">🧭</span> <?= I18N::translate('Identität als _LOC schreiben') ?>
+            </button>
+            <div class="form-text">
+                <?= I18N::translate('Schreibt vorhandene GOV-ID und Koordinaten additiv in einen GEDCOM-L _LOC-Record (offenes Standardformat). Die Vorschau zeigt genau, was passiert; bestehende Werte werden nie überschrieben.') ?>
+            </div>
+        </div>
+        <?php endif ?>
+
         <div class="row g-3 mb-4">
             <div class="col-6 col-sm-3">
                 <div class="card text-center h-100">
@@ -1365,6 +1379,107 @@ foreach ($bilder as $medium) {
         fetch(form.action, { method: 'POST', body: fd, headers: { 'X-CSRF-TOKEN': csrf }})
             .then(r => r.json())
             .then(_ => location.reload());
+    });
+})();
+</script>
+<?php endif ?>
+
+<?php if ($can_edit && $ort !== null && $tree !== null) : ?>
+<div class="modal fade" id="ortsregister-loc-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><span aria-hidden="true">🧭</span> <?= I18N::translate('_LOC-Identität schreiben') ?></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="ortsregister-loc-modal-body">
+                <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?= I18N::translate('Abbrechen') ?></button>
+                <button type="button" class="btn btn-primary" id="ortsregister-loc-confirm" disabled><?= I18N::translate('Schreiben') ?></button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+(function () {
+    const wrap    = document.getElementById('ortsregister-loc-write');
+    const modalEl = document.getElementById('ortsregister-loc-modal');
+    if (!wrap || !modalEl) return;
+    const previewUrl = wrap.dataset.previewUrl;
+    const writeUrl   = wrap.dataset.writeUrl;
+    const csrf       = wrap.dataset.csrf;
+    const body    = document.getElementById('ortsregister-loc-modal-body');
+    const confirm = document.getElementById('ortsregister-loc-confirm');
+    let modal = null;
+    let selectedTarget = null;
+
+    const esc = (s) => (s == null ? '' : String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])));
+
+    document.getElementById('ortsregister-loc-write-btn').addEventListener('click', function () {
+        body.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>';
+        confirm.disabled = true;
+        selectedTarget = null;
+        modal = modal || new bootstrap.Modal(modalEl);
+        modal.show();
+        fetch(previewUrl, { headers: { 'Accept': 'application/json' }})
+            .then(r => r.json())
+            .then(renderPreview)
+            .catch(err => { body.innerHTML = '<div class="text-danger">Fehler: ' + esc(err) + '</div>'; });
+    });
+
+    function renderPreview(data) {
+        if (!data.success) {
+            body.innerHTML = '<div class="text-danger">' + esc(data.message || 'Fehler') + '</div>';
+            return;
+        }
+        const labels = { create: 'Neuen _LOC-Record anlegen', update: 'Bestehenden _LOC-Record ergänzen', none: 'Nichts zu schreiben', ambiguous: 'Mehrere passende _LOC-Records' };
+        let html = '<p class="fw-semibold">' + esc(labels[data.action] || data.action)
+                 + (data.target_xref ? ' <code>@' + esc(data.target_xref) + '@</code>' : '') + '</p>';
+        if (data.action === 'ambiguous') {
+            html += '<p>Bitte den passenden Record wählen:</p>';
+            (data.candidates || []).forEach((c, i) => {
+                html += '<div class="form-check"><input class="form-check-input" type="radio" name="loc-target" id="loc-cand-' + i + '" value="' + esc(c.xref) + '">'
+                     + '<label class="form-check-label" for="loc-cand-' + i + '">' + esc(c.name) + ' <code>@' + esc(c.xref) + '@</code></label></div>';
+            });
+        } else if (data.gedcom) {
+            html += '<p class="mb-1">Folgendes wird additiv geschrieben:</p><pre class="border rounded p-2 bg-body-secondary">' + esc(data.gedcom) + '</pre>';
+        } else if (data.target_xref) {
+            html += '<p class="text-muted">Die Identität ist bereits vollständig — nichts zu ergänzen.</p>';
+        } else {
+            html += '<p class="text-muted">Für diesen Ort hat das Modul keine GOV-ID und keine Koordinaten — es gibt nichts, was in einen _LOC-Record geschrieben werden könnte. Verknüpfe den Ort zuerst über „Jetzt mit GOV verknüpfen".</p>';
+        }
+        if (data.conflicts && data.conflicts.length) {
+            html += '<div class="alert alert-warning mt-2 mb-0"><strong>Konflikte (werden NICHT geschrieben):</strong><ul class="mb-0">'
+                 + data.conflicts.map(c => '<li>' + esc(c) + '</li>').join('') + '</ul></div>';
+        }
+        body.innerHTML = html;
+
+        if (data.action === 'create' || data.action === 'update') {
+            confirm.disabled = false;
+        } else if (data.action === 'ambiguous') {
+            confirm.disabled = true;
+            body.querySelectorAll('input[name="loc-target"]').forEach(r => r.addEventListener('change', function () {
+                selectedTarget = this.value;
+                confirm.disabled = false;
+            }));
+        } else {
+            confirm.disabled = true;
+        }
+    }
+
+    confirm.addEventListener('click', function () {
+        const fd = new FormData();
+        if (selectedTarget) fd.append('target_xref', selectedTarget);
+        confirm.disabled = true;
+        fetch(writeUrl, { method: 'POST', body: fd, headers: { 'X-CSRF-TOKEN': csrf }})
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) { location.reload(); }
+                else { alert('Schreiben fehlgeschlagen: ' + (data.message || 'unbekannt')); confirm.disabled = false; }
+            })
+            .catch(err => { alert('Netzwerkfehler: ' + err); confirm.disabled = false; });
     });
 })();
 </script>

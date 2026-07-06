@@ -85,4 +85,61 @@ if ($exampleName !== null) {
     echo "\nforPlaceName(Baum {$tid}, \"{$name}\") -> " . count($hits) . " Treffer (end-to-end gegen echte DB).\n";
 }
 
+// ---------------------------------------------------------------------------
+// Test-Kandidaten für den Writer (W1): Orte OHNE _LOC finden.
+// ---------------------------------------------------------------------------
+$fold = static fn(string $s): string => mb_strtolower(trim((string) preg_replace('/\s+/', ' ', $s)));
+
+foreach ($treeIds as $tid) {
+    $tid = (int) $tid;
+
+    // Gefaltete Namen, die schon ein _LOC haben.
+    $locNames = [];
+    foreach (DB::table('other')->where('o_file', '=', $tid)->where('o_type', '=', '_LOC')->pluck('o_gedcom') as $g) {
+        foreach ($reader->parse('x', (string) $g)->names as $n) {
+            $locNames[$fold($n)] = true;
+        }
+    }
+
+    // place_id -> Ortsname (Blatt) für diesen Baum.
+    $idToName = [];
+    foreach (DB::table('places')->where('p_file', '=', $tid)->select(['p_id', 'p_place'])->get() as $p) {
+        $idToName[(int) $p->p_id] = (string) $p->p_place;
+    }
+
+    // (A) SOFORT anlegbar: Modul-GOV gesetzt, aber kein _LOC → CREATE ohne Vorarbeit.
+    echo "\n=== Baum {$tid}: CREATE-Kandidaten (Modul-GOV gesetzt, kein _LOC) ===\n";
+    $anyA = false;
+    $metaRows = DB::table('ortsregister_place_meta')
+        ->where('tree_id', '=', $tid)
+        ->whereNotNull('gov_id')
+        ->where('gov_id', '!=', '')
+        ->select(['place_id', 'gov_id'])
+        ->get();
+    foreach ($metaRows as $m) {
+        $name = $idToName[(int) $m->place_id] ?? null;
+        if ($name === null || isset($locNames[$fold($name)])) {
+            continue;
+        }
+        echo "  place_id={$m->place_id}  {$name}  (GOV {$m->gov_id})\n";
+        $anyA = true;
+    }
+    if (!$anyA) {
+        echo "  (keine — im Modul ist kaum/kein Ort mit GOV verknüpft)\n";
+    }
+
+    // (B) Orte OHNE _LOC (zum „mit GOV verknüpfen" + anlegen).
+    $without = [];
+    foreach ($idToName as $pid => $name) {
+        if (!isset($locNames[$fold($name)])) {
+            $without[] = "{$name} (place_id={$pid})";
+        }
+    }
+    sort($without);
+    echo "\n=== Baum {$tid}: Orte OHNE _LOC (" . count($without) . " gesamt) — erste 25 ===\n";
+    foreach (array_slice($without, 0, 25) as $w) {
+        echo "  {$w}\n";
+    }
+}
+
 echo "\nFertig. Nichts geschrieben.\n";

@@ -103,6 +103,10 @@ class OrteRepository
     {
         $rows = DB::table('ortsregister_merge_log')
             ->where('tree_id', '=', $tree->id())
+            // Nur Operationen, die der globale Merge/Rename-Undo-Handler zurückspielen
+            // kann. `loc_write` teilt dieselbe Log-Tabelle, hat aber ein eigenes
+            // Backup-Format + eigenen Undo-Endpoint → hier NICHT auflisten.
+            ->whereIn('operation', ['merge', 'rename'])
             ->orderByDesc('id')
             ->limit($limit)
             ->get();
