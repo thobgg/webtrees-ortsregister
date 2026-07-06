@@ -59,7 +59,7 @@ final class PlaceTasksUpdate implements RequestHandlerInterface
         try {
             switch ($action) {
                 case 'add':
-                    $this->tasksService->add($tree, $placeName, $text);
+                    $this->tasksService->add($tree, $placeName, $text, (string) $user->realName());
                     break;
                 case 'toggle':
                     if ($id === '') throw new \RuntimeException('Keine ID.');

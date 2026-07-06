@@ -4,6 +4,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+### Hinzugefügt
+- **Aufgaben tragen jetzt Bearbeiter und Datum.** Eine Orts-Aufgabe (`_tasks.json`)
+  speichert beim Anlegen den Anzeigenamen des webtrees-Nutzers und das Erstellungs-
+  datum; beide werden neben dem Aufgabentext angezeigt. Damit hat jede Aufgabe einen
+  Bezug zu *wer* und *wann* — die zwei Felder, die eine Forschungsaufgabe nach
+  GEDCOM-L braucht (`DATE`, `_WT_USER`). Das formt die Sidecar-Aufgabe bereits in die
+  Gestalt eines `_TODO`-Eintrags und ist die Vorstufe für einen späteren, opt-in
+  `_LOC:_TODO`-Export als Interop-Brücke (Issue #7). Alt-Dateien ohne die Felder
+  bleiben unverändert lesbar (Default = leer).
+
 ## [1.0.8] – 2026-07-04
 
 ### Behoben
