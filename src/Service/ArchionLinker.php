@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Ortsregister\Service;
 
 use Fisharebest\Webtrees\Tree;
-use Fisharebest\Webtrees\Webtrees;
 
 /**
  * Liefert Archion-Deep-URLs pro Ort. Zwei-Level-Lookup:
@@ -31,7 +30,7 @@ final class ArchionLinker
     private array $mapCache = [];
 
     public function __construct(
-        private readonly string $folderRoot = 'orte',
+        private readonly PlaceFolderLocator $folderLocator = new PlaceFolderLocator(),
         private readonly ?ArchionParishLookup $parishLookup = null,
         private readonly float $autoMaxDistanceKm = 10.0,
     ) {}
@@ -104,7 +103,11 @@ final class ArchionLinker
 
     private function readPerPlace(Tree $tree, string $placeName): ?string
     {
-        $path = $this->placeFolder($tree) . $placeName . '/' . self::PER_PLACE_FILE;
+        $folder = $this->folderLocator->folder($tree, $placeName);
+        if ($folder === null) {
+            return null;
+        }
+        $path = $folder . '/' . self::PER_PLACE_FILE;
         if (!is_file($path)) {
             return null;
         }
@@ -125,7 +128,7 @@ final class ArchionLinker
         if (isset($this->mapCache[$treeId])) {
             return $this->mapCache[$treeId];
         }
-        $path = $this->placeFolder($tree) . self::MAP_FILE;
+        $path = $this->folderLocator->root($tree) . '/' . self::MAP_FILE;
         $map  = [];
         if (is_file($path)) {
             $decoded = $this->loadJson($path);
@@ -155,12 +158,6 @@ final class ArchionLinker
         } catch (\JsonException) {
             return null;
         }
-    }
-
-    private function placeFolder(Tree $tree): string
-    {
-        $mediaDir = $tree->getPreference('MEDIA_DIRECTORY', 'media/');
-        return Webtrees::DATA_DIR . $mediaDir . trim($this->folderRoot, '/') . '/';
     }
 
     private function isValidPlaceName(string $name): bool

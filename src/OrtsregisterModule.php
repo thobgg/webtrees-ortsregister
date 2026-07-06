@@ -34,6 +34,7 @@ use Ortsregister\Service\GovLinkingService;
 use Ortsregister\Service\PlaceEventCounter;
 use Ortsregister\Service\ArchionLinker;
 use Ortsregister\Service\ArchionParishLookup;
+use Ortsregister\Service\LocationReader;
 use Ortsregister\Service\PlaceFolderLocator;
 use Ortsregister\Service\PlaceFolderScanner;
 use Ortsregister\Service\PlaceSidecarInventory;
@@ -242,7 +243,7 @@ class OrtsregisterModule extends AbstractModule implements
         );
         $container->set(
             PlaceFolderScanner::class,
-            new PlaceFolderScanner($this->folderRoot()),
+            new PlaceFolderScanner($folderLocator),
         );
         $container->set(
             PlaceNotesService::class,
@@ -255,7 +256,7 @@ class OrtsregisterModule extends AbstractModule implements
         $container->set(
             ArchionLinker::class,
             new ArchionLinker(
-                $this->folderRoot(),
+                $folderLocator,
                 $container->get(ArchionParishLookup::class),
                 (float) $this->archionAutoDistanceKm(),
             ),
@@ -297,6 +298,7 @@ class OrtsregisterModule extends AbstractModule implements
                 $container->get(PlaceSidecarMerger::class),
                 $container->get(PlaceSidecarInventory::class),
                 new PlaceRecordMutator($container->get(GedcomPlaceManipulator::class)),
+                new LocationReader(),
             ),
         );
         // AdminConfigPage: braucht das Modul selbst
@@ -320,6 +322,7 @@ class OrtsregisterModule extends AbstractModule implements
                 $container->get(PlaceTasksService::class),
                 $container->get(PlaceKbListService::class),
                 $this,
+                new LocationReader(),
             ),
         );
     }

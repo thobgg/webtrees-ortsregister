@@ -30,6 +30,37 @@ final class PlaceFolderLocator
      */
     public function folder(Tree $tree, string $leafName): ?string
     {
+        $leafName = $this->safeLeaf($leafName);
+        return $leafName === null ? null : $this->root($tree) . '/' . $leafName;
+    }
+
+    /**
+     * Absoluter Wurzelpfad `<data>/<media>/<root>` (ohne abschliessenden Slash).
+     * Für Ablagen die NICHT an einem einzelnen Ort hängen (z.B. globale
+     * Archion-Map `_archion-urls.json`).
+     */
+    public function root(Tree $tree): string
+    {
+        $mediaDir = $tree->getPreference('MEDIA_DIRECTORY', 'media/');
+        return Webtrees::DATA_DIR . $mediaDir . trim($this->folderRoot, '/');
+    }
+
+    /**
+     * Ordnerpfad relativ zu MEDIA_DIRECTORY (`<root>/<blattname>`) oder null bei
+     * unsicherem Namen. Für Verweise die relativ bleiben müssen (z.B.
+     * `PlaceFile::relativePath` → MediaDateiServe `?pfad=…`).
+     */
+    public function relativeFolder(Tree $tree, string $leafName): ?string
+    {
+        $leafName = $this->safeLeaf($leafName);
+        return $leafName === null ? null : trim($this->folderRoot, '/') . '/' . $leafName;
+    }
+
+    /**
+     * Trimmt + prüft den Blattnamen (Path-Traversal-Schutz). null = unsicher/leer.
+     */
+    private function safeLeaf(string $leafName): ?string
+    {
         $leafName = trim($leafName);
         if ($leafName === ''
             || str_contains($leafName, '/')
@@ -38,7 +69,6 @@ final class PlaceFolderLocator
         ) {
             return null;
         }
-        $mediaDir = $tree->getPreference('MEDIA_DIRECTORY', 'media/');
-        return Webtrees::DATA_DIR . $mediaDir . trim($this->folderRoot, '/') . '/' . $leafName;
+        return $leafName;
     }
 }

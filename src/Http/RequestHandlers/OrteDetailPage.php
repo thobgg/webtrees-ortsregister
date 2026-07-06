@@ -11,6 +11,7 @@ use Ortsregister\Repository\OrteRepository;
 use Ortsregister\Service\DdbClient;
 use Ortsregister\Service\GovHierarchyResolver;
 use Ortsregister\Service\GovLinkingService;
+use Ortsregister\Service\LocationReader;
 use Ortsregister\Service\PlaceEventCounter;
 use Ortsregister\Service\ArchionLinker;
 use Ortsregister\Service\PlaceFolderScanner;
@@ -46,6 +47,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
         private readonly PlaceTasksService    $tasksService,
         private readonly PlaceKbListService   $kbService,
         private readonly OrtsregisterModule   $module,
+        private readonly LocationReader       $locationReader = new LocationReader(),
     ) {}
 
     protected function respond(
@@ -71,6 +73,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
                 'title'        => I18N::translate('Ort'),
                 'tree'         => null,
                 'ort'          => null,
+                'loc_records'  => [],
                 'personen'     => [],
                 'medien'       => [],
                 'gov_id'             => null,
@@ -101,6 +104,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
                 'title'        => I18N::translate('Ort nicht gefunden'),
                 'tree'         => $tree,
                 'ort'          => null,
+                'loc_records'  => [],
                 'personen'     => [],
                 'medien'       => [],
                 'gov_id'             => null,
@@ -286,10 +290,20 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
             }
         } catch (Throwable) {}
 
+        // GEDCOM-L _LOC-Records mit passendem Namen (rein lesend, Identitäts-Schicht).
+        // Nur ein Hinweis — Namensgleichheit ist Heuristik, keine harte Zuordnung.
+        $locRecords = [];
+        try {
+            $locRecords = $this->locationReader->forPlaceName($tree, $ort->name);
+        } catch (Throwable) {
+            // Stiller Fallback — die Ortsseite darf daran nicht scheitern.
+        }
+
         return $this->viewResponse($this->viewName('ort-detail'), array_merge([
             'title'        => $ort->name,
             'tree'         => $tree,
             'ort'          => $ort,
+            'loc_records'  => $locRecords,
             'personen'     => $personen,
             'medien'       => $medien,
             'gov_id'             => $govId,

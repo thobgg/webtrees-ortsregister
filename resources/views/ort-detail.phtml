@@ -33,6 +33,7 @@ use Fisharebest\Webtrees\View;
 /** @var list<\Ortsregister\Dto\PlaceTask> $tasks */
 /** @var array{open:int,done:int} $task_counts */
 /** @var \Ortsregister\OrtsregisterModule $module */
+/** @var list<\Ortsregister\Dto\LocationIdentity> $loc_records */
 
 // Lokale Aliases — Settings kommen vom Handler, Defaults siehe OrtsregisterModule
 $PERSONEN_VISIBLE = $personen_visible ?? 10;
@@ -311,6 +312,54 @@ foreach ($bilder as $medium) {
                 <?php endif ?>
             </div>
         </div>
+
+        <?php if ($loc_records !== []) : ?>
+        <div class="card mb-4" data-collapsible data-card-key="loc-identitaet">
+            <div class="card-header fw-semibold d-flex align-items-center">
+                <span><span aria-hidden="true">🧭</span> <?= I18N::translate('GEDCOM-L _LOC-Identität') ?></span>
+                <span class="badge bg-secondary ms-2"><?= count($loc_records) ?></span>
+                <span class="ortsregister-chevron ms-auto" aria-hidden="true">▾</span>
+            </div>
+            <div class="card-body">
+                <?php foreach ($loc_records as $loc) : ?>
+                    <div class="mb-3">
+                        <div>
+                            <strong><?= e($loc->primaryName() !== '' ? $loc->primaryName() : $ort->name) ?></strong>
+                            <code class="ms-1">@<?= e($loc->xref) ?>@</code>
+                            <?php if ($loc->type !== null) : ?>
+                                <span class="text-muted small ms-1"><?= e($loc->type) ?></span>
+                            <?php endif ?>
+                        </div>
+                        <?php if (count($loc->names) > 1) : ?>
+                            <div class="text-muted small">
+                                <?= I18N::translate('Namensvarianten') ?>:
+                                <?= e(implode(', ', array_slice($loc->names, 1))) ?>
+                            </div>
+                        <?php endif ?>
+                        <div class="small">
+                            <?php if ($loc->hasGov()) : ?>
+                                <span class="me-2"><strong>GOV</strong>
+                                    <a href="https://gov.genealogy.net/item/show/<?= e($loc->govId) ?>"
+                                       target="_blank" rel="noopener"><code><?= e($loc->govId) ?></code> ↗</a>
+                                </span>
+                            <?php endif ?>
+                            <?php if ($loc->hasCoordinates()) : ?>
+                                <span class="me-2"><?= I18N::translate('Koordinaten') ?>:
+                                    <?= e(sprintf('%.4f, %.4f', $loc->latitude, $loc->longitude)) ?></span>
+                            <?php endif ?>
+                            <?php if ($loc->parentXrefs !== []) : ?>
+                                <span class="text-muted"><?= I18N::translate('Hierarchie-Zeiger') ?>:
+                                    <?= count($loc->parentXrefs) ?></span>
+                            <?php endif ?>
+                        </div>
+                    </div>
+                <?php endforeach ?>
+                <div class="form-text">
+                    <?= I18N::translate('Vorhandene _LOC-Records (GEDCOM-L Identitäts-Schicht) mit passendem Ortsnamen. Nur gelesen, nichts geschrieben — die Zuordnung über den Namen ist ein Hinweis, keine feste Verknüpfung.') ?>
+                </div>
+            </div>
+        </div>
+        <?php endif ?>
 
         <div class="row g-3 mb-4">
             <div class="col-6 col-sm-3">
