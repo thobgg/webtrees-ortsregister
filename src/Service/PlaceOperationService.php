@@ -50,6 +50,7 @@ class PlaceOperationService
         private readonly PlaceSidecarMerger      $sidecarMerger,
         private readonly PlaceSidecarInventory   $inventory,
         private readonly PlaceRecordMutator      $mutator,
+        private readonly LocationReader          $locationReader = new LocationReader(),
     ) {}
 
     // ---------------------------------------------------------------
@@ -91,9 +92,10 @@ class PlaceOperationService
         $conflicts = $this->manipulator->detectConflicts($sourceSubtags, $targetSubtags);
 
         $warnings = [];
-        if (isset($sourceSubtags['_LOC']) || isset($targetSubtags['_LOC'])) {
-            $warnings[] = 'Beteiligte PLACs verweisen auf Vesta-_LOC-Records. '
-                . 'Mit dem Merge können _LOC-Records verwaisen — separate Aufräum-Operation später.';
+        // _LOC-Zeiger auflösen (rein lesend): statt „irgendwo ein _LOC" zeigen
+        // wir, WAS der Record trägt und welche Seite verwaist.
+        foreach ($this->describeLocReferences($tree, $sourceSubtags, $targetSubtags) as $locWarning) {
+            $warnings[] = $locWarning;
         }
 
         // Großer Merge: läuft in EINER Transaktion ohne Batching (Härtung #1
@@ -766,6 +768,89 @@ class PlaceOperationService
             return mb_strtolower($s);
         };
         return $a !== $b && $norm($a) === $norm($b);
+    }
+
+    /**
+     * Löst `_LOC`-Zeiger der beteiligten PLACs auf (rein lesend über die
+     * Core-Factory) und beschreibt konkret, was jeder Record trägt und welche
+     * Seite beim Merge verwaisen kann. `_LOC` ist nativ (GEDCOM-L), NICHT
+     * Vesta-spezifisch — daher neutrale Formulierung.
+     *
+     * @param array<string, list<string>> $sourceSubtags
+     * @param array<string, list<string>> $targetSubtags
+     * @return list<string>
+     */
+    private function describeLocReferences(Tree $tree, array $sourceSubtags, array $targetSubtags): array
+    {
+        $srcRefs = $this->uniqueLocXrefs($sourceSubtags['_LOC'] ?? []);
+        $dstRefs = $this->uniqueLocXrefs($targetSubtags['_LOC'] ?? []);
+        if ($srcRefs === [] && $dstRefs === []) {
+            return [];
+        }
+
+        $out = [];
+        foreach ($srcRefs as $xref) {
+            $summary = $this->locSummary($this->locationReader->make($tree, $xref));
+            $out[]   = sprintf(
+                'Die Quelle verweist auf den GEDCOM-L-Ortsrecord @%s@%s. Beim Merge kann die Referenz '
+                . 'darauf wegfallen und der Record verwaisen. Das Zusammenführen der _LOC-Identität ist noch '
+                . 'nicht automatisiert — bei Bedarf separat prüfen.',
+                $xref,
+                $summary === '' ? '' : ' (' . $summary . ')',
+            );
+        }
+
+        if ($dstRefs !== []) {
+            $parts = [];
+            foreach ($dstRefs as $xref) {
+                $summary = $this->locSummary($this->locationReader->make($tree, $xref));
+                $parts[] = '@' . $xref . '@' . ($summary === '' ? '' : ' (' . $summary . ')');
+            }
+            $out[] = 'Das Ziel trägt bereits GEDCOM-L-Ortsrecord(s) ' . implode(', ', $parts)
+                . '. Eine Quell-Identität wird NICHT automatisch hineingemergt.';
+        }
+
+        return $out;
+    }
+
+    /**
+     * Xref-Zeiger (`@L1@`) aus den rohen `_LOC`-Subtag-Werten ziehen, dedupliziert.
+     *
+     * @param list<string> $rawValues
+     * @return list<string>
+     */
+    private function uniqueLocXrefs(array $rawValues): array
+    {
+        $out = [];
+        foreach ($rawValues as $raw) {
+            if (preg_match('/@([^@]+)@/', trim($raw), $m) === 1) {
+                $out[$m[1]] = true;
+            }
+        }
+        return array_keys($out);
+    }
+
+    /** Kurzbeschreibung einer gelesenen _LOC-Identität (leer, wenn nichts Auswertbares). */
+    private function locSummary(?\Ortsregister\Dto\LocationIdentity $id): string
+    {
+        if ($id === null || $id->isEmpty()) {
+            return '';
+        }
+        $bits = [];
+        if ($id->primaryName() !== '') {
+            $bits[] = '„' . $id->primaryName() . '"';
+        }
+        if ($id->hasGov()) {
+            $bits[] = 'GOV ' . $id->govId;
+        }
+        if ($id->hasCoordinates()) {
+            $bits[] = 'Koordinaten';
+        }
+        $extraNames = count($id->names) - 1;
+        if ($extraNames > 0) {
+            $bits[] = $extraNames . ' weitere Namensvariante' . ($extraNames === 1 ? '' : 'n');
+        }
+        return implode(', ', $bits);
     }
 
     /** Existiert (mindestens) ein Ort mit diesem Blattnamen im Baum? */

@@ -6,7 +6,6 @@ namespace Ortsregister\Service;
 
 use Ortsregister\Dto\PlaceFile;
 use Fisharebest\Webtrees\Tree;
-use Fisharebest\Webtrees\Webtrees;
 
 /**
  * Liest Dateien aus `media/<root>/<ortsname>/` zu einem Ort.
@@ -23,7 +22,7 @@ class PlaceFolderScanner
     private const IGNORED_PREFIXES = ['.', '_'];
 
     public function __construct(
-        private readonly string $folderRoot = 'orte',
+        private readonly PlaceFolderLocator $folderLocator = new PlaceFolderLocator(),
     ) {}
 
     /**
@@ -31,21 +30,10 @@ class PlaceFolderScanner
      */
     public function scan(Tree $tree, string $placeName): array
     {
-        $placeName = trim($placeName);
-        if ($placeName === '') {
-            return [];
-        }
-
-        // Path-Traversal-Schutz: keine "/" oder ".." im Place-Namen
-        if (str_contains($placeName, '/') || str_contains($placeName, '\\') || str_contains($placeName, '..')) {
-            return [];
-        }
-
-        $mediaDir   = $tree->getPreference('MEDIA_DIRECTORY', 'media/');
-        $relativeDir = trim($this->folderRoot, '/') . '/' . $placeName;
-        $absoluteDir = Webtrees::DATA_DIR . $mediaDir . $relativeDir;
-
-        if (!is_dir($absoluteDir)) {
+        // Ort->Ordner-Auflösung + Path-Traversal-Schutz: einzige Naht.
+        $absoluteDir = $this->folderLocator->folder($tree, $placeName);
+        $relativeDir = $this->folderLocator->relativeFolder($tree, $placeName);
+        if ($absoluteDir === null || $relativeDir === null || !is_dir($absoluteDir)) {
             return [];
         }
 
