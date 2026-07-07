@@ -7,7 +7,7 @@
 | | |
 |---|---|
 | Modul-Name | `ortsregister` |
-| Version | 1.0.10 |
+| Version | 1.1.0 |
 | webtrees | 2.2.x |
 | PHP | 8.2 – 8.4 |
 | Lizenz | GPL-3.0-or-later |
@@ -17,8 +17,11 @@
 ## ⚠️ Vorab — dieses Modul schreibt in deinen Stammbaum
 
 **Dieses Modul schreibt in deinen Stammbaum.** *Merge* und *Umbenennen* schreiben
-die `PLAC` betroffener Datensätze über die native webtrees-Edit-API um. Da es
-Datensätze verändert, triff die üblichen Vorsichtsmaßnahmen:
+die `PLAC` betroffener Datensätze über die native webtrees-Edit-API um. Die optionale
+Aktion *_LOC-Identität* legt zusätzlich pro Ort *einen* `_LOC`-Record additiv an bzw.
+ergänzt ihn (Orts-Identität im GEDCOM-L-Standard) — opt-in, mit Vorschau, und sie
+überschreibt nie bestehende Werte. Da es Datensätze verändert, triff die üblichen
+Vorsichtsmaßnahmen:
 
 - **Vorher vollständigen GEDCOM-Export sichern** (Verwaltung → Stammbäume → Export)
   — nicht nur das modul-eigene JSON-Backup pro Operation.
@@ -70,6 +73,9 @@ Leaflet-/OpenStreetMap-Ansicht, der Ort aus seinen Koordinaten verortet:
   Daten (Notizen/KB/GOV/Digitalisate) wandern mit
 - **Externe Treffer** auf der Detailseite: Wikimedia/Commons, Deutsche Digitale
   Bibliothek, Archion-Auto-Pfarrei-Lookup
+- **GEDCOM-L `_LOC`-Identitätsschicht**: erkennt vorhandene `_LOC`-Records und zeigt sie
+  pro Ort; optionales additives Schreiben von GOV-Kennung und Koordinaten in einen
+  Standard-`_LOC`-Record (Vorschau zuerst, nur Lücken füllen, nie überschreiben)
 
 ### Hierarchie-Filter
 
@@ -109,8 +115,9 @@ oberhalb der Liste.
 ## Roadmap
 
 Aktueller Funktionsstand: [CHANGELOG](CHANGELOG.md). Feedback ist willkommen;
-als Nächstes: record-genauer Split (einzelne Ereignisse von einem Sammel-Ort lösen) und
-Ausbau der Dubletten-Erkennung.
+als Nächstes für die `_LOC`-Identitätsschicht: Ereignisse mit ihrem `_LOC`-Record
+verknüpfen (der `2 _LOC @x@`-Zeiger unter `PLAC`), dazu record-genauer Split (einzelne
+Ereignisse von einem Sammel-Ort lösen) und Ausbau der Dubletten-Erkennung.
 
 ## Voraussetzungen
 
