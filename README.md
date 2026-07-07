@@ -7,7 +7,7 @@
 | | |
 |---|---|
 | Module name | `ortsregister` |
-| Version | 1.0.10 |
+| Version | 1.1.0 |
 | webtrees | 2.2.x |
 | PHP | 8.2 – 8.4 |
 | License | GPL-3.0-or-later |
@@ -17,8 +17,10 @@
 ## ⚠️ Before you start — this module writes to your tree
 
 **This module writes to your family tree.** *Merge* and *Rename* rewrite the `PLAC`
-of affected records through the native webtrees edit API. Because it changes records,
-take the usual precautions:
+of affected records through the native webtrees edit API. The optional *_LOC identity*
+action additively creates or extends a single `_LOC` record per place (place identity
+in the GEDCOM-L standard) — opt-in, with a preview, and it never overwrites existing
+values. Because it changes records, take the usual precautions:
 
 - **Make a full GEDCOM backup first** (Control panel → manage trees → export) —
   not just the module's per-operation JSON backup.
@@ -70,6 +72,9 @@ Leaflet / OpenStreetMap view, the place located from its coordinates:
   (notes/church books/GOV/digitised items) travels along
 - **External hits** on the detail page: Wikimedia/Commons, German Digital Library,
   Archion auto parish lookup
+- **GEDCOM-L `_LOC` identity layer**: reads existing `_LOC` records and shows them per
+  place; optional additive write of the GOV id and coordinates into a standard `_LOC`
+  record (preview first, gap-fill only, never overwrites)
 
 ### Hierarchy filter
 
@@ -107,9 +112,10 @@ list.
 
 ## Roadmap
 
-Current feature state is in the [CHANGELOG](CHANGELOG.md). Feedback is welcome; next up:
-record-level split (detaching single events from a collective place)
-and expanding duplicate detection.
+Current feature state is in the [CHANGELOG](CHANGELOG.md). Feedback is welcome; next up
+for the `_LOC` identity layer: linking events to their `_LOC` record (the `2 _LOC @x@`
+pointer under `PLAC`), plus record-level split (detaching single events from a collective
+place) and expanding duplicate detection.
 
 ## Requirements
 

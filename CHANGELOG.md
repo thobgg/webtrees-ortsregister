@@ -4,6 +4,38 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+## [1.1.0] – 2026-07-06
+
+### Hinzugefügt
+- **GEDCOM-L `_LOC`-Identitätsschicht (lesen).** Vorhandene `_LOC`-Records (der
+  native Orts-Record-Typ von webtrees, `Registry::locationFactory()`) werden erkannt
+  und auf der Ortsseite als eigene Karte ausgewertet: Name(n), GOV-Kennung,
+  Koordinaten, Hierarchie-Zeiger. Die Merge-Vorschau löst beteiligte `_LOC`-Zeiger
+  jetzt auf und benennt konkret, was ein Record trägt und welche Seite verwaisen kann,
+  statt nur pauschal zu warnen. Rein lesend, verändert nichts. Die Namens-Zuordnung
+  ist bewusst als Hinweis gekennzeichnet, keine feste Verknüpfung.
+- **`_LOC`-Identität schreiben (opt-in, additiv) — Stufe 1.** Ein Ort kann seine
+  Identität (GOV-Kennung und Koordinaten aus dem Modul) in *einen* GEDCOM-L
+  `_LOC`-Record graduieren — angelegt bzw. additiv ergänzt über die native
+  webtrees-API (`createRecord`/`createFact`), kein Vesta, kein Core-Fork. Vor jedem
+  Schreiben eine **Vorschau** mit dem exakten GEDCOM (nie still). **Gap-fill only:**
+  bestehende Werte werden nie überschrieben, Abweichungen nur als Konflikt gemeldet;
+  ein bereits vorhandener `_LOC` wird über den Reader erkannt und nicht doppelt
+  angelegt. Berührt ausschließlich den `_LOC`-Record, keine INDI/FAM. Jede
+  Schreibaktion wird gesichert (Undo-Endpoint vorhanden).
+
+### Intern
+- `PlaceFolderLocator` um `root()` + `relativeFolder()` erweitert; `PlaceFolderScanner`
+  und `ArchionLinker` nutzen ihn jetzt als einzige Ort→Ordner-Naht (Abschluss des
+  1.0.10-Refactors).
+
+### Bekannte Grenzen dieser Stufe
+- Die Ereignis-Verknüpfung (`2 _LOC @xref@` unter den `PLAC`-Zeilen der Ereignisse)
+  ist noch **nicht** enthalten — das ist die invasivere Folgestufe.
+- Für das Schreiben ist wie bei Merge/Rename „Änderungen automatisch übernehmen" nötig.
+- Ein Rückgängig-Knopf in der Oberfläche fehlt noch (der Record lässt sich über
+  webtrees selbst löschen).
+
 ## [1.0.10] – 2026-07-06
 
 ### Intern
