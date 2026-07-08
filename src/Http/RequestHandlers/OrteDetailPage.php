@@ -77,6 +77,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
                 'ort'          => null,
                 'loc_records'  => [],
                 'gov_geschwister' => [],
+                'gov_kandidaten'  => [],
                 'loc_undo_log_id' => null,
                 'personen'     => [],
                 'medien'       => [],
@@ -110,6 +111,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
                 'ort'          => null,
                 'loc_records'  => [],
                 'gov_geschwister' => [],
+                'gov_kandidaten'  => [],
                 'loc_undo_log_id' => null,
                 'personen'     => [],
                 'medien'       => [],
@@ -322,6 +324,14 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
             // Stiller Fallback — kein Hinweis, kein Seitenfehler.
         }
 
+        // Kandidaten für Sammel-Verknüpfung: gleichnamige, noch nicht verknüpfte Orte.
+        $govKandidaten = [];
+        try {
+            $govKandidaten = $this->orteRepository->govVerknuepfungsKandidaten($tree, $placeId);
+        } catch (Throwable) {
+            // Stiller Fallback — kein Vorschlag, kein Seitenfehler.
+        }
+
         return $this->viewResponse($this->viewName('ort-detail'), array_merge([
             'title'        => $ort->name,
             'tree'         => $tree,
@@ -329,6 +339,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
             'loc_records'  => $locRecords,
             'loc_undo_log_id' => $locUndoLogId,
             'gov_geschwister' => $govGeschwister,
+            'gov_kandidaten'  => $govKandidaten,
             'personen'     => $personen,
             'medien'       => $medien,
             'gov_id'             => $govId,

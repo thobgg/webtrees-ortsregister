@@ -4,17 +4,29 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+## [1.2.0] – 2026-07-08
+
 ### Hinzugefügt
-- **Derselbe Ort über die Zeit — Querverweise (Achse C).** Verwaltungsreformen erzeugen
-  für *einen* realen Ort mehrere PLAC-Schreibweisen (z.B. „Oberurbach, Amt Schorndorf"
-  vs. „…, OA Schorndorf, Kgr. Württemberg"). Sind zwei solche Orte im Modul mit
-  **derselben GOV-Kennung** verknüpft, zeigt die Ortsseite jetzt einen Hinweis „Derselbe
-  Ort erscheint im Baum auch als: …" mit Links auf die Varianten. Rein lesend, nutzt nur
-  vorhandene GOV-Verknüpfungen, **ändert keine PLAC** — die historischen Schreibweisen
-  bleiben erhalten. (Für echte Tippfehler/Dubletten bleibt *Merge* das richtige Werkzeug;
-  für echte Zeit-Varianten der Querverweis.)
+- **Derselbe Ort über die Zeit — erkennen und zusammenführen (Achse C).** Verwaltungs-
+  reformen erzeugen für *einen* realen Ort mehrere PLAC-Schreibweisen (z.B. „Oberurbach,
+  Amt Schorndorf" vs. „…, OA Schorndorf, Kgr. Württemberg"). Das Modul führt sie über die
+  **GOV-Kennung** zusammen — ohne die Schreibweisen anzutasten:
+  - Sind zwei Orte mit derselben GOV-Kennung verknüpft, zeigt die Ortsseite „Derselbe Ort
+    erscheint im Baum auch als: …" mit Links auf die Varianten.
+  - Die Ortsseite **schlägt** gleichnamige, noch nicht verknüpfte Orte **vor** und
+    verknüpft die ausgewählten in **einem Schritt** mit derselben GOV-Kennung (übernimmt
+    dabei auch die Koordinaten). Spart das Verknüpfen jeder Variante von Hand.
+  Rein additiv, **ändert keine PLAC** — die historischen Schreibweisen bleiben erhalten.
+  (Für echte Tippfehler/Dubletten bleibt *Merge* das richtige Werkzeug; für echte
+  Zeit-Varianten der Querverweis.)
 
 ### Behoben
+- **`Lock wait timeout exceeded` beim Anlegen/Bearbeiten von Datensätzen.** Die
+  Schema-Migration lief bei *jedem* Request und schrieb dabei unbedingt eine
+  `module_setting`-Zeile (Schreib-Sperre). Bei langen Transaktionen (z.B. eine Person
+  anlegen) plus einem parallelen Request wartete einer bis zum Timeout auf diese Sperre.
+  Die Migration läuft jetzt nur noch, wenn das Schema tatsächlich zu aktualisieren ist —
+  im Normalbetrieb kein Schreibzugriff, keine Sperren-Konkurrenz.
 - **GOV-Hierarchie liest jetzt die Jahreszahlen — und „heute".** Die GOV-API liefert pro
   `part-of`-Beziehung eine Zeitspanne als `beginYear`/`endYear`; der Parser suchte nach
   den falschen Feldnamen und **warf die Jahre weg**. Jetzt kommen sie an. Zusätzlich wird
