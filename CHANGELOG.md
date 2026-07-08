@@ -4,6 +4,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+### Behoben
+- **Koordinaten-Read jetzt hierarchie-genau.** Bisher matchte der Read `place_location`
+  nur über den **Blattnamen** (`MAX` über gleichnamige Orte) — mehrere gleichnamige Orte
+  zeigten dieselben Koordinaten. Jetzt wird der **volle Pfad** verglichen (dieselbe
+  Bauweise wie schon beim Schreiben über `PlaceLocation`): nur der Ort mit passender
+  Hierarchie bekommt seine Koordinaten. Betrifft Detailseite, Liste und den
+  `_LOC`-Writer (schreibt kein falsches `MAP` mehr in gleichnamige Orte). Der
+  Medien-Ordner (`media/orte/<Blatt>/`) und der `_LOC`-Namensmatch bleiben blattbasiert
+  (eigene Themen).
+
 ## [1.1.1] – 2026-07-08
 
 ### Hinzugefügt
