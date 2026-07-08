@@ -4,6 +4,30 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+## [1.1.1] – 2026-07-08
+
+### Hinzugefügt
+- **GOV-Koordinaten wandern beim Verknüpfen ins Modul.** Verknüpft man einen Ort mit
+  GOV, werden dessen Koordinaten additiv nach `place_location` übernommen (nur wenn dort
+  noch keine stehen — bestehende werden nie überschrieben). Folge: der Ort erscheint auf
+  der Karte, und der `_LOC`-Writer schreibt jetzt auch einen `MAP`-Block (`LATI`/`LONG`),
+  nicht nur die GOV-Kennung. Damit wird die `_LOC`-Identität aus 1.1.0 vollständig.
+- **Rückgängig-Knopf für `_LOC`-Schreibvorgänge** auf der Ortsseite. Der jüngste
+  Schreibvorgang eines Orts lässt sich direkt zurücknehmen (CREATE → Record löschen,
+  UPDATE → alten Stand zurückschreiben). Der Endpoint existierte schon in 1.1.0, jetzt
+  gibt es die Schaltfläche dazu.
+
+### Behoben
+- **GOV-Verknüpfen/-Lösen leert jetzt den Orts-Cache.** Bisher hielt der APCu-Cache
+  (20 Min) nach dem Verknüpfen die alten Ortsdaten (`gov_id`/Koordinaten) — Ortsseite und
+  `_LOC`-Vorschau zeigten sie erst verzögert. Wird jetzt sofort invalidiert (wie schon bei
+  Merge/Rename/Koordinaten-Import).
+
+### Bekannte Grenze (unverändert)
+- Der Koordinaten-Read läuft weiter über den **Blattnamen** (`MAX` über gleichnamige
+  Orte), nicht über die Hierarchie: mehrere gleichnamige Orte zeigen dieselben
+  Koordinaten. Ein hierarchie-genauer Read ist als eigenes Kapitel vorgemerkt.
+
 ## [1.1.0] – 2026-07-06
 
 ### Hinzugefügt

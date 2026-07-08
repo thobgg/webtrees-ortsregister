@@ -34,6 +34,7 @@ use Fisharebest\Webtrees\View;
 /** @var array{open:int,done:int} $task_counts */
 /** @var \Ortsregister\OrtsregisterModule $module */
 /** @var list<\Ortsregister\Dto\LocationIdentity> $loc_records */
+/** @var int|null $loc_undo_log_id */
 
 // Lokale Aliases — Settings kommen vom Handler, Defaults siehe OrtsregisterModule
 $PERSONEN_VISIBLE = $personen_visible ?? 10;
@@ -365,10 +366,17 @@ foreach ($bilder as $medium) {
         <div class="mb-4" id="ortsregister-loc-write"
              data-preview-url="<?= e(route('ortsregister.loc.preview', ['tree' => $tree->name(), 'place_id' => $place_id])) ?>"
              data-write-url="<?= e(route('ortsregister.loc.write', ['tree' => $tree->name(), 'place_id' => $place_id])) ?>"
+             data-undo-url="<?= e(route('ortsregister.loc.undo', ['tree' => $tree->name(), 'place_id' => $place_id])) ?>"
              data-csrf="<?= e(csrf_token()) ?>">
             <button type="button" class="btn btn-sm btn-outline-secondary" id="ortsregister-loc-write-btn">
                 <span aria-hidden="true">🧭</span> <?= I18N::translate('Identität als _LOC schreiben') ?>
             </button>
+            <?php if ($loc_undo_log_id !== null) : ?>
+                <button type="button" class="btn btn-sm btn-outline-danger ms-2" id="ortsregister-loc-undo-btn"
+                        data-log-id="<?= (int) $loc_undo_log_id ?>">
+                    <?= I18N::translate('Letzten _LOC-Schreibvorgang rückgängig machen') ?>
+                </button>
+            <?php endif ?>
             <div class="form-text">
                 <?= I18N::translate('Schreibt vorhandene GOV-ID und Koordinaten additiv in einen GEDCOM-L _LOC-Record (offenes Standardformat). Die Vorschau zeigt genau, was passiert; bestehende Werte werden nie überschrieben.') ?>
             </div>
@@ -1481,6 +1489,23 @@ foreach ($bilder as $medium) {
             })
             .catch(err => { alert('Netzwerkfehler: ' + err); confirm.disabled = false; });
     });
+
+    const undoBtn = document.getElementById('ortsregister-loc-undo-btn');
+    if (undoBtn) {
+        undoBtn.addEventListener('click', function () {
+            if (!window.confirm('Diesen _LOC-Schreibvorgang wirklich rückgängig machen?')) return;
+            const fd = new FormData();
+            fd.append('log_id', undoBtn.dataset.logId);
+            undoBtn.disabled = true;
+            fetch(wrap.dataset.undoUrl, { method: 'POST', body: fd, headers: { 'X-CSRF-TOKEN': csrf }})
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) { location.reload(); }
+                    else { alert('Rückgängig fehlgeschlagen: ' + (data.message || 'unbekannt')); undoBtn.disabled = false; }
+                })
+                .catch(err => { alert('Netzwerkfehler: ' + err); undoBtn.disabled = false; });
+        });
+    }
 })();
 </script>
 <?php endif ?>

@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Ortsregister\Service;
 
+use Ortsregister\Cache\ApcuCacheService;
 use Ortsregister\Dto\GovObject;
 use Fisharebest\Webtrees\DB;
+use Fisharebest\Webtrees\PlaceLocation;
 use Fisharebest\Webtrees\Tree;
 use RuntimeException;
+use Throwable;
 
 /**
  * Verknüpft webtrees-Places mit GOV-IDs und cached die GOV-Antwort
@@ -17,6 +20,7 @@ class GovLinkingService
 {
     public function __construct(
         private readonly GovApiClient $govClient,
+        private readonly ?ApcuCacheService $cache = null,
     ) {}
 
     /**
@@ -50,7 +54,61 @@ class GovLinkingService
                 'types'     => $obj->typeIds,
             ],
         ]);
+
+        // GOV-Koordinaten additiv nach place_location übernehmen (gap-fill only),
+        // damit der Ort auf der Karte erscheint UND der _LOC-Writer ein MAP schreiben
+        // kann. Beigabe zur Verknüpfung: ein Fehler hier darf den Link nicht killen.
+        if ($obj->hasCoordinates()) {
+            try {
+                $this->fillCoordinates($tree, $placeId, (float) $obj->latitude, (float) $obj->longitude);
+            } catch (Throwable) {
+                // Koordinaten-Übernahme fehlgeschlagen — Verknüpfung bleibt trotzdem gültig.
+            }
+        }
+
+        // OrtDto ist gecacht (gov_id + Koordinaten) — nach dem Schreiben leeren,
+        // sonst zeigen Ortsseite und _LOC-Vorschau bis zu 20 Min alte Daten.
+        $this->cache?->flush();
+
         return $obj;
+    }
+
+    /**
+     * Schreibt Koordinaten in webtrees' `place_location` (Standard-Gazetteer),
+     * nur wenn dort noch keine stehen — bestehende werden nie überschrieben.
+     * `PlaceLocation(...)->id()` legt fehlende Hierarchie-Einträge selbst an.
+     */
+    private function fillCoordinates(Tree $tree, int $placeId, float $lat, float $lon): void
+    {
+        $path = $this->fullPlacePath($tree, $placeId);
+        if ($path === '') {
+            return;
+        }
+        $id       = (new PlaceLocation($path))->id();
+        $existing  = DB::table('place_location')->where('id', '=', $id)->first(['latitude', 'longitude']);
+        if ($existing !== null && $existing->latitude !== null && $existing->longitude !== null) {
+            return;
+        }
+        DB::table('place_location')->where('id', '=', $id)->update(['latitude' => $lat, 'longitude' => $lon]);
+    }
+
+    /** Vollständiger Komma-Pfad („Blatt, Eltern, …, Land") zu einer place_id. */
+    private function fullPlacePath(Tree $tree, int $placeId): string
+    {
+        $parts = [];
+        $id    = $placeId;
+        for ($guard = 0; $id > 0 && $guard < 20; $guard++) {
+            $row = DB::table('places')
+                ->where('p_id', '=', $id)
+                ->where('p_file', '=', $tree->id())
+                ->first(['p_place', 'p_parent_id']);
+            if ($row === null) {
+                break;
+            }
+            $parts[] = (string) $row->p_place;
+            $id      = (int) $row->p_parent_id;
+        }
+        return implode(', ', $parts);
     }
 
     /**
@@ -62,6 +120,7 @@ class GovLinkingService
             ->where('tree_id',  '=', $tree->id())
             ->where('place_id', '=', $placeId)
             ->update(['gov_id' => null]);
+        $this->cache?->flush();
     }
 
     /**

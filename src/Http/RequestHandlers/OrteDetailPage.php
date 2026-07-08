@@ -12,6 +12,7 @@ use Ortsregister\Service\DdbClient;
 use Ortsregister\Service\GovHierarchyResolver;
 use Ortsregister\Service\GovLinkingService;
 use Ortsregister\Service\LocationReader;
+use Ortsregister\Service\OperationBackup;
 use Ortsregister\Service\PlaceEventCounter;
 use Ortsregister\Service\ArchionLinker;
 use Ortsregister\Service\PlaceFolderScanner;
@@ -48,6 +49,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
         private readonly PlaceKbListService   $kbService,
         private readonly OrtsregisterModule   $module,
         private readonly LocationReader       $locationReader = new LocationReader(),
+        private readonly ?OperationBackup     $operationBackup = null,
     ) {}
 
     protected function respond(
@@ -74,6 +76,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
                 'tree'         => null,
                 'ort'          => null,
                 'loc_records'  => [],
+                'loc_undo_log_id' => null,
                 'personen'     => [],
                 'medien'       => [],
                 'gov_id'             => null,
@@ -105,6 +108,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
                 'tree'         => $tree,
                 'ort'          => null,
                 'loc_records'  => [],
+                'loc_undo_log_id' => null,
                 'personen'     => [],
                 'medien'       => [],
                 'gov_id'             => null,
@@ -299,11 +303,20 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
             // Stiller Fallback — die Ortsseite darf daran nicht scheitern.
         }
 
+        // Jüngster rückgängig-machbarer _LOC-Schreibvorgang an diesem Ort (Undo-Button).
+        $locUndoLogId = null;
+        try {
+            $locUndoLogId = $this->operationBackup?->latestUndoable($tree->id(), 'loc_write', $placeId);
+        } catch (Throwable) {
+            // Stiller Fallback — kein Undo-Button, kein Seitenfehler.
+        }
+
         return $this->viewResponse($this->viewName('ort-detail'), array_merge([
             'title'        => $ort->name,
             'tree'         => $tree,
             'ort'          => $ort,
             'loc_records'  => $locRecords,
+            'loc_undo_log_id' => $locUndoLogId,
             'personen'     => $personen,
             'medien'       => $medien,
             'gov_id'             => $govId,
