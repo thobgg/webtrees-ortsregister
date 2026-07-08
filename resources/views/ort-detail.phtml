@@ -35,6 +35,7 @@ use Fisharebest\Webtrees\View;
 /** @var \Ortsregister\OrtsregisterModule $module */
 /** @var list<\Ortsregister\Dto\LocationIdentity> $loc_records */
 /** @var int|null $loc_undo_log_id */
+/** @var list<array{id:int,pfad:string}> $gov_geschwister */
 
 // Lokale Aliases — Settings kommen vom Handler, Defaults siehe OrtsregisterModule
 $PERSONEN_VISIBLE = $personen_visible ?? 10;
@@ -264,11 +265,11 @@ foreach ($bilder as $medium) {
                             <?= $renderChain($gov_chain, true) ?>
                         <?php endif ?>
                         <?php if ($hasCurrent) : ?>
-                            <div class="mb-2 <?= $hasHistorical ? 'mt-3' : '' ?>"><small class="text-uppercase text-muted fw-semibold"><?= I18N::translate('Aktuell (located-in)') ?></small></div>
+                            <div class="mb-2 <?= $hasHistorical ? 'mt-3' : '' ?>"><small class="text-uppercase text-muted fw-semibold"><?= I18N::translate('Heute') ?></small></div>
                             <?= $renderChain($gov_chain_current, false) ?>
                         <?php elseif ($hasHistorical) : ?>
                             <div class="alert alert-warning py-2 mt-2 mb-0 small">
-                                <?= I18N::translate('GOV liefert keine „aktuell"-Daten (located-in) für diesen Ort — nur die historische Kette.') ?>
+                                <?= I18N::translate('GOV liefert für diesen Ort keine heutige Zugehörigkeit — nur die historische Kette.') ?>
                             </div>
                         <?php endif ?>
                     <?php elseif ($gov_hierarchy_mode === \Ortsregister\OrtsregisterModule::HIERARCHY_MODE_CURRENT) : ?>
@@ -276,7 +277,7 @@ foreach ($bilder as $medium) {
                             <?= $renderChain($gov_chain_current, false) ?>
                         <?php elseif ($hasHistorical) : ?>
                             <div class="alert alert-warning py-2 mb-2 small">
-                                <?= I18N::translate('GOV hat keine „aktuell"-Daten (located-in) für diesen Ort hinterlegt. Stattdessen wird die historische Kette gezeigt.') ?>
+                                <?= I18N::translate('GOV hat für diesen Ort keine heutige Zugehörigkeit hinterlegt. Stattdessen wird die historische Kette gezeigt.') ?>
                             </div>
                             <?= $renderChain($gov_chain, true) ?>
                         <?php endif ?>
@@ -313,6 +314,24 @@ foreach ($bilder as $medium) {
                 <?php endif ?>
             </div>
         </div>
+
+        <?php if ($tree !== null && ($gov_geschwister ?? []) !== []) : ?>
+        <div class="alert alert-info d-flex align-items-start gap-2 mb-4" role="alert">
+            <span aria-hidden="true">🔗</span>
+            <div>
+                <strong><?= I18N::translate('Derselbe Ort erscheint im Baum mehrfach') ?></strong>
+                <div class="small mb-1"><?= I18N::translate('Laut GOV-Kennung ist dies derselbe reale Ort wie:') ?></div>
+                <ul class="mb-1">
+                    <?php foreach ($gov_geschwister as $g) : ?>
+                        <li><a href="<?= e(route('ortsregister.orte.detail', ['tree' => $tree->name(), 'place_id' => $g['id']])) ?>"><?= e($g['pfad']) ?></a></li>
+                    <?php endforeach ?>
+                </ul>
+                <div class="form-text mb-0">
+                    <?= I18N::translate('Vermutlich Zeit- bzw. Gebietsreform-Varianten (andere Verwaltungszugehörigkeit über die Zeit). Die historischen Schreibweisen bleiben unangetastet — hier nur der Hinweis, dass es sich um denselben Ort handelt.') ?>
+                </div>
+            </div>
+        </div>
+        <?php endif ?>
 
         <?php if ($loc_records !== []) : ?>
         <div class="card mb-4" data-collapsible data-card-key="loc-identitaet">

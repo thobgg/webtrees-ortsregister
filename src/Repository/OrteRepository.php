@@ -84,6 +84,49 @@ class OrteRepository
     }
 
     /**
+     * Andere Orte im Baum, die laut GOV DERSELBE reale Ort sind — verknüpft auf
+     * dieselbe GOV-Kennung (`ortsregister_place_meta.gov_id`) wie $placeId.
+     *
+     * Das sind die Zeit-/Gebietsreform-Varianten desselben Orts (Achse C): gleicher
+     * realer Ort, verschiedene PLAC-Schreibweisen über die Zeit. Rein lesend, nutzt
+     * nur vorhandene GOV-Verknüpfungen — schreibt nichts, ändert keine PLAC.
+     *
+     * @return list<array{id:int, pfad:string}>
+     */
+    public function govGeschwister(Tree $tree, int $placeId): array
+    {
+        $govId = DB::table('ortsregister_place_meta')
+            ->where('tree_id',  '=', $tree->id())
+            ->where('place_id', '=', $placeId)
+            ->value('gov_id');
+        if ($govId === null || (string) $govId === '') {
+            return [];
+        }
+
+        $siblingIds = DB::table('ortsregister_place_meta')
+            ->where('tree_id',  '=', $tree->id())
+            ->where('gov_id',   '=', $govId)
+            ->where('place_id', '!=', $placeId)
+            ->pluck('place_id');
+        if ($siblingIds->isEmpty()) {
+            return [];
+        }
+
+        // Nur Orte mit vollem Pfad, die es im Baum wirklich (noch) gibt — filtert
+        // verwaiste place_meta-Zeilen (Ort gelöscht, Meta blieb) automatisch aus.
+        $pathMap = $this->buildPathMap($tree);
+        $out = [];
+        foreach ($siblingIds as $sid) {
+            $sid = (int) $sid;
+            if (isset($pathMap[$sid])) {
+                $out[] = ['id' => $sid, 'pfad' => $pathMap[$sid]];
+            }
+        }
+        usort($out, static fn(array $a, array $b): int => strnatcasecmp($a['pfad'], $b['pfad']));
+        return $out;
+    }
+
+    /**
      * Löscht den Cache für alle Orte dieses Baums.
      */
     public function invalidateCache(Tree $tree): void

@@ -76,6 +76,11 @@ Leaflet-/OpenStreetMap-Ansicht, der Ort aus seinen Koordinaten verortet:
 - **GEDCOM-L `_LOC`-Identitätsschicht**: erkennt vorhandene `_LOC`-Records und zeigt sie
   pro Ort; optionales additives Schreiben von GOV-Kennung und Koordinaten in einen
   Standard-`_LOC`-Record (Vorschau zuerst, nur Lücken füllen, nie überschreiben)
+- **Zeit-bewusste Orts-Identität**: Koordinaten werden über den vollen Hierarchie-Pfad
+  aufgelöst — gleichnamige Orte teilen sie nicht; die GOV-Hierarchie zeigt die historische
+  Kette mit Jahren und die heutige Zugehörigkeit; Orte, die über Verwaltungsreformen
+  derselbe sind (gleiche GOV-Kennung), werden querverwiesen — die historischen
+  Schreibweisen bleiben erhalten, werden nie umgeschrieben
 
 ### Hierarchie-Filter
 

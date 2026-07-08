@@ -76,6 +76,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
                 'tree'         => null,
                 'ort'          => null,
                 'loc_records'  => [],
+                'gov_geschwister' => [],
                 'loc_undo_log_id' => null,
                 'personen'     => [],
                 'medien'       => [],
@@ -108,6 +109,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
                 'tree'         => $tree,
                 'ort'          => null,
                 'loc_records'  => [],
+                'gov_geschwister' => [],
                 'loc_undo_log_id' => null,
                 'personen'     => [],
                 'medien'       => [],
@@ -311,12 +313,22 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
             // Stiller Fallback — kein Undo-Button, kein Seitenfehler.
         }
 
+        // Zeit-/Gebietsreform-Varianten desselben Orts (Achse C): andere Orte mit
+        // derselben GOV-Kennung. Rein lesend — nur Querverweise, nichts geschrieben.
+        $govGeschwister = [];
+        try {
+            $govGeschwister = $this->orteRepository->govGeschwister($tree, $placeId);
+        } catch (Throwable) {
+            // Stiller Fallback — kein Hinweis, kein Seitenfehler.
+        }
+
         return $this->viewResponse($this->viewName('ort-detail'), array_merge([
             'title'        => $ort->name,
             'tree'         => $tree,
             'ort'          => $ort,
             'loc_records'  => $locRecords,
             'loc_undo_log_id' => $locUndoLogId,
+            'gov_geschwister' => $govGeschwister,
             'personen'     => $personen,
             'medien'       => $medien,
             'gov_id'             => $govId,

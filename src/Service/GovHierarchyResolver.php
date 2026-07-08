@@ -10,9 +10,15 @@ use Ortsregister\Dto\GovObject;
  * Löst die GOV-Hierarchie eines Place rekursiv über `partOfIds` auf.
  *
  * Strategie:
- *   - Pro Stufe nehmen wir den ERSTEN partOf-Eintrag.
- *     GOV liefert oft mehrere parallele Zugehörigkeiten (Zeitperioden).
- *     Zeitauflösung ist Sache einer späteren Phase.
+ *   - GOV liefert pro Stufe mehrere partOf-Einträge mit Zeitspannen (beginYear/
+ *     endYear). Wir wählen zeit-bewusst:
+ *       MODE_CURRENT    = der partOf-Eintrag OHNE Ende (läuft bis heute) → die
+ *                         heutige Zugehörigkeit (z.B. Oberurbach → Urbach ab 1970).
+ *                         GOVs eigenes `located-in` ist oft leer, daher NICHT primär.
+ *       MODE_HISTORICAL = der älteste beendete partOf-Eintrag → die ursprüngliche
+ *                         Hierarchie, mit Zeitspanne.
+ *     (Die volle Epochen-Zeitleiste — ALLE partOf-Kanten nebeneinander — ist eine
+ *     spätere Stufe.)
  *   - Lookups gehen alle über GovApiClient → Cache (7d TTL) macht
  *     wiederholte Anzeigen praktisch kostenlos.
  *   - Cycle-Detection via visited-Set (GOV hat real Self-References).
@@ -76,21 +82,70 @@ class GovHierarchyResolver
             }
             $chain[] = ['obj' => $obj, 'begin' => $pendingBegin, 'end' => $pendingEnd];
 
-            // Modus entscheidet welche Eltern-Beziehung gewählt wird
-            if ($mode === self::MODE_CURRENT) {
-                $nextId       = $obj->locatedInIds[0] ?? '';
-                $pendingBegin = null;
-                $pendingEnd   = null;
-            } else {
-                $nextId       = $obj->partOfIds[0] ?? '';
-                $meta         = $obj->partOfMeta[$nextId] ?? null;
-                $pendingBegin = $meta['begin'] ?? null;
-                $pendingEnd   = $meta['end']   ?? null;
-            }
+            // Modus entscheidet welche Eltern-Beziehung gewählt wird — zeit-bewusst.
+            $nextId       = $mode === self::MODE_CURRENT
+                ? $this->currentParentId($obj)
+                : $this->historicalParentId($obj);
+            $meta         = $obj->partOfMeta[$nextId] ?? null;
+            $pendingBegin = $meta['begin'] ?? null;
+            // Aktuelle Zugehörigkeit hat kein Ende (läuft bis heute).
+            $pendingEnd   = $mode === self::MODE_CURRENT ? null : ($meta['end'] ?? null);
+
             $currentId    = $nextId;
             $steps++;
         }
         return $chain;
+    }
+
+    /**
+     * Heutige Zugehörigkeit:
+     *   1. explizites `located-in` (GOVs „aktuell räumlich"), falls vorhanden;
+     *   2. sonst der partOf-Eintrag OHNE Ende (läuft bis heute) — real oft der
+     *      einzige Weg, weil `located-in` bei vielen Objekten leer ist (verifiziert
+     *      an Oberurbach: located-in leer, „ab 1970 Urbach" nur als offener partOf);
+     *   3. Fallback: erster partOf.
+     */
+    private function currentParentId(GovObject $obj): string
+    {
+        if (($obj->locatedInIds[0] ?? '') !== '') {
+            return $obj->locatedInIds[0];
+        }
+        $best      = '';
+        $bestBegin = -1;
+        foreach ($obj->partOfIds as $ref) {
+            $meta = $obj->partOfMeta[$ref] ?? null;
+            $end  = $meta['end'] ?? null;
+            if ($end === null || $end === '') {
+                $begin = (int) ($meta['begin'] ?? 0);
+                if ($begin >= $bestBegin) {
+                    $bestBegin = $begin;
+                    $best      = $ref;
+                }
+            }
+        }
+        return $best !== '' ? $best : ($obj->partOfIds[0] ?? '');
+    }
+
+    /**
+     * Ursprüngliche Zugehörigkeit = beendeter partOf-Eintrag (hat ein Ende) mit
+     * dem frühesten Beginn. Fällt auf den ersten partOf zurück.
+     */
+    private function historicalParentId(GovObject $obj): string
+    {
+        $best      = '';
+        $bestBegin = PHP_INT_MAX;
+        foreach ($obj->partOfIds as $ref) {
+            $meta = $obj->partOfMeta[$ref] ?? null;
+            $end  = $meta['end'] ?? null;
+            if ($end !== null && $end !== '') {
+                $begin = (int) ($meta['begin'] ?? 0);
+                if ($begin < $bestBegin) {
+                    $bestBegin = $begin;
+                    $best      = $ref;
+                }
+            }
+        }
+        return $best !== '' ? $best : ($obj->partOfIds[0] ?? '');
     }
 
     /**

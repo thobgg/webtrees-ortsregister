@@ -287,8 +287,10 @@ class GovApiClient
                 if (is_string($ref) && $ref !== '') {
                     $out[] = [
                         'ref'   => $ref,
-                        'begin' => $this->stringOrNull($item['timeBegin'] ?? $item['begin'] ?? null),
-                        'end'   => $this->stringOrNull($item['timeEnd']   ?? $item['end']   ?? null),
+                        // GOV-API liefert die Zeitspanne als beginYear/endYear (verifiziert
+                        // an getObject OBEACH_W7067); timeBegin/begin als Fallback.
+                        'begin' => $this->stringOrNull($item['beginYear'] ?? $item['timeBegin'] ?? $item['begin'] ?? null),
+                        'end'   => $this->stringOrNull($item['endYear']   ?? $item['timeEnd']   ?? $item['end']   ?? null),
                     ];
                 }
             } elseif (is_string($item) && $item !== '') {
