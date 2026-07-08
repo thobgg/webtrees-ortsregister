@@ -19,6 +19,7 @@ use Ortsregister\Http\RequestHandlers\MergeUndo;
 use Ortsregister\Http\RequestHandlers\LocWritePreview;
 use Ortsregister\Http\RequestHandlers\LocWriteExecute;
 use Ortsregister\Http\RequestHandlers\LocWriteUndo;
+use Ortsregister\Http\RequestHandlers\GovLinkSiblings;
 use Ortsregister\Http\RequestHandlers\RenameExecute;
 use Ortsregister\Http\RequestHandlers\RenameModalPage;
 use Ortsregister\Http\RequestHandlers\OrteDataTable;
@@ -129,7 +130,7 @@ class OrtsregisterModule extends AbstractModule implements
     public function title(): string { return I18N::translate('Ortsregister'); }
     public function description(): string { return I18N::translate('Ortsregister mit visueller Landing-Page, Medien-Verknüpfung und (geplant) GOV-Integration.'); }
     public function customModuleAuthorName(): string { return 'Thomas Bugge'; }
-    public function customModuleVersion(): string { return '1.1.1'; }
+    public function customModuleVersion(): string { return '1.2.0'; }
     public function customModuleSupportUrl(): string { return ''; }
 
     /**
@@ -188,6 +189,7 @@ class OrtsregisterModule extends AbstractModule implements
         $router->get('ortsregister.loc.preview',         '/tree/{tree}/orte/{place_id}/loc-write/preview', LocWritePreview::class);
         $router->post('ortsregister.loc.write',          '/tree/{tree}/orte/{place_id}/loc-write',         LocWriteExecute::class);
         $router->post('ortsregister.loc.undo',           '/tree/{tree}/orte/{place_id}/loc-write/undo',    LocWriteUndo::class);
+        $router->post('ortsregister.gov.siblings',       '/tree/{tree}/orte/{place_id}/gov-siblings',      GovLinkSiblings::class);
         $router->get('ortsregister.orte.detail',   '/tree/{tree}/orte/{place_id}',     OrteDetailPage::class);
         $router->get('ortsregister.admin.config',  '/ortsregister/admin/config',       AdminConfigPage::class)
                ->allows('POST');
@@ -344,6 +346,13 @@ class OrtsregisterModule extends AbstractModule implements
             new LocWriteUndo(
                 $container->get(LocationWriter::class),
                 $container->get(OperationBackup::class),
+            ),
+        );
+        $container->set(
+            GovLinkSiblings::class,
+            new GovLinkSiblings(
+                $container->get(GovLinkingService::class),
+                $container->get(\Ortsregister\Repository\OrteRepository::class),
             ),
         );
         // AdminConfigPage: braucht das Modul selbst
@@ -505,13 +514,24 @@ class OrtsregisterModule extends AbstractModule implements
 
     private function migrateDatabase(): void
     {
+        // SCHNELLPFAD (behebt „Lock wait timeout exceeded", Issue Hermann):
+        // migrateDatabase() läuft bei JEDEM Request (boot). Vorher schrieb es am Ende
+        // UNBEDINGT setPreference('SCHEMA_VERSION') — ein updateOrInsert, das eine
+        // Schreib-Sperre auf EINER module_setting-Zeile nimmt. Bei langen Transaktionen
+        // (z.B. Person anlegen) + Nebenläufigkeit wartete ein zweiter Request 50 s auf
+        // diese Sperre → Timeout. Ist die Version schon aktuell, jetzt nur noch ein
+        // billiges getPreference (SELECT), KEIN Schreibzugriff.
+        // Sicher: SCHEMA_VERSION wird ausschließlich am Ende NACH erfolgreicher DDL
+        // gesetzt (DDL-Fehler wirft vorher) — „Version gesetzt, Tabellen fehlen" kann
+        // also nicht auftreten.
+        if ((int) $this->getPreference('SCHEMA_VERSION', '0') === self::SCHEMA_VERSION) {
+            return;
+        }
+
         $schema = DB::schema();
         $didDdl = false;
 
-        // Idempotente Migration über hasTable() — kein SCHEMA_VERSION-Gate,
-        // weil ein vorheriger fehlgeschlagener Boot die Tabellen-Erstellung
-        // übersprungen haben kann, während ein anderer Code-Pfad bereits
-        // SCHEMA_VERSION gesetzt hat.
+        // Idempotente Migration über hasTable() (nur im Upgrade-Fall erreicht).
         if (!$schema->hasTable('ortsregister_place_meta')) {
             $schema->create('ortsregister_place_meta', function (Blueprint $table): void {
                 $table->integer('place_id');

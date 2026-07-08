@@ -127,6 +127,68 @@ class OrteRepository
     }
 
     /**
+     * Kandidaten zum Sammel-Verknüpfen: gleichnamige Orte im Baum, die (noch) mit
+     * KEINER GOV-Kennung verknüpft sind — also die wahrscheinlichen Zeit-Varianten
+     * desselben Orts, die man mit der GOV-Kennung von $placeId zusammenführen könnte.
+     *
+     * Nur sinnvoll, wenn $placeId selbst schon verknüpft ist (sonst gibt es keine
+     * Kennung zum Übertragen → leer). Rein lesend.
+     *
+     * @return list<array{id:int, pfad:string}>
+     */
+    public function govVerknuepfungsKandidaten(Tree $tree, int $placeId): array
+    {
+        $self = DB::table('places')
+            ->where('p_id',   '=', $placeId)
+            ->where('p_file', '=', $tree->id())
+            ->first(['p_place']);
+        if ($self === null) {
+            return [];
+        }
+        $govId = DB::table('ortsregister_place_meta')
+            ->where('tree_id',  '=', $tree->id())
+            ->where('place_id', '=', $placeId)
+            ->value('gov_id');
+        if ($govId === null || (string) $govId === '') {
+            return [];
+        }
+        $leaf = (string) $self->p_place;
+
+        // Alle gleichnamigen Orte (außer self) …
+        $sameLeaf = DB::table('places')
+            ->where('p_file',  '=', $tree->id())
+            ->where('p_place', '=', $leaf)
+            ->where('p_id',    '!=', $placeId)
+            ->pluck('p_id');
+        if ($sameLeaf->isEmpty()) {
+            return [];
+        }
+        // … abzüglich der bereits verknüpften (egal auf welche Kennung — die fasst
+        // man bewusst nicht automatisch um).
+        $linked = [];
+        foreach (
+            DB::table('ortsregister_place_meta')
+                ->where('tree_id', '=', $tree->id())
+                ->whereNotNull('gov_id')
+                ->where('gov_id', '!=', '')
+                ->pluck('place_id') as $pid
+        ) {
+            $linked[(int) $pid] = true;
+        }
+
+        $pathMap = $this->buildPathMap($tree);
+        $out = [];
+        foreach ($sameLeaf as $sid) {
+            $sid = (int) $sid;
+            if (!isset($linked[$sid]) && isset($pathMap[$sid])) {
+                $out[] = ['id' => $sid, 'pfad' => $pathMap[$sid]];
+            }
+        }
+        usort($out, static fn(array $a, array $b): int => strnatcasecmp($a['pfad'], $b['pfad']));
+        return $out;
+    }
+
+    /**
      * Löscht den Cache für alle Orte dieses Baums.
      */
     public function invalidateCache(Tree $tree): void
