@@ -179,10 +179,15 @@ class OrteRepository
         // Voller Komma-Pfad je Ort — damit zwei Orte mit gleichem Blatt+Elternteil
         // (z.B. "Brisbane, Queensland, Australia" vs "…Australia.") in der Liste
         // unterscheidbar sind. Einmal pro (gecachtem) Listenaufbau berechnet.
-        $pathMap = $this->buildPathMap($tree);
+        $pathMap  = $this->buildPathMap($tree);
+        $coordMap = $this->buildLocationCoordMap();
 
         return $rows
-            ->map(fn (object $row) => $this->rowToDto($row, $pathMap[(int) $row->p_id] ?? null))
+            ->map(function (object $row) use ($pathMap, $coordMap) {
+                $fullPath    = $pathMap[(int) $row->p_id] ?? null;
+                [$lat, $lon] = $fullPath !== null ? ($coordMap[$fullPath] ?? [null, null]) : [null, null];
+                return $this->rowToDto($row, $fullPath, $lat, $lon);
+            })
             ->values()
             ->all();
     }
@@ -221,6 +226,51 @@ class OrteRepository
             $paths[$id] = implode(', ', $parts);
         }
         return $paths;
+    }
+
+    /**
+     * Baut vollen Komma-Pfad (Blatt-first, ", ") → [lat, lon] aus `place_location`.
+     * Hierarchie-genau: unterscheidet gleichnamige Orte über den GANZEN Pfad statt nur
+     * den Blattnamen (behebt die Leaf-Ambiguität des früheren `MAX`-Joins). Pfad-Bau
+     * identisch zu buildPathMap(), damit die Schlüssel byte-genau matchen.
+     * `place_location` ist global (nicht baum-scoped).
+     *
+     * @return array<string, array{0: float|null, 1: float|null}>
+     */
+    private function buildLocationCoordMap(): array
+    {
+        $rows = DB::table('place_location')
+            ->select(['id', 'parent_id', 'place', 'latitude', 'longitude'])
+            ->get();
+
+        $byId = [];
+        foreach ($rows as $r) {
+            $byId[(int) $r->id] = [
+                'place'  => (string) $r->place,
+                'parent' => $r->parent_id === null ? 0 : (int) $r->parent_id,
+                'lat'    => $r->latitude  === null ? null : (float) $r->latitude,
+                'lon'    => $r->longitude === null ? null : (float) $r->longitude,
+            ];
+        }
+
+        $map = [];
+        foreach ($byId as $id => $info) {
+            $parts = [];
+            $cur   = $id;
+            $seen  = [];
+            while ($cur > 0 && isset($byId[$cur]) && !isset($seen[$cur])) {
+                $seen[$cur] = true;
+                $parts[]    = $byId[$cur]['place'];
+                $cur        = $byId[$cur]['parent'];
+            }
+            // Nur Knoten mit Koordinaten sind interessant; kollidierende Pfade (selten,
+            // via DB-Collation) — erster mit Koordinaten gewinnt.
+            $key = implode(', ', $parts);
+            if (!isset($map[$key]) || ($info['lat'] !== null && $info['lon'] !== null)) {
+                $map[$key] = [$info['lat'], $info['lon']];
+            }
+        }
+        return $map;
     }
 
     private function queryAnzahlOrte(Tree $tree, string $filter, string $mode): int
@@ -266,7 +316,14 @@ class OrteRepository
             ->where('p.p_id', '=', $id)
             ->first();
 
-        return $row !== null ? $this->rowToDto($row) : null;
+        if ($row === null) {
+            return null;
+        }
+
+        $fullPath    = $this->buildPathMap($tree)[$id] ?? null;
+        [$lat, $lon] = $fullPath !== null ? ($this->buildLocationCoordMap()[$fullPath] ?? [null, null]) : [null, null];
+
+        return $this->rowToDto($row, $fullPath, $lat, $lon);
     }
 
     // ---------------------------------------------------------------
@@ -286,7 +343,6 @@ class OrteRepository
                 $join->on('pl.pl_p_id', '=', 'p.p_id')
                      ->where('pl.pl_file', '=', $tree->id());
             })
-            ->leftJoin('place_location AS loc', 'loc.place', '=', 'p.p_place')
             ->leftJoin('ortsregister_place_meta AS meta', function ($join) use ($tree) {
                 $join->on('meta.place_id', '=', 'p.p_id')
                      ->where('meta.tree_id', '=', $tree->id());
@@ -298,9 +354,10 @@ class OrteRepository
                 'parent.p_place AS parent_place',
                 'meta.gov_id',
             ])
+            // Koordinaten NICHT mehr hier per Blattnamen-Join (das mischte gleichnamige
+            // Orte). Sie kommen vollpfad-genau aus buildLocationCoordMap(), gemappt in
+            // queryAlleOrte()/queryOrtById().
             ->selectRaw("COUNT(DISTINCT {$prefix}pl.pl_gid)  AS anzahl_ereignisse")
-            ->selectRaw("MAX({$prefix}loc.latitude)  AS breitengrad")
-            ->selectRaw("MAX({$prefix}loc.longitude) AS laengengrad")
             ->groupBy(
                 'p.p_id',
                 'p.p_place',
@@ -313,7 +370,7 @@ class OrteRepository
     // Mapping
     // ---------------------------------------------------------------
 
-    private function rowToDto(object $row, ?string $fullPath = null): OrtDto
+    private function rowToDto(object $row, ?string $fullPath = null, ?float $lat = null, ?float $lon = null): OrtDto
     {
         if ($fullPath !== null && $fullPath !== '') {
             $pfad = $fullPath;
@@ -330,8 +387,8 @@ class OrteRepository
             name:               $row->p_place,
             vollstaendigerPfad: $pfad,
             anzahlEreignisse:   (int) ($row->anzahl_ereignisse ?? 0),
-            breitengrad:        isset($row->breitengrad)  ? (float) $row->breitengrad  : null,
-            laengengrad:        isset($row->laengengrad) ? (float) $row->laengengrad : null,
+            breitengrad:        $lat,
+            laengengrad:        $lon,
             govId:              isset($row->gov_id) && $row->gov_id !== null ? (string) $row->gov_id : null,
         );
     }
