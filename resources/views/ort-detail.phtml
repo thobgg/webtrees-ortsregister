@@ -446,6 +446,27 @@ foreach ($bilder as $medium) {
         </div>
         <?php endif ?>
 
+        <?php if ($can_edit && $ort !== null && $tree !== null) : ?>
+        <div class="mb-4" id="ortsregister-locev"
+             data-preview-url="<?= e(route('ortsregister.locev.preview', ['tree' => $tree->name(), 'place_id' => $place_id])) ?>"
+             data-write-url="<?= e(route('ortsregister.locev.write', ['tree' => $tree->name(), 'place_id' => $place_id])) ?>"
+             data-undo-url="<?= e(route('ortsregister.locev.undo', ['tree' => $tree->name(), 'place_id' => $place_id])) ?>"
+             data-csrf="<?= e(csrf_token()) ?>">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="ortsregister-locev-btn">
+                <span aria-hidden="true">🔗</span> <?= I18N::translate('Ereignisse mit _LOC verknüpfen') ?>
+            </button>
+            <?php if ($locev_undo_log_id !== null) : ?>
+                <button type="button" class="btn btn-sm btn-outline-danger ms-2" id="ortsregister-locev-undo-btn"
+                        data-log-id="<?= (int) $locev_undo_log_id ?>">
+                    <?= I18N::translate('Letzte _LOC-Verknüpfung rückgängig machen') ?>
+                </button>
+            <?php endif ?>
+            <div class="form-text">
+                <?= I18N::translate('Setzt den GEDCOM-L-Zeiger 3 _LOC unter die Ereignisse an diesem Ort — damit zeigen Geburten/Heiraten/Tode auf den _LOC-Record und bleiben standard-portabel. Additiv, der PLAC-Text bleibt; die Vorschau zeigt genau, welche Datensätze betroffen sind. Setzt einen vorhandenen _LOC-Record voraus (erst „Identität als _LOC schreiben").') ?>
+            </div>
+        </div>
+        <?php endif ?>
+
         <div class="row g-3 mb-4">
             <div class="col-6 col-sm-3">
                 <div class="card text-center h-100">
@@ -1557,6 +1578,116 @@ foreach ($bilder as $medium) {
     if (undoBtn) {
         undoBtn.addEventListener('click', function () {
             if (!window.confirm('Diesen _LOC-Schreibvorgang wirklich rückgängig machen?')) return;
+            const fd = new FormData();
+            fd.append('log_id', undoBtn.dataset.logId);
+            undoBtn.disabled = true;
+            fetch(wrap.dataset.undoUrl, { method: 'POST', body: fd, headers: { 'X-CSRF-TOKEN': csrf }})
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) { location.reload(); }
+                    else { alert('Rückgängig fehlgeschlagen: ' + (data.message || 'unbekannt')); undoBtn.disabled = false; }
+                })
+                .catch(err => { alert('Netzwerkfehler: ' + err); undoBtn.disabled = false; });
+        });
+    }
+})();
+</script>
+
+<div class="modal fade" id="ortsregister-locev-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><span aria-hidden="true">🔗</span> <?= I18N::translate('Ereignisse mit _LOC verknüpfen') ?></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="ortsregister-locev-modal-body">
+                <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?= I18N::translate('Abbrechen') ?></button>
+                <button type="button" class="btn btn-primary" id="ortsregister-locev-confirm" disabled><?= I18N::translate('Verknüpfen') ?></button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+(function () {
+    const wrap    = document.getElementById('ortsregister-locev');
+    const modalEl = document.getElementById('ortsregister-locev-modal');
+    if (!wrap || !modalEl) return;
+    const previewUrl = wrap.dataset.previewUrl;
+    const writeUrl   = wrap.dataset.writeUrl;
+    const csrf       = wrap.dataset.csrf;
+    const body    = document.getElementById('ortsregister-locev-modal-body');
+    const confirm = document.getElementById('ortsregister-locev-confirm');
+    let modal = null;
+
+    const esc = (s) => (s == null ? '' : String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])));
+
+    document.getElementById('ortsregister-locev-btn').addEventListener('click', function () {
+        body.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>';
+        confirm.disabled = true;
+        modal = modal || new bootstrap.Modal(modalEl);
+        modal.show();
+        fetch(previewUrl, { headers: { 'Accept': 'application/json' }})
+            .then(r => r.json())
+            .then(renderPreview)
+            .catch(err => { body.innerHTML = '<div class="text-danger">Fehler: ' + esc(err) + '</div>'; });
+    });
+
+    function renderPreview(data) {
+        if (!data.success) {
+            body.innerHTML = '<div class="text-danger">' + esc(data.message || 'Fehler') + '</div>';
+            return;
+        }
+        if (data.action === 'no_loc') {
+            body.innerHTML = '<p class="text-muted">Für diesen Ort gibt es noch keinen _LOC-Record. Schreibe zuerst die _LOC-Identität (Knopf „Identität als _LOC schreiben"), dann können die Ereignisse darauf zeigen.</p>';
+            confirm.disabled = true;
+            return;
+        }
+        if (data.action === 'ambiguous') {
+            let h = '<p>Mehrere _LOC-Records mit diesem Namen — bitte erst eindeutig machen:</p><ul>';
+            (data.candidates || []).forEach(c => { h += '<li>' + esc(c.name) + ' <code>@' + esc(c.xref) + '@</code></li>'; });
+            body.innerHTML = h + '</ul>';
+            confirm.disabled = true;
+            return;
+        }
+        let html = '<p class="fw-semibold">Ziel-Record: <code>@' + esc(data.loc_xref) + '@</code></p>';
+        if (data.pointers > 0) {
+            html += '<p class="mb-1">Der Zeiger <code>3 _LOC @' + esc(data.loc_xref) + '@</code> wird unter <strong>' + data.pointers + '</strong> Ereignis(se) in <strong>' + data.records + '</strong> Datensatz/-sätzen gesetzt:</p>';
+            html += '<ul class="mb-2">' + (data.targets || []).map(t =>
+                '<li><span class="badge text-bg-secondary">' + esc(t.type) + '</span> ' + esc(t.label)
+                + ' <code>@' + esc(t.xref) + '@</code>' + (t.count > 1 ? ' <span class="text-muted">(' + t.count + '×)</span>' : '') + '</li>'
+            ).join('') + '</ul>';
+            if (data.already_linked > 0) {
+                html += '<p class="text-muted small">' + data.already_linked + ' Ereignis(se) tragen den Zeiger schon — die bleiben unberührt.</p>';
+            }
+            html += '<p class="text-muted small mb-0">Additiv: der PLAC-Text bleibt unverändert.</p>';
+            confirm.disabled = false;
+        } else {
+            html += '<p class="text-muted">' + (data.already_linked > 0
+                ? ('Alle ' + data.already_linked + ' Ereignisse am Ort tragen den _LOC-Zeiger schon — nichts zu tun.')
+                : 'Keine Ereignisse an diesem Ort gefunden.') + '</p>';
+            confirm.disabled = true;
+        }
+        body.innerHTML = html;
+    }
+
+    confirm.addEventListener('click', function () {
+        confirm.disabled = true;
+        fetch(writeUrl, { method: 'POST', body: new FormData(), headers: { 'X-CSRF-TOKEN': csrf }})
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) { location.reload(); }
+                else { alert('Verknüpfen fehlgeschlagen: ' + (data.message || 'unbekannt')); confirm.disabled = false; }
+            })
+            .catch(err => { alert('Netzwerkfehler: ' + err); confirm.disabled = false; });
+    });
+
+    const undoBtn = document.getElementById('ortsregister-locev-undo-btn');
+    if (undoBtn) {
+        undoBtn.addEventListener('click', function () {
+            if (!window.confirm('Diese _LOC-Verknüpfung wirklich rückgängig machen?')) return;
             const fd = new FormData();
             fd.append('log_id', undoBtn.dataset.logId);
             undoBtn.disabled = true;

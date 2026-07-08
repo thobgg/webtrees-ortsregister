@@ -79,6 +79,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
                 'gov_geschwister' => [],
                 'gov_kandidaten'  => [],
                 'loc_undo_log_id' => null,
+                'locev_undo_log_id' => null,
                 'personen'     => [],
                 'medien'       => [],
                 'gov_id'             => null,
@@ -113,6 +114,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
                 'gov_geschwister' => [],
                 'gov_kandidaten'  => [],
                 'loc_undo_log_id' => null,
+                'locev_undo_log_id' => null,
                 'personen'     => [],
                 'medien'       => [],
                 'gov_id'             => null,
@@ -308,9 +310,11 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
         }
 
         // Jüngster rückgängig-machbarer _LOC-Schreibvorgang an diesem Ort (Undo-Button).
-        $locUndoLogId = null;
+        $locUndoLogId   = null;
+        $locevUndoLogId = null;
         try {
-            $locUndoLogId = $this->operationBackup?->latestUndoable($tree->id(), 'loc_write', $placeId);
+            $locUndoLogId   = $this->operationBackup?->latestUndoable($tree->id(), 'loc_write', $placeId);
+            $locevUndoLogId = $this->operationBackup?->latestUndoable($tree->id(), 'loc_event_link', $placeId);
         } catch (Throwable) {
             // Stiller Fallback — kein Undo-Button, kein Seitenfehler.
         }
@@ -338,6 +342,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
             'ort'          => $ort,
             'loc_records'  => $locRecords,
             'loc_undo_log_id' => $locUndoLogId,
+            'locev_undo_log_id' => $locevUndoLogId,
             'gov_geschwister' => $govGeschwister,
             'gov_kandidaten'  => $govKandidaten,
             'personen'     => $personen,
