@@ -4,7 +4,24 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+### Hinzugefügt
+- **Derselbe Ort über die Zeit — Querverweise (Achse C).** Verwaltungsreformen erzeugen
+  für *einen* realen Ort mehrere PLAC-Schreibweisen (z.B. „Oberurbach, Amt Schorndorf"
+  vs. „…, OA Schorndorf, Kgr. Württemberg"). Sind zwei solche Orte im Modul mit
+  **derselben GOV-Kennung** verknüpft, zeigt die Ortsseite jetzt einen Hinweis „Derselbe
+  Ort erscheint im Baum auch als: …" mit Links auf die Varianten. Rein lesend, nutzt nur
+  vorhandene GOV-Verknüpfungen, **ändert keine PLAC** — die historischen Schreibweisen
+  bleiben erhalten. (Für echte Tippfehler/Dubletten bleibt *Merge* das richtige Werkzeug;
+  für echte Zeit-Varianten der Querverweis.)
+
 ### Behoben
+- **GOV-Hierarchie liest jetzt die Jahreszahlen — und „heute".** Die GOV-API liefert pro
+  `part-of`-Beziehung eine Zeitspanne als `beginYear`/`endYear`; der Parser suchte nach
+  den falschen Feldnamen und **warf die Jahre weg**. Jetzt kommen sie an. Zusätzlich wird
+  die **heutige** Zugehörigkeit korrekt bestimmt: bevorzugt aus `located-in`, und wenn das
+  (wie bei vielen Orten) leer ist, aus dem **offenen `part-of`-Eintrag** (Beginn ohne
+  Ende) — dadurch erscheint z.B. „Oberurbach → heute Urbach" statt „keine aktuell-Daten".
+  Die historische Kette nimmt den ältesten datierten Eintrag.
 - **Koordinaten-Read jetzt hierarchie-genau.** Bisher matchte der Read `place_location`
   nur über den **Blattnamen** (`MAX` über gleichnamige Orte) — mehrere gleichnamige Orte
   zeigten dieselben Koordinaten. Jetzt wird der **volle Pfad** verglichen (dieselbe

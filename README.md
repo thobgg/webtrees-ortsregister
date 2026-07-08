@@ -75,6 +75,11 @@ Leaflet / OpenStreetMap view, the place located from its coordinates:
 - **GEDCOM-L `_LOC` identity layer**: reads existing `_LOC` records and shows them per
   place; optional additive write of the GOV id and coordinates into a standard `_LOC`
   record (preview first, gap-fill only, never overwrites)
+- **Time-aware place identity**: coordinates resolve by the full hierarchy path, so
+  same-named places do not share them; the GOV hierarchy shows the historical chain with
+  dates and today's affiliation; places that are the same across administrative reforms
+  (linked to the same GOV id) are cross-linked — the historical spellings are preserved,
+  never rewritten
 
 ### Hierarchy filter
 

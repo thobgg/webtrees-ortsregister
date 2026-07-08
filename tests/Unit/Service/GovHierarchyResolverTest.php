@@ -190,6 +190,35 @@ final class GovHierarchyResolverTest extends TestCase
         self::assertSame('object_historical', $hist[1]->govId);
     }
 
+    public function testCurrentModeUsesOpenEndedPartOfWhenLocatedInEmpty(): void
+    {
+        // Echte Oberurbach-Struktur (verifiziert an GOV OBEACH_W7067): located-in leer,
+        // partOf mit drei Zeitspannen — der OFFENE (ab 1970) ist die heutige Zugehörigkeit.
+        $leaf = new GovObject(
+            'OBEACH_W7067', 'Oberurbach', ['deu' => 'Oberurbach'], [], null, null,
+            ['object_306665', 'URBACHJN48TT', 'object_190778'], [], [], [],
+            [
+                'object_306665' => ['begin' => '1938', 'end' => '1970'],
+                'URBACHJN48TT'  => ['begin' => '1970', 'end' => null],   // offen → heute
+                'object_190778' => ['begin' => null,   'end' => '1938'],
+            ],
+        );
+        $resolver = new GovHierarchyResolver($this->stubClient([
+            'OBEACH_W7067'  => $leaf,
+            'URBACHJN48TT'  => $this->makeObj('URBACHJN48TT',  'Urbach',           []),
+            'object_190778' => $this->makeObj('object_190778', 'Oberamt Schorndorf', []),
+        ]));
+
+        $current = $resolver->resolve('OBEACH_W7067', GovHierarchyResolver::MODE_CURRENT);
+        self::assertCount(2, $current);
+        self::assertSame('URBACHJN48TT', $current[1]->govId); // heute: Urbach
+
+        $hist = $resolver->resolveWithEdges('OBEACH_W7067', GovHierarchyResolver::MODE_HISTORICAL);
+        self::assertCount(2, $hist);
+        self::assertSame('object_190778', $hist[1]['obj']->govId); // ältester: bis 1938
+        self::assertSame('1938', $hist[1]['end']);                 // Zeitspanne kommt jetzt an
+    }
+
     public function testResolveWithEdgesHandlesMissingPartOfMeta(): void
     {
         $leaf = new GovObject('object_leaf', 'Weiler', ['deu' => 'Weiler'], [], null, null,
