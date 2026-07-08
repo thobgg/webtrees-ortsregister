@@ -95,6 +95,23 @@ final class OperationBackup
         return $row !== null ? (string) $row->backup_path : null;
     }
 
+    /**
+     * log_id der jüngsten noch rückgängig-machbaren Operation eines Orts
+     * (für den Undo-Button auf der Ortsseite). null = nichts rückgängig zu machen.
+     */
+    public function latestUndoable(int $treeId, string $operation, int $srcPlaceId): ?int
+    {
+        $row = DB::table('ortsregister_merge_log')
+            ->where('tree_id', '=', $treeId)
+            ->where('operation', '=', $operation)
+            ->where('src_place_id', '=', $srcPlaceId)
+            ->where('status', '=', 'completed')
+            ->orderByDesc('id')
+            ->select(['id'])
+            ->first();
+        return $row !== null ? (int) $row->id : null;
+    }
+
     public function markUndone(int $logId): void
     {
         DB::table('ortsregister_merge_log')->where('id', '=', $logId)->update(['status' => 'undone']);

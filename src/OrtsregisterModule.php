@@ -129,7 +129,7 @@ class OrtsregisterModule extends AbstractModule implements
     public function title(): string { return I18N::translate('Ortsregister'); }
     public function description(): string { return I18N::translate('Ortsregister mit visueller Landing-Page, Medien-Verknüpfung und (geplant) GOV-Integration.'); }
     public function customModuleAuthorName(): string { return 'Thomas Bugge'; }
-    public function customModuleVersion(): string { return '1.1.0'; }
+    public function customModuleVersion(): string { return '1.1.1'; }
     public function customModuleSupportUrl(): string { return ''; }
 
     /**
@@ -222,7 +222,10 @@ class OrtsregisterModule extends AbstractModule implements
         );
         $container->set(
             GovLinkingService::class,
-            new GovLinkingService($container->get(GovApiClient::class)),
+            new GovLinkingService(
+                $container->get(GovApiClient::class),
+                $container->get(ApcuCacheService::class),
+            ),
         );
         $container->set(
             GovHierarchyResolver::class,
@@ -365,6 +368,7 @@ class OrtsregisterModule extends AbstractModule implements
                 $container->get(PlaceKbListService::class),
                 $this,
                 new LocationReader(),
+                $container->get(OperationBackup::class),
             ),
         );
     }
