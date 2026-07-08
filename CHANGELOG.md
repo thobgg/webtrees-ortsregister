@@ -4,6 +4,19 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+## [1.3.0] – 2026-07-08
+
+### Hinzugefügt
+- **Ereignisse mit dem `_LOC`-Record verknüpfen (W2).** Auf der Ortsseite setzt „Ereignisse
+  mit _LOC verknüpfen" den GEDCOM-L-Zeiger `3 _LOC @x@` unter die Ereignis-`PLAC` der
+  Geburten/Heiraten/Tode an diesem Ort. Erst dieser Zeiger macht die Identitäts-Schicht
+  standard-portabel: die Ereignisse zeigen auf den einen `_LOC`-Record, webtrees/Vesta
+  können nativ darüber aggregieren. Additiv und gap-fill — der PLAC-Text bleibt, ein schon
+  vorhandener Zeiger wird nie überschrieben; Vorschau zeigt genau die betroffenen Datensätze;
+  JSON-Backup + Undo (überspringt seither geänderte Datensätze). Setzt einen `_LOC`-Record
+  voraus (erst W1). Grammatik am webtrees-Core verifiziert (`INDI:*:PLAC:_LOC` /
+  `FAM:*:PLAC:_LOC` als native `XrefLocation`).
+
 ## [1.2.0] – 2026-07-08
 
 ### Hinzugefügt

@@ -7,7 +7,7 @@
 | | |
 |---|---|
 | Module name | `ortsregister` |
-| Version | 1.2.0 |
+| Version | 1.3.0 |
 | webtrees | 2.2.x |
 | PHP | 8.2 – 8.4 |
 | License | GPL-3.0-or-later |
@@ -74,7 +74,9 @@ Leaflet / OpenStreetMap view, the place located from its coordinates:
   Archion auto parish lookup
 - **GEDCOM-L `_LOC` identity layer**: reads existing `_LOC` records and shows them per
   place; optional additive write of the GOV id and coordinates into a standard `_LOC`
-  record (preview first, gap-fill only, never overwrites)
+  record (preview first, gap-fill only, never overwrites); and optionally links the events
+  at a place to that `_LOC` record (the `_LOC` pointer under the event `PLAC`), so the tree
+  becomes standard-portable — additive, the `PLAC` text is untouched, with preview and undo
 - **Time-aware place identity**: coordinates resolve by the full hierarchy path, so
   same-named places do not share them; the GOV hierarchy shows the historical chain with
   dates and today's affiliation; places that are the same across administrative reforms
@@ -118,9 +120,9 @@ list.
 ## Roadmap
 
 Current feature state is in the [CHANGELOG](CHANGELOG.md). Feedback is welcome; next up
-for the `_LOC` identity layer: linking events to their `_LOC` record (the `2 _LOC @x@`
-pointer under `PLAC`), plus record-level split (detaching single events from a collective
-place) and expanding duplicate detection.
+for the `_LOC` identity layer: a merged place view that groups the time-variants of one
+real place (same GOV id) onto a single overlay page, plus record-level split (detaching
+single events from a collective place) and expanding duplicate detection.
 
 ## Requirements
 

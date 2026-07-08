@@ -7,7 +7,7 @@
 | | |
 |---|---|
 | Modul-Name | `ortsregister` |
-| Version | 1.2.0 |
+| Version | 1.3.0 |
 | webtrees | 2.2.x |
 | PHP | 8.2 – 8.4 |
 | Lizenz | GPL-3.0-or-later |
@@ -75,7 +75,10 @@ Leaflet-/OpenStreetMap-Ansicht, der Ort aus seinen Koordinaten verortet:
   Bibliothek, Archion-Auto-Pfarrei-Lookup
 - **GEDCOM-L `_LOC`-Identitätsschicht**: erkennt vorhandene `_LOC`-Records und zeigt sie
   pro Ort; optionales additives Schreiben von GOV-Kennung und Koordinaten in einen
-  Standard-`_LOC`-Record (Vorschau zuerst, nur Lücken füllen, nie überschreiben)
+  Standard-`_LOC`-Record (Vorschau zuerst, nur Lücken füllen, nie überschreiben); und
+  optionales Verknüpfen der Ereignisse eines Orts mit diesem `_LOC`-Record (der `_LOC`-Zeiger
+  unter der Ereignis-`PLAC`), damit der Baum standard-portabel wird — additiv, der
+  `PLAC`-Text bleibt, mit Vorschau und Undo
 - **Zeit-bewusste Orts-Identität**: Koordinaten werden über den vollen Hierarchie-Pfad
   aufgelöst — gleichnamige Orte teilen sie nicht; die GOV-Hierarchie zeigt die historische
   Kette mit Jahren und die heutige Zugehörigkeit; Orte, die über Verwaltungsreformen
@@ -120,9 +123,10 @@ oberhalb der Liste.
 ## Roadmap
 
 Aktueller Funktionsstand: [CHANGELOG](CHANGELOG.md). Feedback ist willkommen;
-als Nächstes für die `_LOC`-Identitätsschicht: Ereignisse mit ihrem `_LOC`-Record
-verknüpfen (der `2 _LOC @x@`-Zeiger unter `PLAC`), dazu record-genauer Split (einzelne
-Ereignisse von einem Sammel-Ort lösen) und Ausbau der Dubletten-Erkennung.
+als Nächstes für die `_LOC`-Identitätsschicht: eine zusammengeführte Ortsansicht, die die
+Zeit-Varianten eines realen Orts (gleiche GOV-Kennung) auf einer Overlay-Seite bündelt,
+dazu record-genauer Split (einzelne Ereignisse von einem Sammel-Ort lösen) und Ausbau der
+Dubletten-Erkennung.
 
 ## Voraussetzungen
 

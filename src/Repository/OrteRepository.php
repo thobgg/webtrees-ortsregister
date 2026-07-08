@@ -189,6 +189,15 @@ class OrteRepository
     }
 
     /**
+     * Voller Komma-Pfad eines Orts (Blatt-first), oder null wenn es ihn nicht gibt.
+     * Für W2: gegen diesen Pfad werden die Ereignis-PLACs gematcht.
+     */
+    public function vollerPfad(Tree $tree, int $placeId): ?string
+    {
+        return $this->buildPathMap($tree)[$placeId] ?? null;
+    }
+
+    /**
      * Löscht den Cache für alle Orte dieses Baums.
      */
     public function invalidateCache(Tree $tree): void

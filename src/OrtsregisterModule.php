@@ -19,6 +19,9 @@ use Ortsregister\Http\RequestHandlers\MergeUndo;
 use Ortsregister\Http\RequestHandlers\LocWritePreview;
 use Ortsregister\Http\RequestHandlers\LocWriteExecute;
 use Ortsregister\Http\RequestHandlers\LocWriteUndo;
+use Ortsregister\Http\RequestHandlers\LocEventLinkPreview;
+use Ortsregister\Http\RequestHandlers\LocEventLinkExecute;
+use Ortsregister\Http\RequestHandlers\LocEventLinkUndo;
 use Ortsregister\Http\RequestHandlers\GovLinkSiblings;
 use Ortsregister\Http\RequestHandlers\RenameExecute;
 use Ortsregister\Http\RequestHandlers\RenameModalPage;
@@ -40,6 +43,7 @@ use Ortsregister\Service\ArchionLinker;
 use Ortsregister\Service\ArchionParishLookup;
 use Ortsregister\Service\LocationReader;
 use Ortsregister\Service\LocationWriter;
+use Ortsregister\Service\LocationEventLinker;
 use Ortsregister\Service\OperationBackup;
 use Ortsregister\Service\PlaceFolderLocator;
 use Ortsregister\Service\PlaceFolderScanner;
@@ -130,7 +134,7 @@ class OrtsregisterModule extends AbstractModule implements
     public function title(): string { return I18N::translate('Ortsregister'); }
     public function description(): string { return I18N::translate('Ortsregister mit visueller Landing-Page, Medien-Verknüpfung und (geplant) GOV-Integration.'); }
     public function customModuleAuthorName(): string { return 'Thomas Bugge'; }
-    public function customModuleVersion(): string { return '1.2.0'; }
+    public function customModuleVersion(): string { return '1.3.0'; }
     public function customModuleSupportUrl(): string { return ''; }
 
     /**
@@ -189,6 +193,9 @@ class OrtsregisterModule extends AbstractModule implements
         $router->get('ortsregister.loc.preview',         '/tree/{tree}/orte/{place_id}/loc-write/preview', LocWritePreview::class);
         $router->post('ortsregister.loc.write',          '/tree/{tree}/orte/{place_id}/loc-write',         LocWriteExecute::class);
         $router->post('ortsregister.loc.undo',           '/tree/{tree}/orte/{place_id}/loc-write/undo',    LocWriteUndo::class);
+        $router->get('ortsregister.locev.preview',       '/tree/{tree}/orte/{place_id}/loc-events/preview', LocEventLinkPreview::class);
+        $router->post('ortsregister.locev.write',        '/tree/{tree}/orte/{place_id}/loc-events',         LocEventLinkExecute::class);
+        $router->post('ortsregister.locev.undo',         '/tree/{tree}/orte/{place_id}/loc-events/undo',    LocEventLinkUndo::class);
         $router->post('ortsregister.gov.siblings',       '/tree/{tree}/orte/{place_id}/gov-siblings',      GovLinkSiblings::class);
         $router->get('ortsregister.orte.detail',   '/tree/{tree}/orte/{place_id}',     OrteDetailPage::class);
         $router->get('ortsregister.admin.config',  '/ortsregister/admin/config',       AdminConfigPage::class)
@@ -345,6 +352,36 @@ class OrtsregisterModule extends AbstractModule implements
             LocWriteUndo::class,
             new LocWriteUndo(
                 $container->get(LocationWriter::class),
+                $container->get(OperationBackup::class),
+            ),
+        );
+        // _LOC-Ereignis-Zeiger-Stack (W2): `3 _LOC @x@` unter Ereignis-PLACs setzen.
+        $container->set(
+            LocationEventLinker::class,
+            new LocationEventLinker(
+                $container->get(LocationReader::class),
+                $container->get(OperationBackup::class),
+            ),
+        );
+        $container->set(
+            LocEventLinkPreview::class,
+            new LocEventLinkPreview(
+                $container->get(LocationEventLinker::class),
+                $container->get(\Ortsregister\Repository\OrteRepository::class),
+            ),
+        );
+        $container->set(
+            LocEventLinkExecute::class,
+            new LocEventLinkExecute(
+                $container->get(LocationEventLinker::class),
+                $container->get(\Ortsregister\Repository\OrteRepository::class),
+                $container->get(OperationBackup::class),
+            ),
+        );
+        $container->set(
+            LocEventLinkUndo::class,
+            new LocEventLinkUndo(
+                $container->get(LocationEventLinker::class),
                 $container->get(OperationBackup::class),
             ),
         );
