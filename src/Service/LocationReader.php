@@ -93,6 +93,7 @@ final class LocationReader
         $lat         = null;
         $lon         = null;
         $parentXrefs = [];
+        $notes       = [];
 
         $n = count($lines);
         for ($i = 0; $i < $n; $i++) {
@@ -140,6 +141,24 @@ final class LocationReader
                         }
                     }
                     break;
+                case 'NOTE':
+                    // Nur inline-Notizen (Freitext), keine Pointer `1 NOTE @N1@`.
+                    // Mehrzeilig über `2 CONT` (neue Zeile) / `2 CONC` (Fortsetzung).
+                    if (str_starts_with($value, '@')) {
+                        break;
+                    }
+                    $text = $value;
+                    for ($j = $i + 1; $j < $n && $this->lineLevel($lines[$j]) > 1; $j++) {
+                        if (preg_match('/^\d+\s+CONT(?: (.*))?$/u', $lines[$j], $ct) === 1) {
+                            $text .= "\n" . ($ct[1] ?? '');
+                        } elseif (preg_match('/^\d+\s+CONC(?: (.*))?$/u', $lines[$j], $cc) === 1) {
+                            $text .= $cc[1] ?? '';
+                        }
+                    }
+                    if ($text !== '') {
+                        $notes[] = $text;
+                    }
+                    break;
             }
         }
 
@@ -157,6 +176,7 @@ final class LocationReader
             longitude:   $lon,
             type:        $type,
             parentXrefs: array_values(array_unique($parentXrefs)),
+            notes:       array_values($notes),
         );
     }
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Ortsregister\Http\RequestHandlers;
 
+use Ortsregister\Service\PlaceDescriptionService;
 use Ortsregister\Service\PlaceNotesService;
 use Fig\Http\Message\StatusCodeInterface;
 use Fisharebest\Webtrees\Auth;
@@ -25,6 +26,7 @@ final class PlaceNotesSave implements RequestHandlerInterface
 {
     public function __construct(
         private readonly PlaceNotesService $notesService,
+        private readonly ?PlaceDescriptionService $descriptionService = null,
     ) {}
 
     public function handle(ServerRequestInterface $request): ResponseInterface
@@ -60,6 +62,23 @@ final class PlaceNotesSave implements RequestHandlerInterface
 
         if (!$this->notesService->isValidFilename($filename)) {
             return $this->json(['success' => false, 'message' => 'Ungültiger Filename.'], StatusCodeInterface::STATUS_BAD_REQUEST);
+        }
+
+        // Beschreibung (notes.md) ist ab jetzt der `_LOC` NOTE (Doktrin: Text in den Baum).
+        // Alle anderen Markdown-Slots bleiben Datei (recherche.md etc. = Issue #7, separat).
+        if ($filename === 'notes.md' && $this->descriptionService !== null) {
+            try {
+                $this->descriptionService->save($tree, $placeId, $placeName, $markdown);
+                return $this->json([
+                    'success'  => true,
+                    'mtime'    => 0, // _LOC-Notiz kennt kein file-mtime
+                    'html'     => $this->notesService->render($markdown, $tree),
+                    'markdown' => $markdown,
+                    'filename' => $filename,
+                ]);
+            } catch (Throwable $e) {
+                return $this->json(['success' => false, 'message' => $e->getMessage()], StatusCodeInterface::STATUS_OK);
+            }
         }
 
         try {

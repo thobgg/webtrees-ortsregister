@@ -222,6 +222,45 @@ final class LocationWriter
         return '1 _GOV ' . trim($govId);
     }
 
+    /** `1 NOTE <text>` mit `2 CONT`-Faltung für Zeilenumbrüche (Freitext/Markdown). */
+    public function noteFact(string $text): string
+    {
+        return '1 NOTE ' . strtr(trim($text), ["\n" => "\n2 CONT "]);
+    }
+
+    /**
+     * Setzt/ersetzt die EINE inline-Beschreibung (`1 NOTE <text>`) in einem
+     * `_LOC`-Record-GEDCOM. Rein und isoliert testbar:
+     *   - entfernt vorhandene inline-`1 NOTE`-Blöcke samt `2 CONT/CONC`-Kindern
+     *   - Pointer-Notizen (`1 NOTE @N@`) bleiben unangetastet
+     *   - leerer/`null`-Text → Beschreibung entfernt, sonst neue NOTE ans Ende
+     * Ändert nichts an NAME/_GOV/MAP/_LOC.
+     */
+    public function setInlineNote(string $recordGedcom, ?string $text): string
+    {
+        $lines = explode("\n", $recordGedcom);
+        $n     = count($lines);
+        $out   = [];
+
+        for ($i = 0; $i < $n; $i++) {
+            $line = rtrim($lines[$i], "\r");
+            // inline-NOTE (nicht Pointer) → diese Zeile + Level>1-Kinder überspringen
+            if ($line === '1 NOTE' || (str_starts_with($line, '1 NOTE ') && !str_starts_with($line, '1 NOTE @'))) {
+                while ($i + 1 < $n && preg_match('/^([2-9]|\d\d)/', rtrim($lines[$i + 1], "\r")) === 1) {
+                    $i++;
+                }
+                continue;
+            }
+            $out[] = $lines[$i];
+        }
+
+        $text = $text !== null ? trim($text) : '';
+        if ($text !== '') {
+            $out[] = $this->noteFact($text);
+        }
+        return implode("\n", $out);
+    }
+
     private function mapFact(float $lat, float $lon): string
     {
         return "1 MAP\n2 LATI " . $this->formatLat($lat) . "\n2 LONG " . $this->formatLon($lon);

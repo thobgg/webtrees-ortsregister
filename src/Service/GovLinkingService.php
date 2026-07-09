@@ -6,6 +6,7 @@ namespace Ortsregister\Service;
 
 use Ortsregister\Cache\ApcuCacheService;
 use Ortsregister\Dto\GovObject;
+use Ortsregister\Dto\LocWritePlan;
 use Fisharebest\Webtrees\DB;
 use Fisharebest\Webtrees\PlaceLocation;
 use Fisharebest\Webtrees\Tree;
@@ -21,6 +22,7 @@ class GovLinkingService
     public function __construct(
         private readonly GovApiClient $govClient,
         private readonly ?ApcuCacheService $cache = null,
+        private readonly ?LocationWriter $locationWriter = null,
     ) {}
 
     /**
@@ -66,11 +68,51 @@ class GovLinkingService
             }
         }
 
+        // Daten-Doktrin: die GOV-Kennung ist erhaltenswert und nicht auto-regenerierbar,
+        // darf also nicht DB-only bleiben. Additiv (gap-fill) auch in den `_LOC` schreiben,
+        // damit sie im Baum/Export mitreist — place_meta bleibt dann nur Cache. Best-effort:
+        // ohne Auto-Accept (oder bei Mehrdeutigkeit) übersprungen, die Verknüpfung bleibt gültig.
+        try {
+            $this->anchorGovInLoc($tree, $placeId, $obj);
+        } catch (Throwable) {
+            // _LOC-Anker fehlgeschlagen — Verknüpfung (place_meta) bleibt trotzdem gültig.
+        }
+
         // OrtDto ist gecacht (gov_id + Koordinaten) — nach dem Schreiben leeren,
         // sonst zeigen Ortsseite und _LOC-Vorschau bis zu 20 Min alte Daten.
         $this->cache?->flush();
 
         return $obj;
+    }
+
+    /**
+     * Schreibt die GOV-Kennung (+ vorhandene Koordinaten) additiv in den `_LOC` des Orts
+     * über den getesteten W1-Writer: legt bei Bedarf einen minimalen `_LOC` an, füllt nur
+     * Lücken, überschreibt nie. Mehrere gleichnamige `_LOC` (AMBIGUOUS) → nicht raten,
+     * überspringen. Ohne Writer (nicht verdrahtet) No-op.
+     */
+    private function anchorGovInLoc(Tree $tree, int $placeId, GovObject $obj): void
+    {
+        if ($this->locationWriter === null) {
+            return;
+        }
+        $leaf = DB::table('places')
+            ->where('p_id',   '=', $placeId)
+            ->where('p_file', '=', $tree->id())
+            ->value('p_place');
+        if ($leaf === null || (string) $leaf === '') {
+            return;
+        }
+        $lat  = $obj->hasCoordinates() ? (float) $obj->latitude  : null;
+        $lon  = $obj->hasCoordinates() ? (float) $obj->longitude : null;
+        $plan = $this->locationWriter->plan($tree, $placeId, (string) $leaf, $obj->govId, $lat, $lon);
+
+        if ($plan->action === LocWritePlan::ACTION_AMBIGUOUS) {
+            return; // mehrere passende _LOC — nicht automatisch entscheiden
+        }
+        if ($plan->willWrite()) {
+            $this->locationWriter->execute($tree, $plan); // wirft ohne Auto-Accept → vom Caller gefangen
+        }
     }
 
     /**

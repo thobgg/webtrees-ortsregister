@@ -13,6 +13,7 @@ use Ortsregister\Service\GovHierarchyResolver;
 use Ortsregister\Service\GovLinkingService;
 use Ortsregister\Service\LocationReader;
 use Ortsregister\Service\OperationBackup;
+use Ortsregister\Service\PlaceDescriptionService;
 use Ortsregister\Service\PlaceEventCounter;
 use Ortsregister\Service\ArchionLinker;
 use Ortsregister\Service\PlaceFolderScanner;
@@ -50,6 +51,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
         private readonly OrtsregisterModule   $module,
         private readonly LocationReader       $locationReader = new LocationReader(),
         private readonly ?OperationBackup     $operationBackup = null,
+        private readonly ?PlaceDescriptionService $descriptionService = null,
     ) {}
 
     protected function respond(
@@ -226,20 +228,31 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
 
         $noteSlots = [];
         foreach ($allSlots as $filename => $meta) {
+            $markdown = '';
+            $mtime    = 0;
             try {
-                $n    = $this->notesService->read($tree, $ort->name, $filename);
-                $html = $this->notesService->render($n->markdown, $tree);
+                if ($filename === 'notes.md' && $this->descriptionService !== null) {
+                    // Beschreibung: Original ist ab jetzt der _LOC NOTE. Datei nur noch
+                    // Fallback, bis der Ort einmal übers Modul gespeichert hat (Migration).
+                    $markdown = $this->descriptionService->read($tree, $ort->name)
+                        ?? $this->notesService->read($tree, $ort->name, $filename)->markdown;
+                    $mtime = 0; // _LOC-Notiz nutzt kein file-mtime-Locking
+                } else {
+                    $n        = $this->notesService->read($tree, $ort->name, $filename);
+                    $markdown = $n->markdown;
+                    $mtime    = $n->mtime;
+                }
+                $html = $this->notesService->render($markdown, $tree);
             } catch (Throwable) {
-                $n    = \Ortsregister\Dto\PlaceNotes::empty();
                 $html = '';
             }
             $noteSlots[] = [
                 'filename'      => $filename,
                 'title'         => $meta['title'],
                 'placeholder'   => $meta['placeholder'],
-                'markdown'      => $n->markdown,
+                'markdown'      => $markdown,
                 'html'          => $html,
-                'mtime'         => $n->mtime,
+                'mtime'         => $mtime,
                 // Default: Picker für Extra-Slots EINgeschaltet (User-Custom-MD), für notes.md aus
                 'person_picker' => $meta['person_picker'] ?? ($filename !== 'notes.md'),
             ];

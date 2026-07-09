@@ -134,7 +134,7 @@ class OrtsregisterModule extends AbstractModule implements
     public function title(): string { return I18N::translate('Ortsregister'); }
     public function description(): string { return I18N::translate('Ortsregister mit visueller Landing-Page, Medien-Verknüpfung und (geplant) GOV-Integration.'); }
     public function customModuleAuthorName(): string { return 'Thomas Bugge'; }
-    public function customModuleVersion(): string { return '1.3.0'; }
+    public function customModuleVersion(): string { return '1.4.0'; }
     public function customModuleSupportUrl(): string { return ''; }
 
     /**
@@ -234,6 +234,10 @@ class OrtsregisterModule extends AbstractModule implements
             new GovLinkingService(
                 $container->get(GovApiClient::class),
                 $container->get(ApcuCacheService::class),
+                // _LOC-Anker beim GOV-Verknüpfen (Doktrin: Kennung in den Baum, nicht DB-only).
+                // Inline gebaut, weil der LOC-Stack erst weiter unten registriert wird — identische
+                // Bauweise (arg-loser Reader, gleicher Backup-Ordner), stateless, also unkritisch.
+                new LocationWriter(new LocationReader(), new OperationBackup(__DIR__ . '/../backups')),
             ),
         );
         $container->set(
@@ -331,6 +335,22 @@ class OrtsregisterModule extends AbstractModule implements
                 $container->get(OperationBackup::class),
             ),
         );
+        // Ortsbeschreibung (notes.md) → `_LOC` NOTE (Daten-Doktrin: Text in den Baum).
+        $container->set(
+            \Ortsregister\Service\PlaceDescriptionService::class,
+            new \Ortsregister\Service\PlaceDescriptionService(
+                $container->get(LocationReader::class),
+                $container->get(LocationWriter::class),
+                $container->get(OperationBackup::class),
+            ),
+        );
+        $container->set(
+            PlaceNotesSave::class,
+            new PlaceNotesSave(
+                $container->get(PlaceNotesService::class),
+                $container->get(\Ortsregister\Service\PlaceDescriptionService::class),
+            ),
+        );
         $container->set(
             LocWritePreview::class,
             new LocWritePreview(
@@ -415,6 +435,7 @@ class OrtsregisterModule extends AbstractModule implements
                 $this,
                 new LocationReader(),
                 $container->get(OperationBackup::class),
+                $container->get(\Ortsregister\Service\PlaceDescriptionService::class),
             ),
         );
     }

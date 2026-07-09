@@ -535,8 +535,12 @@ foreach ($bilder as $medium) {
             }
         }
         if (($link_wikipedia ?? true)) {
-            $quellen[] = '<strong>Wikipedia</strong> · <a href="https://de.wikipedia.org/wiki/'
-                . urlencode($ort->name) . '" target="_blank" rel="noopener">' . e($ort->name) . ' ↗</a>';
+            // Bevorzugt der exakte Wikipedia-Artikel in Nutzersprache (aus Wikidata-Sitelinks),
+            // sonst Fallback auf die alte Namens-Suche (de). Löst Hermanns Wikipedia-Issue.
+            $wpUrl = ($wiki ?? null)?->wikipediaUrl(\Fisharebest\Webtrees\I18N::locale()->languageTag());
+            $wpHref = $wpUrl ?? ('https://de.wikipedia.org/wiki/' . urlencode($ort->name));
+            $quellen[] = '<strong>Wikipedia</strong> · <a href="' . e($wpHref)
+                . '" target="_blank" rel="noopener">' . e($ort->name) . ' ↗</a>';
         }
         if (($link_matricula ?? true)) {
             $quellen[] = '<strong>Matricula</strong> · <a href="https://www.matricula-online.eu/search/?q='
