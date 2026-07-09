@@ -4,6 +4,31 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+## [1.4.0] – 2026-07-09
+
+Leitlinie dieses Releases (Daten-Doktrin): Erhaltenswertes, das sich nicht automatisch
+wiederherstellen lässt, gehört in eine dauerhafte, offene Form (Baum/`_LOC` oder die Datei
+selbst) — nicht allein in die Modul-Datenbank. Drei Bausteine setzen das um:
+
+### Hinzugefügt
+- **Ortsbeschreibung wandert in den Baum (`_LOC` NOTE).** Die Beschreibung eines Orts (der
+  „Beschreibung"-Slot) wird jetzt als `1 NOTE` am GEDCOM-L-`_LOC`-Record gespeichert statt als
+  lose Datei — damit reist sie im GEDCOM-Export mit und übersteht Server-/Datenbank-Umzüge.
+  Legt den `_LOC` bei Bedarf an, additiv (ersetzt genau die eine Beschreibungs-Notiz, tastet
+  NAME/_GOV/MAP nicht an), mit Fallback auf eine vorhandene `notes.md` (Migration beim ersten
+  Bearbeiten). Andere Markdown-Dokumente (Recherche etc.) bleiben bewusst Datei.
+- **GOV-Kennung wird im Baum verankert.** Beim GOV-Verknüpfen wird die Kennung zusätzlich
+  additiv in den `_LOC` geschrieben (`1 _GOV`), nicht mehr nur in die Modul-Datenbank. Sie geht
+  damit bei einem Datenbank-/Server-Umzug nicht mehr verloren; `place_meta` ist nur noch Cache.
+  Best-effort (bei mehreren gleichnamigen `_LOC` oder ohne „Änderungen automatisch übernehmen"
+  übersprungen — die Verknüpfung bleibt gültig).
+
+### Geändert
+- **Wikipedia-Link in der Sprache des Nutzers.** Der Wikipedia-Link auf der Ortsseite führt
+  jetzt zum exakten Artikel in der Sprache des Nutzers (aus den Wikidata-Sitelinks, die das
+  Modul für die Bilder ohnehin lädt) statt zu einer deutschen Namens-Suche, die oft nicht traf.
+  Fallback auf die bisherige Suche, wenn kein Sitelink vorliegt.
+
 ## [1.3.0] – 2026-07-08
 
 ### Hinzugefügt

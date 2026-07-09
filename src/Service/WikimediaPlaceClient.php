@@ -65,8 +65,12 @@ class WikimediaPlaceClient
             return WikimediaPlaceData::empty();
         }
 
-        $hauptbild = $this->fetchHauptbild($qid, $placeName);
-        $galerie   = $this->fetchGalerie($placeName);
+        // Entity EINMAL holen → Hauptbild (P18) + Wikipedia-Sitelinks daraus.
+        $entity    = $this->httpGetJson("https://www.wikidata.org/wiki/Special:EntityData/$qid.json");
+        $hauptbild = $entity !== null ? $this->imageFromEntity($entity, $qid) : null;
+        $sitelinks = $entity !== null ? $this->extractSitelinks($entity, $qid) : [];
+
+        $galerie = $this->fetchGalerie($placeName);
 
         // Wenn das Hauptbild auch in der Galerie auftaucht → aus Galerie entfernen
         if ($hauptbild !== null) {
@@ -78,7 +82,7 @@ class WikimediaPlaceClient
         // Kappung auf max. 6 Galerie-Bilder
         $galerie = array_slice($galerie, 0, 6);
 
-        return new WikimediaPlaceData($qid, $hauptbild, $galerie);
+        return new WikimediaPlaceData($qid, $hauptbild, $galerie, $sitelinks);
     }
 
     /**
@@ -133,12 +137,9 @@ class WikimediaPlaceClient
     /**
      * P18-Property auflösen → Commons-FileInfo holen → WikiImage.
      */
-    private function fetchHauptbild(string $qid, string $placeName): ?WikiImage
+    /** P18-Hauptbild aus schon geholter Entity-JSON. */
+    private function imageFromEntity(array $entityJson, string $qid): ?WikiImage
     {
-        $entityJson = $this->httpGetJson("https://www.wikidata.org/wiki/Special:EntityData/$qid.json");
-        if ($entityJson === null) {
-            return null;
-        }
         $p18 = $entityJson['entities'][$qid]['claims']['P18'] ?? [];
         if (!is_array($p18) || $p18 === []) {
             return null;
@@ -148,6 +149,37 @@ class WikimediaPlaceClient
             return null;
         }
         return $this->commonsFileInfo('File:' . str_replace(' ', '_', $filename), 800);
+    }
+
+    /**
+     * Wikipedia-Sitelinks aus der Entity-JSON: Sprach-Code → Artikel-URL. REIN, testbar.
+     * Nimmt nur echte Wikipedias (`<lang>wiki`), keine Schwester-Projekte (commons/meta/…).
+     *
+     * @param array<string,mixed> $entityJson
+     * @return array<string,string>
+     */
+    public function extractSitelinks(array $entityJson, string $qid): array
+    {
+        $sitelinks = $entityJson['entities'][$qid]['sitelinks'] ?? null;
+        if (!is_array($sitelinks)) {
+            return [];
+        }
+        static $notLanguage = ['commons', 'meta', 'species', 'wikidata', 'mediawiki', 'sources', 'incubator', 'wikimania', 'foundation', 'outreach'];
+        $out = [];
+        foreach ($sitelinks as $dbname => $sl) {
+            if (!is_string($dbname) || !str_ends_with($dbname, 'wiki')) {
+                continue;
+            }
+            $lang = substr($dbname, 0, -4);
+            if ($lang === '' || in_array($lang, $notLanguage, true)) {
+                continue;
+            }
+            $url = is_array($sl) ? ($sl['url'] ?? null) : null;
+            if (is_string($url) && $url !== '') {
+                $out[str_replace('_', '-', $lang)] = $url;
+            }
+        }
+        return $out;
     }
 
     /**

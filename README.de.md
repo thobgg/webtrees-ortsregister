@@ -7,7 +7,7 @@
 | | |
 |---|---|
 | Modul-Name | `ortsregister` |
-| Version | 1.3.0 |
+| Version | 1.4.0 |
 | webtrees | 2.2.x |
 | PHP | 8.2 – 8.4 |
 | Lizenz | GPL-3.0-or-later |
@@ -72,13 +72,17 @@ Leaflet-/OpenStreetMap-Ansicht, der Ort aus seinen Koordinaten verortet:
 - **Orts-Hygiene**: Merge & Umbenennen mit Vorschau, JSON-Backup und Undo; kuratierte
   Daten (Notizen/KB/GOV/Digitalisate) wandern mit
 - **Externe Treffer** auf der Detailseite: Wikimedia/Commons, Deutsche Digitale
-  Bibliothek, Archion-Auto-Pfarrei-Lookup
+  Bibliothek, Archion-Auto-Pfarrei-Lookup, dazu ein Wikipedia-Link, der (über Wikidata) den
+  exakten Artikel in der Sprache des Nutzers trifft statt einer deutschen Namens-Suche
 - **GEDCOM-L `_LOC`-Identitätsschicht**: erkennt vorhandene `_LOC`-Records und zeigt sie
   pro Ort; optionales additives Schreiben von GOV-Kennung und Koordinaten in einen
   Standard-`_LOC`-Record (Vorschau zuerst, nur Lücken füllen, nie überschreiben); und
   optionales Verknüpfen der Ereignisse eines Orts mit diesem `_LOC`-Record (der `_LOC`-Zeiger
   unter der Ereignis-`PLAC`), damit der Baum standard-portabel wird — additiv, der
-  `PLAC`-Text bleibt, mit Vorschau und Undo
+  `PLAC`-Text bleibt, mit Vorschau und Undo.
+  Die **Orts-Beschreibung** wird als `_LOC` NOTE gespeichert, und das GOV-Verknüpfen
+  **verankert die GOV-Kennung im `_LOC`** — diese kuratierten Daten reisen so im
+  GEDCOM-Export mit, statt nur in der Modul-Datenbank zu liegen
 - **Zeit-bewusste Orts-Identität**: Koordinaten werden über den vollen Hierarchie-Pfad
   aufgelöst — gleichnamige Orte teilen sie nicht; die GOV-Hierarchie zeigt die historische
   Kette mit Jahren und die heutige Zugehörigkeit; Orte, die über Verwaltungsreformen

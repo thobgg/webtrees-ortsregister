@@ -13,12 +13,14 @@ namespace Ortsregister\Dto;
 final class WikimediaPlaceData
 {
     /**
-     * @param list<WikiImage> $galerie
+     * @param list<WikiImage>       $galerie
+     * @param array<string,string>  $wikipediaSitelinks  Sprach-Code → Wikipedia-Artikel-URL (aus Wikidata; sprach-unabhängig, cache-sicher)
      */
     public function __construct(
         public readonly ?string    $qid,
         public readonly ?WikiImage $hauptbild,
         public readonly array      $galerie,
+        public readonly array      $wikipediaSitelinks = [],
     ) {}
 
     public function isEmpty(): bool
@@ -26,8 +28,26 @@ final class WikimediaPlaceData
         return $this->hauptbild === null && $this->galerie === [];
     }
 
+    /**
+     * Wikipedia-Artikel in der Nutzersprache (Fallback: Primär-Subtag → de → en → irgendeiner).
+     * Löst Hermanns Kritik: exakter Artikel statt Namens-Rate-Link, in der Sprache des Nutzers.
+     */
+    public function wikipediaUrl(string $lang): ?string
+    {
+        $primary = strtolower(explode('-', $lang)[0]);
+        foreach ([strtolower($lang), $primary, 'de', 'en'] as $l) {
+            if (($this->wikipediaSitelinks[$l] ?? '') !== '') {
+                return $this->wikipediaSitelinks[$l];
+            }
+        }
+        if ($this->wikipediaSitelinks === []) {
+            return null;
+        }
+        return (string) $this->wikipediaSitelinks[array_key_first($this->wikipediaSitelinks)];
+    }
+
     public static function empty(): self
     {
-        return new self(null, null, []);
+        return new self(null, null, [], []);
     }
 }

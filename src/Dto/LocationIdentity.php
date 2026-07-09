@@ -33,12 +33,19 @@ final class LocationIdentity
         public readonly ?float $longitude = null,
         public readonly ?string $type = null,
         public readonly array $parentXrefs = [],
+        public readonly array $notes = [],
     ) {}
 
     /** Erster NAME-Wert oder leer. */
     public function primaryName(): string
     {
         return $this->names[0] ?? '';
+    }
+
+    /** Erste inline-NOTE (die Orts-Beschreibung), oder null. */
+    public function primaryNote(): ?string
+    {
+        return $this->notes[0] ?? null;
     }
 
     public function hasCoordinates(): bool
