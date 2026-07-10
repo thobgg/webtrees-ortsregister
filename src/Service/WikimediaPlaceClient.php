@@ -47,7 +47,9 @@ class WikimediaPlaceClient
             return WikimediaPlaceData::empty();
         }
 
-        $cacheKey = sprintf('wmp:%s:%s:%s',
+        // Key-Version 2: seit dem Sitelinks-Feld im DTO — alte gecachte Objekte
+        // (ohne das Feld) dürfen nicht mehr ausgeliefert werden.
+        $cacheKey = sprintf('wmp2:%s:%s:%s',
             md5($placeName),
             $govLat !== null ? round($govLat, 3) : '_',
             $govLon !== null ? round($govLon, 3) : '_',

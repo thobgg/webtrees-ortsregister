@@ -19,7 +19,7 @@ use Ortsregister\Service\ArchionLinker;
 use Ortsregister\Service\PlaceFolderScanner;
 use Ortsregister\Service\PlaceKbListService;
 use Ortsregister\Service\PlaceNotesService;
-use Ortsregister\Service\PlaceTasksService;
+use Ortsregister\Service\PlaceTasksLocStore;
 use Ortsregister\Service\WikimediaPlaceClient;
 use Fisharebest\Webtrees\DB;
 use Fisharebest\Webtrees\I18N;
@@ -46,7 +46,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
         private readonly PlaceFolderScanner   $folderScanner,
         private readonly PlaceNotesService    $notesService,
         private readonly ArchionLinker        $archionLinker,
-        private readonly PlaceTasksService    $tasksService,
+        private readonly PlaceTasksLocStore   $tasksService,
         private readonly PlaceKbListService   $kbService,
         private readonly OrtsregisterModule   $module,
         private readonly LocationReader       $locationReader = new LocationReader(),

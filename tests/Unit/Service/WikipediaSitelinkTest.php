@@ -74,4 +74,15 @@ final class WikipediaSitelinkTest extends TestCase
         $none = new WikimediaPlaceData('Q1', null, [], []);
         self::assertNull($none->wikipediaUrl('de'));
     }
+
+    /**
+     * Cache-Altbestand (der Oberurbach-500): ein VOR dem Sitelinks-Feld gecachtes Objekt
+     * kommt mit uninitialisierten Properties aus dem Cache zurück. wikipediaUrl() muss
+     * dann null liefern statt mit einem Fatal die Ortsseite zu killen.
+     */
+    public function testStaleCachedObjectWithoutSitelinksReturnsNull(): void
+    {
+        $stale = (new ReflectionClass(WikimediaPlaceData::class))->newInstanceWithoutConstructor();
+        self::assertNull($stale->wikipediaUrl('de'));
+    }
 }

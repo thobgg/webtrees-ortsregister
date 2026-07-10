@@ -134,7 +134,7 @@ class OrtsregisterModule extends AbstractModule implements
     public function title(): string { return I18N::translate('Ortsregister'); }
     public function description(): string { return I18N::translate('Ortsregister mit visueller Landing-Page, Medien-Verknüpfung und (geplant) GOV-Integration.'); }
     public function customModuleAuthorName(): string { return 'Thomas Bugge'; }
-    public function customModuleVersion(): string { return '1.4.0'; }
+    public function customModuleVersion(): string { return '1.5.0'; }
     public function customModuleSupportUrl(): string { return ''; }
 
     /**
@@ -163,6 +163,20 @@ class OrtsregisterModule extends AbstractModule implements
         $this->migrateDatabase();
         $this->registerServices();
         View::registerNamespace(self::MODULE_NAME, $this->resourcesFolder() . 'views/');
+
+        // Orts-Aufgaben (#7): `_LOC:_TODO` als Custom-Tags registrieren — exakt das
+        // Muster des Core-`ResearchTaskModule` (das nur INDI/FAM registriert). Damit
+        // zeigt auch die NATIVE _LOC-Seite die Aufgaben strukturiert an, statt sie
+        // als unbekannte Tags zu behandeln.
+        Registry::elementFactory()->registerTags([
+            '_LOC:_TODO'          => new \Fisharebest\Webtrees\Elements\ResearchTask(I18N::translate('Forschungsaufgabe')),
+            '_LOC:_TODO:DATE'     => new \Fisharebest\Webtrees\Elements\DateValueToday(I18N::translate('Datum')),
+            '_LOC:_TODO:NOTE'     => new \Fisharebest\Webtrees\Elements\NoteStructure(I18N::translate('Notiz')),
+            '_LOC:_TODO:_WT_USER' => new \Fisharebest\Webtrees\Elements\WebtreesUser(I18N::translate('Bearbeiter')),
+            '_LOC:_TODO:STAT'     => new \Fisharebest\Webtrees\Elements\ResearchTaskStatus(I18N::translate('Status')),
+            '_LOC:_TODO:_UID'     => new \Fisharebest\Webtrees\Elements\CustomElement(I18N::translate('Eindeutige Kennung')),
+        ]);
+        Registry::elementFactory()->make('_LOC')->subtag('_TODO', '0:M');
 
         $router = Registry::routeFactory()->routeMap();
 
@@ -351,6 +365,23 @@ class OrtsregisterModule extends AbstractModule implements
                 $container->get(\Ortsregister\Service\PlaceDescriptionService::class),
             ),
         );
+        // Orts-Aufgaben (#7): Heimat = `_LOC:_TODO` im Baum; JSON nur noch Migrations-Fallback.
+        $container->set(
+            \Ortsregister\Service\PlaceTasksLocStore::class,
+            new \Ortsregister\Service\PlaceTasksLocStore(
+                $container->get(LocationReader::class),
+                new \Ortsregister\Service\LocTodoMapper(),
+                $container->get(OperationBackup::class),
+                $container->get(PlaceTasksService::class),
+                $container->get(PlaceFolderLocator::class),
+            ),
+        );
+        $container->set(
+            \Ortsregister\Http\RequestHandlers\PlaceTasksUpdate::class,
+            new \Ortsregister\Http\RequestHandlers\PlaceTasksUpdate(
+                $container->get(\Ortsregister\Service\PlaceTasksLocStore::class),
+            ),
+        );
         $container->set(
             LocWritePreview::class,
             new LocWritePreview(
@@ -430,7 +461,7 @@ class OrtsregisterModule extends AbstractModule implements
                 $container->get(PlaceFolderScanner::class),
                 $container->get(PlaceNotesService::class),
                 $container->get(ArchionLinker::class),
-                $container->get(PlaceTasksService::class),
+                $container->get(\Ortsregister\Service\PlaceTasksLocStore::class),
                 $container->get(PlaceKbListService::class),
                 $this,
                 new LocationReader(),

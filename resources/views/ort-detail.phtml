@@ -576,7 +576,12 @@ foreach ($bilder as $medium) {
                     <div class="card h-100">
                         <div class="card-header fw-semibold d-flex align-items-center">
                             <?= e($slot['title']) ?>
-                            <small class="text-muted ms-2" style="font-size:.7rem"><code><?= e($slot['filename']) ?></code></small>
+                            <?php if ($slot['filename'] === 'notes.md') : ?>
+                                <?php /* Beschreibung lebt seit v1.4.0 im _LOC-Record (Baum), nicht mehr in der Datei */ ?>
+                                <small class="text-muted ms-2" style="font-size:.7rem" title="<?= e(I18N::translate('Gespeichert im Stammbaum am Ortsdatensatz — reist im GEDCOM-Export mit.')) ?>"><code>_LOC</code></small>
+                            <?php else : ?>
+                                <small class="text-muted ms-2" style="font-size:.7rem"><code><?= e($slot['filename']) ?></code></small>
+                            <?php endif ?>
                             <?php if ($can_edit) : ?>
                                 <button type="button" class="btn btn-sm btn-outline-secondary ms-auto ortsregister-notes-edit-btn"
                                         data-filename="<?= e($slot['filename']) ?>"
@@ -798,7 +803,8 @@ foreach ($bilder as $medium) {
              data-csrf="<?= e(csrf_token()) ?>">
             <div class="card-header fw-semibold d-flex align-items-center">
                 <?= I18N::translate('Aufgaben') ?>
-                <small class="text-muted ms-2" style="font-size:.7rem"><code>_tasks.json</code></small>
+                <?php /* Aufgaben leben seit #7 als _TODO-Strukturen im _LOC-Record (Baum) */ ?>
+                <small class="text-muted ms-2" style="font-size:.7rem" title="<?= e(I18N::translate('Gespeichert im Stammbaum am Ortsdatensatz (Forschungsaufgaben nach GEDCOM-L) — reist im GEDCOM-Export mit.')) ?>"><code>_LOC:_TODO</code></small>
                 <span class="badge bg-secondary ms-2 ortsregister-tasks-counter">
                     <?= (int) $task_counts['open'] ?> <?= I18N::translate('offen') ?>
                     <?php if ((int) $task_counts['done'] > 0) : ?> / <?= (int) $task_counts['done'] ?> <?= I18N::translate('erl.') ?><?php endif ?>
@@ -1153,7 +1159,14 @@ foreach ($bilder as $medium) {
                 </div>
 
                 <div class="form-text mt-2" id="ortsregister-notes-filehint">
-                    <?= I18N::translate('Markdown + GFM-Task-Lists. Datei: <code><span id="ortsregister-notes-fileecho">notes.md</span></code> — direkt auch mit Texteditor auf der NAS editierbar.') ?>
+                    <?php /* Der JS-Code unten blendet je nach Slot den passenden Hinweis ein:
+                           Beschreibung → _LOC (Baum), andere Slots → Datei. */ ?>
+                    <span id="ortsregister-notes-hint-loc" style="display:none">
+                        <?= I18N::translate('Markdown + GFM-Task-Lists. Gespeichert im <code>_LOC</code>-Ortsdatensatz des Stammbaums — reist im GEDCOM-Export mit.') ?>
+                    </span>
+                    <span id="ortsregister-notes-hint-file" style="display:none">
+                        <?= I18N::translate('Markdown + GFM-Task-Lists. Datei: <code><span id="ortsregister-notes-fileecho">notes.md</span></code> — direkt auch mit Texteditor auf der NAS editierbar.') ?>
+                    </span>
                 </div>
                 <div id="ortsregister-notes-status" class="mt-2 small"></div>
             </div>
@@ -1199,6 +1212,14 @@ foreach ($bilder as $medium) {
         titlePrefix.textContent   = (btn.dataset.title || 'Notizen') + ' bearbeiten';
         fileEcho.textContent      = filename;
         status.textContent        = '';
+
+        // Speicherort-Hinweis: Beschreibung (notes.md) lebt im _LOC (Baum), andere Slots als Datei.
+        const hintLoc  = document.getElementById('ortsregister-notes-hint-loc');
+        const hintFile = document.getElementById('ortsregister-notes-hint-file');
+        if (hintLoc && hintFile) {
+            hintLoc.style.display  = (filename === 'notes.md') ? '' : 'none';
+            hintFile.style.display = (filename === 'notes.md') ? 'none' : '';
+        }
 
         // Personen-Picker nur in Slots zeigen die das brauchen (Recherche etc.)
         const pickerWrap = document.getElementById('ortsregister-indi-picker-wrap');

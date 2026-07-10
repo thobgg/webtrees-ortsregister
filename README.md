@@ -7,7 +7,7 @@
 | | |
 |---|---|
 | Module name | `ortsregister` |
-| Version | 1.4.0 |
+| Version | 1.5.0 |
 | webtrees | 2.2.x |
 | PHP | 8.2 – 8.4 |
 | License | GPL-3.0-or-later |
@@ -78,9 +78,10 @@ Leaflet / OpenStreetMap view, the place located from its coordinates:
   record (preview first, gap-fill only, never overwrites); and optionally links the events
   at a place to that `_LOC` record (the `_LOC` pointer under the event `PLAC`), so the tree
   becomes standard-portable — additive, the `PLAC` text is untouched, with preview and undo.
-  The **place description** is stored as a `_LOC` NOTE and linking a place to GOV **anchors
-  the GOV id in its `_LOC`**, so this curated data travels with a GEDCOM export instead of
-  living only in the module database
+  The **place description** is stored as a `_LOC` NOTE, **place tasks** as GEDCOM-L
+  research tasks (`_TODO` with date, user and status) at the `_LOC`, and linking a place
+  to GOV **anchors the GOV id in its `_LOC`**, so this curated data travels with a GEDCOM
+  export instead of living only in the module database
 - **Time-aware place identity**: coordinates resolve by the full hierarchy path, so
   same-named places do not share them; the GOV hierarchy shows the historical chain with
   dates and today's affiliation; places that are the same across administrative reforms
@@ -115,11 +116,12 @@ list.
   batching — thousands of records risk timeout/memory (you are warned).
 - **Undo** is safe right after an operation; if a record changed since, it aborts
   (overwrites nothing) — not a full version history.
-- **Curated archive data is not stored in the GEDCOM.** Notes, church-book logs, tasks
-  and digitised items live as files in the place folder (`media/orte/…`) plus a DB index —
-  **not** in the tree. A GEDCOM export therefore does not carry them; back up the place
-  folder separately. (Deliberate choice: open, readable files instead of proprietary
-  GEDCOM extensions.)
+- **Media and some logs live as files, not in the GEDCOM.** A place's description and
+  its tasks now live in the `_LOC` record and travel with a GEDCOM export. Digitised
+  items, the research log and the church-book list, however, live as open files in the
+  place folder (`media/orte/…`) plus a DB index — back up the place folder separately.
+  (Deliberate choice: a scan belongs in the archive as a file, not as structure inside
+  the tree.)
 
 ## Roadmap
 

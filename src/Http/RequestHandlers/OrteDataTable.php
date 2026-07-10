@@ -6,6 +6,7 @@ namespace Ortsregister\Http\RequestHandlers;
 
 use Ortsregister\Dto\OrtDto;
 use Ortsregister\Repository\OrteRepository;
+use Ortsregister\Service\VariantenGruppierung;
 use Fisharebest\Webtrees\I18N;
 use Fisharebest\Webtrees\Validator;
 use Psr\Http\Message\ServerRequestInterface;
@@ -53,6 +54,12 @@ class OrteDataTable extends AbstractDataTableHandler
         $total    = $this->orteRepository->anzahlOrte($tree, '', $mode);
         $filtered = count($alle);
 
+        // Varianten-Gruppen (Issue #11): über die UNGEFILTERTE Liste zählen (Cache-Hit),
+        // sonst zerreißt ein aktiver Suchfilter die Gruppen und die Zahlen stimmen nicht.
+        $gruppen = VariantenGruppierung::zaehle(
+            $search === '' ? $alle : $this->orteRepository->alleOrte($tree, '', $mode),
+        );
+
         // Sortierung — Spalte 2 = Ereignisse (numerisch), sonst Pfad (natürlich)
         usort($alle, static function (OrtDto $a, OrtDto $b) use ($orderColumn): int {
             return match ($orderColumn) {
@@ -70,12 +77,15 @@ class OrteDataTable extends AbstractDataTableHandler
         return [
             'total'    => $total,
             'filtered' => $filtered,
-            'rows'     => array_map(fn (OrtDto $o) => $this->toRow($o, $tree->name()), $seite),
+            'rows'     => array_map(fn (OrtDto $o) => $this->toRow($o, $tree->name(), $gruppen), $seite),
         ];
     }
 
-    /** @return list<string> */
-    private function toRow(OrtDto $ort, string $treeName): array
+    /**
+     * @param array{name: array<string,int>, gov: array<string,int>} $gruppen
+     * @return list<string>
+     */
+    private function toRow(OrtDto $ort, string $treeName, array $gruppen): array
     {
         // Auswahl-Spalte: Q/Z-Radios für Merge + GOV-Verknüpfen-Button
         $auswahlHtml = sprintf(
@@ -105,6 +115,28 @@ class OrteDataTable extends AbstractDataTableHandler
             $ortHtml .= sprintf(
                 '<br><small class="text-muted">%s</small>',
                 e($ort->vollstaendigerPfad)
+            );
+        }
+
+        // Varianten-Gruppen-Signale (Issue #11): webtrees legt pro Schreibweise der
+        // Elternkette einen eigenen Orts-Datensatz an — hier sichtbar machen, was
+        // wahrscheinlich EIN realer Ort ist. Das Modul zeigt, der Nutzer entscheidet
+        // auf der Ortsseite (Merge für Rauschen, GOV-Verknüpfen für Zeit-Varianten).
+        $govCount  = $ort->hatGov() ? ($gruppen['gov'][(string) $ort->govId] ?? 0) : 0;
+        $nameCount = $gruppen['name'][VariantenGruppierung::nameKey($ort->name)] ?? 0;
+        if ($govCount > 1) {
+            // Autoritativ: gleiche GOV-Kennung = sicher derselbe reale Ort.
+            $ortHtml .= sprintf(
+                ' <span class="badge text-bg-info" title="%s">%s</span>',
+                e(I18N::translate('Über dieselbe GOV-Kennung als EIN realer Ort verknüpft — Querverweise auf der Ortsseite')),
+                e(sprintf('%d× %s', $govCount, I18N::translate('derselbe Ort'))),
+            );
+        } elseif ($nameCount > 1) {
+            // Heuristik: gleicher Name = Kandidaten (Schreibvariante, Zeit-Variante oder Namensvetter).
+            $ortHtml .= sprintf(
+                ' <span class="badge text-bg-warning" title="%s">%s</span>',
+                e(I18N::translate('Mehrere Orts-Einträge mit diesem Namen — auf der Ortsseite prüfen: Schreibvarianten zusammenführen oder Zeit-Varianten über GOV verknüpfen')),
+                e(sprintf('%d× %s', $nameCount, I18N::translate('gleicher Name'))),
             );
         }
 

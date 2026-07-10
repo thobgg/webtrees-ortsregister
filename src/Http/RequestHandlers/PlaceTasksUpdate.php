@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Ortsregister\Http\RequestHandlers;
 
 use Ortsregister\Dto\PlaceTask;
-use Ortsregister\Service\PlaceTasksService;
+use Ortsregister\Service\PlaceTasksLocStore;
 use Fig\Http\Message\StatusCodeInterface;
 use Fisharebest\Webtrees\Auth;
 use Fisharebest\Webtrees\DB;
@@ -25,7 +25,7 @@ use Throwable;
 final class PlaceTasksUpdate implements RequestHandlerInterface
 {
     public function __construct(
-        private readonly PlaceTasksService $tasksService,
+        private readonly PlaceTasksLocStore $tasksService,
     ) {}
 
     public function handle(ServerRequestInterface $request): ResponseInterface
