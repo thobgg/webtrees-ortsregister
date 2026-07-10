@@ -6,8 +6,6 @@ namespace Ortsregister\Service;
 
 use Fisharebest\Webtrees\Auth;
 use Fisharebest\Webtrees\Contracts\UserInterface;
-use Fisharebest\Webtrees\GedcomRecord;
-use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\Tree;
 use RuntimeException;
 
@@ -24,23 +22,25 @@ use RuntimeException;
 final class PlaceDescriptionService
 {
     public function __construct(
-        private readonly LocationReader  $reader,
-        private readonly LocationWriter  $writer,
-        private readonly OperationBackup $backup,
+        private readonly LocBindingService $binding,
+        private readonly LocationReader    $reader,
+        private readonly LocationWriter    $writer,
+        private readonly OperationBackup   $backup,
     ) {}
 
     /**
-     * Beschreibung aus dem `_LOC` NOTE (erster passender Record mit inline-Notiz),
-     * oder null wenn es (noch) keine gibt. REIN LESEND.
+     * Beschreibung aus dem GEBUNDENEN `_LOC` NOTE, oder null. REIN LESEND
+     * (bis auf das Persistieren einer neu gefundenen Bindung — Cache-Charakter).
+     * Bindung statt Namens-Match: gleichnamige Orte (Friedhof A/B) teilen sich
+     * sonst fälschlich eine Beschreibung.
      */
-    public function read(Tree $tree, string $leaf): ?string
+    public function read(Tree $tree, int $placeId, string $leaf): ?string
     {
-        foreach ($this->reader->forPlaceName($tree, $leaf) as $id) {
-            if ($id->primaryNote() !== null) {
-                return $id->primaryNote();
-            }
+        $record = $this->binding->resolve($tree, $placeId, $leaf);
+        if ($record === null) {
+            return null;
         }
-        return null;
+        return $this->reader->parse($record->xref(), $record->gedcom())->primaryNote();
     }
 
     /**
@@ -54,7 +54,7 @@ final class PlaceDescriptionService
     {
         $this->assertAutoAccept();
 
-        $record = $this->resolveOrCreate($tree, $leaf);
+        $record = $this->binding->resolveOrCreate($tree, $placeId, $leaf);
         $pre    = $record->gedcom();
         $new    = $this->writer->setInlineNote($pre, $markdown);
 
@@ -73,21 +73,6 @@ final class PlaceDescriptionService
         $record->updateRecord($new, true);
 
         return ['xref' => $record->xref(), 'backup_path' => $backupPath, 'written' => true];
-    }
-
-    /**
-     * Ersten passenden `_LOC` holen; keiner da → minimalen anlegen (`0 @@ _LOC\n1 NAME <leaf>`),
-     * nativer Weg wie Core `CreateLocationAction`.
-     */
-    private function resolveOrCreate(Tree $tree, string $leaf): GedcomRecord
-    {
-        foreach ($this->reader->forPlaceName($tree, $leaf) as $id) {
-            $record = Registry::locationFactory()->make($id->xref, $tree);
-            if ($record !== null) {
-                return $record;
-            }
-        }
-        return $tree->createRecord("0 @@ _LOC\n1 NAME " . strtr(trim($leaf), ["\n" => "\n2 CONT "]));
     }
 
     private function assertAutoAccept(): void

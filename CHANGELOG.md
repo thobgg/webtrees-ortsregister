@@ -4,6 +4,24 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+## [1.5.1] – 2026-07-10
+
+### Behoben
+- **Gleichnamige Orte konnten sich `_LOC`-Daten teilen.** Bei tief strukturierten Bäumen
+  (z.B. „Friedhof" oder „Kirche" als eigener Ort unter mehreren Dörfern) fand der
+  Blattnamen-Match den `_LOC`-Record des *falschen* gleichnamigen Orts — Beschreibung und
+  Aufgaben wären zwischen verschiedenen realen Orten vermischt worden. Jetzt gibt es eine
+  **feste Bindung Ort ↔ `_LOC`** (aufgelöst über die GOV-Kennung, sonst nur bei beidseitig
+  eindeutigem Namen; im Zweifel bekommt ein Ort einen eigenen Record statt einen fremden zu
+  kapern). Beschreibung, Aufgaben, GOV-Anker, die `_LOC`-Anzeige der Ortsseite sowie
+  „Identität als _LOC schreiben" und „Ereignisse mit _LOC verknüpfen" nutzen durchgängig
+  diese Bindung.
+- **Keine Wikidata-Vermutungen mehr bei Orten ohne Koordinaten.** Ohne Koordinaten lässt
+  sich ein Namenstreffer nicht geo-validieren — bei mehrdeutigen Namen (Hausadressen,
+  Friedhöfe) kamen falsche Bilder und ein falscher Wikipedia-Link (Issue #9). Solche Orte
+  zeigen jetzt keine automatische Galerie mehr; der Wikipedia-Link fällt auf die Suche
+  zurück. Abhilfe: Ort mit GOV verknüpfen (bringt Koordinaten mit).
+
 ## [1.5.0] – 2026-07-10
 
 ### Hinzugefügt

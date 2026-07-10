@@ -80,6 +80,36 @@ final class LocationReader
     }
 
     /**
+     * Findet alle `_LOC`-Records des Baums mit dieser GOV-Kennung (`1 _GOV`).
+     * Autoritativer als der Namens-Match — die Kennung ist die stabile Identität.
+     * REIN LESEND.
+     *
+     * @return list<LocationIdentity>
+     */
+    public function forGovId(Tree $tree, string $govId): array
+    {
+        $govId = trim($govId);
+        if ($govId === '') {
+            return [];
+        }
+
+        $rows = DB::table('other')
+            ->where('o_file', '=', $tree->id())
+            ->where('o_type', '=', Location::RECORD_TYPE)
+            ->select(['o_id', 'o_gedcom'])
+            ->get();
+
+        $out = [];
+        foreach ($rows as $row) {
+            $id = $this->parse((string) $row->o_id, (string) $row->o_gedcom);
+            if ($id->govId !== null && $id->govId === $govId) {
+                $out[] = $id;
+            }
+        }
+        return $out;
+    }
+
+    /**
      * Parst die verifizierte `_LOC`-Grammatik aus rohem Record-GEDCOM.
      * Unbekannte/nicht-verifizierte Tags werden ignoriert (keine Semantik-Raterei).
      */

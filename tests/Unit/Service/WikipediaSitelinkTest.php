@@ -85,4 +85,20 @@ final class WikipediaSitelinkTest extends TestCase
         $stale = (new ReflectionClass(WikimediaPlaceData::class))->newInstanceWithoutConstructor();
         self::assertNull($stale->wikipediaUrl('de'));
     }
+
+    /**
+     * Doktrin „nie raten" (Hermanns #9, Klosterstraße 3): ohne Orts-Koordinaten ist ein
+     * Wikidata-Namenstreffer nicht geo-validierbar → lookup() muss LEER liefern, ohne
+     * jeden HTTP-Zugriff (der Test hätte sonst Netz-Abhängigkeit und würde hängen).
+     */
+    public function testLookupWithoutCoordinatesReturnsEmptyWithoutGuessing(): void
+    {
+        $client = new WikimediaPlaceClient(new \Ortsregister\Cache\ApcuCacheService());
+
+        $data = $client->lookup('Klosterstraße 3', null, null);
+
+        self::assertTrue($data->isEmpty());
+        self::assertNull($data->qid);
+        self::assertNull($data->wikipediaUrl('de'));
+    }
 }

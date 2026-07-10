@@ -30,6 +30,7 @@ final class LocWritePreview implements RequestHandlerInterface
         private readonly LocationWriter    $writer,
         private readonly OrteRepository    $repository,
         private readonly GovLinkingService $govLinking,
+        private readonly ?\Ortsregister\Service\LocBindingService $binding = null,
     ) {}
 
     public function handle(ServerRequestInterface $request): ResponseInterface
@@ -49,7 +50,12 @@ final class LocWritePreview implements RequestHandlerInterface
 
         try {
             $govId = $this->govLinking->getLinkedGovId($tree, $placeId);
-            $plan  = $this->writer->plan($tree, $placeId, $ort->name, $govId, $ort->breitengrad, $ort->laengengrad);
+            // Binding-first (Loch 4): der GEBUNDENE _LOC ist das Ziel — der Namens-Match
+            // träfe bei gleichnamigen Orten (Friedhof A/B) still den falschen Record.
+            $bound = $this->binding?->resolve($tree, $placeId, $ort->name);
+            $plan  = $bound !== null
+                ? $this->writer->planForTarget($tree, $placeId, $ort->name, $govId, $ort->breitengrad, $ort->laengengrad, $bound->xref())
+                : $this->writer->plan($tree, $placeId, $ort->name, $govId, $ort->breitengrad, $ort->laengengrad);
         } catch (Throwable $e) {
             return $this->json(['success' => false, 'message' => $e->getMessage()], StatusCodeInterface::STATUS_OK);
         }

@@ -34,6 +34,7 @@ final class LocWriteExecute implements RequestHandlerInterface
         private readonly OrteRepository    $repository,
         private readonly GovLinkingService $govLinking,
         private readonly OperationBackup   $backup,
+        private readonly ?\Ortsregister\Service\LocBindingService $binding = null,
     ) {}
 
     public function handle(ServerRequestInterface $request): ResponseInterface
@@ -56,6 +57,10 @@ final class LocWriteExecute implements RequestHandlerInterface
 
         try {
             $govId = $this->govLinking->getLinkedGovId($tree, $placeId);
+            // Priorität: explizit gewähltes Ziel > gebundener _LOC (Loch 4) > Namens-Plan.
+            if ($target === '') {
+                $target = $this->binding?->resolve($tree, $placeId, $ort->name)?->xref() ?? '';
+            }
             $plan  = $target !== ''
                 ? $this->writer->planForTarget($tree, $placeId, $ort->name, $govId, $ort->breitengrad, $ort->laengengrad, $target)
                 : $this->writer->plan($tree, $placeId, $ort->name, $govId, $ort->breitengrad, $ort->laengengrad);
@@ -81,6 +86,10 @@ final class LocWriteExecute implements RequestHandlerInterface
 
             $result = $this->writer->execute($tree, $plan);
             $logId  = $this->backup->log($tree->id(), 'loc_write', $placeId, Auth::id(), (string) $result['backup_path']);
+            // Bindung persistieren — ab jetzt ist dieser Record die feste Zuordnung des Orts.
+            if (($result['xref'] ?? null) !== null) {
+                $this->binding?->bind($tree, $placeId, (string) $result['xref']);
+            }
         } catch (Throwable $e) {
             // 200 mit success:false — sonst ersetzt webtrees die 500 durch HTML.
             return $this->json([
