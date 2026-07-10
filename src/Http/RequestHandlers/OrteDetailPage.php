@@ -52,6 +52,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
         private readonly LocationReader       $locationReader = new LocationReader(),
         private readonly ?OperationBackup     $operationBackup = null,
         private readonly ?PlaceDescriptionService $descriptionService = null,
+        private readonly ?\Ortsregister\Service\LocBindingService $locBinding = null,
     ) {}
 
     protected function respond(
@@ -78,6 +79,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
                 'tree'         => null,
                 'ort'          => null,
                 'loc_records'  => [],
+                'loc_bound'    => false,
                 'gov_geschwister' => [],
                 'gov_kandidaten'  => [],
                 'loc_undo_log_id' => null,
@@ -113,6 +115,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
                 'tree'         => $tree,
                 'ort'          => null,
                 'loc_records'  => [],
+                'loc_bound'    => false,
                 'gov_geschwister' => [],
                 'gov_kandidaten'  => [],
                 'loc_undo_log_id' => null,
@@ -234,7 +237,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
                 if ($filename === 'notes.md' && $this->descriptionService !== null) {
                     // Beschreibung: Original ist ab jetzt der _LOC NOTE. Datei nur noch
                     // Fallback, bis der Ort einmal übers Modul gespeichert hat (Migration).
-                    $markdown = $this->descriptionService->read($tree, $ort->name)
+                    $markdown = $this->descriptionService->read($tree, $placeId, $ort->name)
                         ?? $this->notesService->read($tree, $ort->name, $filename)->markdown;
                     $mtime = 0; // _LOC-Notiz nutzt kein file-mtime-Locking
                 } else {
@@ -280,7 +283,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
         $tasks      = [];
         $taskCounts = ['open' => 0, 'done' => 0];
         try {
-            foreach ($this->tasksService->read($tree, $ort->name) as $t) {
+            foreach ($this->tasksService->read($tree, $placeId, $ort->name) as $t) {
                 $tasks[] = $t;
                 $t->isOpen() ? $taskCounts['open']++ : $taskCounts['done']++;
             }
@@ -313,11 +316,19 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
             }
         } catch (Throwable) {}
 
-        // GEDCOM-L _LOC-Records mit passendem Namen (rein lesend, Identitäts-Schicht).
-        // Nur ein Hinweis — Namensgleichheit ist Heuristik, keine harte Zuordnung.
+        // GEDCOM-L _LOC-Anzeige: bevorzugt der GEBUNDENE Record (echte Zuordnung,
+        // Loch 2 der Konsistenz-Prüfung) — der Namens-Match nur noch als Fallback-
+        // Hinweis, wenn (noch) keine Bindung existiert.
         $locRecords = [];
+        $locBound   = false;
         try {
-            $locRecords = $this->locationReader->forPlaceName($tree, $ort->name);
+            $bound = $this->locBinding?->resolve($tree, $placeId, $ort->name);
+            if ($bound !== null) {
+                $locRecords = [$this->locationReader->parse($bound->xref(), $bound->gedcom())];
+                $locBound   = true;
+            } else {
+                $locRecords = $this->locationReader->forPlaceName($tree, $ort->name);
+            }
         } catch (Throwable) {
             // Stiller Fallback — die Ortsseite darf daran nicht scheitern.
         }
@@ -354,6 +365,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
             'tree'         => $tree,
             'ort'          => $ort,
             'loc_records'  => $locRecords,
+            'loc_bound'    => $locBound,
             'loc_undo_log_id' => $locUndoLogId,
             'locev_undo_log_id' => $locevUndoLogId,
             'gov_geschwister' => $govGeschwister,

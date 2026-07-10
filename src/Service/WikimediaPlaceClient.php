@@ -47,6 +47,15 @@ class WikimediaPlaceClient
             return WikimediaPlaceData::empty();
         }
 
+        // Doktrin „nie raten" (Hermanns #9, Klosterstraße 3): ohne Orts-Koordinaten
+        // lässt sich ein Wikidata-Namenstreffer nicht geo-validieren — mehrdeutige
+        // Namen (Hausadressen, Friedhöfe) griffen dann ins Falsche, und Bilder UND
+        // Wikipedia-Link wären falsch. Lieber nichts zeigen als das falsche Objekt;
+        // Wikipedia fällt in der View auf den Such-Link zurück.
+        if ($govLat === null || $govLon === null) {
+            return WikimediaPlaceData::empty();
+        }
+
         // Key-Version 2: seit dem Sitelinks-Feld im DTO — alte gecachte Objekte
         // (ohne das Feld) dürfen nicht mehr ausgeliefert werden.
         $cacheKey = sprintf('wmp2:%s:%s:%s',

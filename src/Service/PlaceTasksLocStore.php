@@ -7,8 +7,6 @@ namespace Ortsregister\Service;
 use Ortsregister\Dto\PlaceTask;
 use Fisharebest\Webtrees\Auth;
 use Fisharebest\Webtrees\Contracts\UserInterface;
-use Fisharebest\Webtrees\GedcomRecord;
-use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\Tree;
 use RuntimeException;
 
@@ -29,7 +27,7 @@ use RuntimeException;
 final class PlaceTasksLocStore
 {
     public function __construct(
-        private readonly LocationReader     $reader,
+        private readonly LocBindingService  $binding,
         private readonly LocTodoMapper      $mapper,
         private readonly OperationBackup    $backup,
         private readonly PlaceTasksService  $legacy,
@@ -40,20 +38,22 @@ final class PlaceTasksLocStore
     // Lesen
     // ---------------------------------------------------------------
 
-    /** @return list<PlaceTask> */
-    public function read(Tree $tree, string $placeName): array
+    /**
+     * Aufgaben des GEBUNDENEN `_LOC` (Bindung statt Namens-Match — gleichnamige
+     * Orte wie „Friedhof" unter verschiedenen Dörfern teilen sich sonst Aufgaben).
+     *
+     * @return list<PlaceTask>
+     */
+    public function read(Tree $tree, int $placeId, string $placeName): array
     {
-        foreach ($this->reader->forPlaceName($tree, $placeName) as $id) {
-            $record = Registry::locationFactory()->make($id->xref, $tree);
-            if ($record === null) {
-                continue;
-            }
+        $record = $this->binding->resolve($tree, $placeId, $placeName);
+        if ($record !== null) {
             $tasks = $this->mapper->tasksFromRecord($record->gedcom());
             if ($tasks !== []) {
                 return $tasks;
             }
         }
-        // Kein _LOC mit Aufgaben → Alt-Datei (bis zur Migration beim ersten Schreiben).
+        // Kein gebundener _LOC mit Aufgaben → Alt-Datei (bis zur Migration beim ersten Schreiben).
         return $this->legacy->read($tree, $placeName);
     }
 
@@ -61,7 +61,7 @@ final class PlaceTasksLocStore
     // Mutationen (Signaturen wie der Datei-Store)
     // ---------------------------------------------------------------
 
-    public function add(Tree $tree, string $placeName, string $text, string $author = '', string $created = ''): PlaceTask
+    public function add(Tree $tree, int $placeId, string $placeName, string $text, string $author = '', string $created = ''): PlaceTask
     {
         $text = trim($text);
         if ($text === '') {
@@ -74,34 +74,34 @@ final class PlaceTasksLocStore
             created: $created !== '' ? $created : date('Y-m-d'),
             author:  trim($author),
         );
-        $tasks   = $this->read($tree, $placeName);
+        $tasks   = $this->read($tree, $placeId, $placeName);
         $tasks[] = $task;
-        $this->saveAll($tree, $placeName, $tasks);
+        $this->saveAll($tree, $placeId, $placeName, $tasks);
         return $task;
     }
 
-    public function toggle(Tree $tree, string $placeName, string $id): ?PlaceTask
+    public function toggle(Tree $tree, int $placeId, string $placeName, string $id): ?PlaceTask
     {
-        return $this->mutate($tree, $placeName, $id, static fn (PlaceTask $t): ?PlaceTask => $t->toggled());
+        return $this->mutate($tree, $placeId, $placeName, $id, static fn (PlaceTask $t): ?PlaceTask => $t->toggled());
     }
 
-    public function updateText(Tree $tree, string $placeName, string $id, string $newText): ?PlaceTask
+    public function updateText(Tree $tree, int $placeId, string $placeName, string $id, string $newText): ?PlaceTask
     {
         $newText = trim($newText);
         if ($newText === '') {
             return null;
         }
-        return $this->mutate($tree, $placeName, $id, static fn (PlaceTask $t): ?PlaceTask => $t->withText($newText));
+        return $this->mutate($tree, $placeId, $placeName, $id, static fn (PlaceTask $t): ?PlaceTask => $t->withText($newText));
     }
 
-    public function delete(Tree $tree, string $placeName, string $id): bool
+    public function delete(Tree $tree, int $placeId, string $placeName, string $id): bool
     {
-        $tasks = $this->read($tree, $placeName);
+        $tasks = $this->read($tree, $placeId, $placeName);
         $rest  = array_values(array_filter($tasks, static fn (PlaceTask $t): bool => $t->id !== $id));
         if (count($rest) === count($tasks)) {
             return false;
         }
-        $this->saveAll($tree, $placeName, $rest);
+        $this->saveAll($tree, $placeId, $placeName, $rest);
         return true;
     }
 
@@ -110,9 +110,9 @@ final class PlaceTasksLocStore
     // ---------------------------------------------------------------
 
     /** @param callable(PlaceTask):?PlaceTask $fn */
-    private function mutate(Tree $tree, string $placeName, string $id, callable $fn): ?PlaceTask
+    private function mutate(Tree $tree, int $placeId, string $placeName, string $id, callable $fn): ?PlaceTask
     {
-        $tasks   = $this->read($tree, $placeName);
+        $tasks   = $this->read($tree, $placeId, $placeName);
         $changed = null;
         foreach ($tasks as $k => $t) {
             if ($t->id === $id) {
@@ -127,21 +127,21 @@ final class PlaceTasksLocStore
         if ($changed === null) {
             return null;
         }
-        $this->saveAll($tree, $placeName, array_values($tasks));
+        $this->saveAll($tree, $placeId, $placeName, array_values($tasks));
         return $changed;
     }
 
     /**
-     * Schreibt die komplette Liste in den `_LOC` (find-or-create), sichert den
-     * Vor-Stand, schickt die Alt-JSON in Rente.
+     * Schreibt die komplette Liste in den GEBUNDENEN `_LOC` (resolve-or-create),
+     * sichert den Vor-Stand, schickt die Alt-JSON in Rente.
      *
      * @param list<PlaceTask> $tasks
      */
-    private function saveAll(Tree $tree, string $placeName, array $tasks): void
+    private function saveAll(Tree $tree, int $placeId, string $placeName, array $tasks): void
     {
         $this->assertAutoAccept();
 
-        $record = $this->resolveOrCreate($tree, $placeName);
+        $record = $this->binding->resolveOrCreate($tree, $placeId, $placeName);
         $pre    = $record->gedcom();
         $new    = $this->mapper->setTasks($pre, $tasks);
 
@@ -157,27 +157,6 @@ final class PlaceTasksLocStore
         }
 
         $this->retireLegacyFile($tree, $placeName);
-    }
-
-    /**
-     * Passenden `_LOC` holen; keiner da → minimalen anlegen (wie Beschreibung/W1).
-     * Bei mehreren gleichnamigen gewinnt der, der schon Aufgaben trägt — Lese- und
-     * Schreib-Record müssen derselbe sein, sonst entstünden Dubletten.
-     */
-    private function resolveOrCreate(Tree $tree, string $placeName): GedcomRecord
-    {
-        $first = null;
-        foreach ($this->reader->forPlaceName($tree, $placeName) as $id) {
-            $record = Registry::locationFactory()->make($id->xref, $tree);
-            if ($record === null) {
-                continue;
-            }
-            if ($this->mapper->tasksFromRecord($record->gedcom()) !== []) {
-                return $record;
-            }
-            $first ??= $record;
-        }
-        return $first ?? $tree->createRecord("0 @@ _LOC\n1 NAME " . strtr(trim($placeName), ["\n" => "\n2 CONT "]));
     }
 
     /** `_tasks.json` → `_tasks.json.migriert` (einmalig; Inhalt bleibt als Alt-Kopie erhalten). */

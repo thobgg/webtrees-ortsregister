@@ -134,7 +134,7 @@ class OrtsregisterModule extends AbstractModule implements
     public function title(): string { return I18N::translate('Ortsregister'); }
     public function description(): string { return I18N::translate('Ortsregister mit visueller Landing-Page, Medien-Verknüpfung und (geplant) GOV-Integration.'); }
     public function customModuleAuthorName(): string { return 'Thomas Bugge'; }
-    public function customModuleVersion(): string { return '1.5.0'; }
+    public function customModuleVersion(): string { return '1.5.1'; }
     public function customModuleSupportUrl(): string { return ''; }
 
     /**
@@ -252,6 +252,7 @@ class OrtsregisterModule extends AbstractModule implements
                 // Inline gebaut, weil der LOC-Stack erst weiter unten registriert wird — identische
                 // Bauweise (arg-loser Reader, gleicher Backup-Ordner), stateless, also unkritisch.
                 new LocationWriter(new LocationReader(), new OperationBackup(__DIR__ . '/../backups')),
+                new \Ortsregister\Service\LocBindingService(new LocationReader()),
             ),
         );
         $container->set(
@@ -349,10 +350,16 @@ class OrtsregisterModule extends AbstractModule implements
                 $container->get(OperationBackup::class),
             ),
         );
+        // Bindung Ort↔_LOC (gegen die Blattnamen-Falle bei gleichnamigen Orten wie „Friedhof").
+        $container->set(
+            \Ortsregister\Service\LocBindingService::class,
+            new \Ortsregister\Service\LocBindingService($container->get(LocationReader::class)),
+        );
         // Ortsbeschreibung (notes.md) → `_LOC` NOTE (Daten-Doktrin: Text in den Baum).
         $container->set(
             \Ortsregister\Service\PlaceDescriptionService::class,
             new \Ortsregister\Service\PlaceDescriptionService(
+                $container->get(\Ortsregister\Service\LocBindingService::class),
                 $container->get(LocationReader::class),
                 $container->get(LocationWriter::class),
                 $container->get(OperationBackup::class),
@@ -369,7 +376,7 @@ class OrtsregisterModule extends AbstractModule implements
         $container->set(
             \Ortsregister\Service\PlaceTasksLocStore::class,
             new \Ortsregister\Service\PlaceTasksLocStore(
-                $container->get(LocationReader::class),
+                $container->get(\Ortsregister\Service\LocBindingService::class),
                 new \Ortsregister\Service\LocTodoMapper(),
                 $container->get(OperationBackup::class),
                 $container->get(PlaceTasksService::class),
@@ -388,6 +395,7 @@ class OrtsregisterModule extends AbstractModule implements
                 $container->get(LocationWriter::class),
                 $container->get(\Ortsregister\Repository\OrteRepository::class),
                 $container->get(GovLinkingService::class),
+                $container->get(\Ortsregister\Service\LocBindingService::class),
             ),
         );
         $container->set(
@@ -397,6 +405,7 @@ class OrtsregisterModule extends AbstractModule implements
                 $container->get(\Ortsregister\Repository\OrteRepository::class),
                 $container->get(GovLinkingService::class),
                 $container->get(OperationBackup::class),
+                $container->get(\Ortsregister\Service\LocBindingService::class),
             ),
         );
         $container->set(
@@ -419,6 +428,7 @@ class OrtsregisterModule extends AbstractModule implements
             new LocEventLinkPreview(
                 $container->get(LocationEventLinker::class),
                 $container->get(\Ortsregister\Repository\OrteRepository::class),
+                $container->get(\Ortsregister\Service\LocBindingService::class),
             ),
         );
         $container->set(
@@ -427,6 +437,7 @@ class OrtsregisterModule extends AbstractModule implements
                 $container->get(LocationEventLinker::class),
                 $container->get(\Ortsregister\Repository\OrteRepository::class),
                 $container->get(OperationBackup::class),
+                $container->get(\Ortsregister\Service\LocBindingService::class),
             ),
         );
         $container->set(
@@ -467,6 +478,7 @@ class OrtsregisterModule extends AbstractModule implements
                 new LocationReader(),
                 $container->get(OperationBackup::class),
                 $container->get(\Ortsregister\Service\PlaceDescriptionService::class),
+                $container->get(\Ortsregister\Service\LocBindingService::class),
             ),
         );
     }

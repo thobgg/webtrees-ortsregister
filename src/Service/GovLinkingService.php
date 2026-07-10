@@ -23,6 +23,7 @@ class GovLinkingService
         private readonly GovApiClient $govClient,
         private readonly ?ApcuCacheService $cache = null,
         private readonly ?LocationWriter $locationWriter = null,
+        private readonly ?LocBindingService $binding = null,
     ) {}
 
     /**
@@ -110,8 +111,14 @@ class GovLinkingService
         if ($plan->action === LocWritePlan::ACTION_AMBIGUOUS) {
             return; // mehrere passende _LOC — nicht automatisch entscheiden
         }
+        $xref = $plan->targetXref;
         if ($plan->willWrite()) {
-            $this->locationWriter->execute($tree, $plan); // wirft ohne Auto-Accept → vom Caller gefangen
+            $result = $this->locationWriter->execute($tree, $plan); // wirft ohne Auto-Accept → vom Caller gefangen
+            $xref   = $result['xref'] ?? $xref;
+        }
+        // Bindung Ort↔_LOC persistieren (gegen die Blattnamen-Falle bei gleichnamigen Orten).
+        if ($xref !== null && $xref !== '') {
+            $this->binding?->bind($tree, $placeId, (string) $xref);
         }
     }
 

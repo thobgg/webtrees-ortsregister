@@ -59,19 +59,19 @@ final class PlaceTasksUpdate implements RequestHandlerInterface
         try {
             switch ($action) {
                 case 'add':
-                    $this->tasksService->add($tree, $placeName, $text, (string) $user->realName());
+                    $this->tasksService->add($tree, $placeId, $placeName, $text, (string) $user->realName());
                     break;
                 case 'toggle':
                     if ($id === '') throw new \RuntimeException('Keine ID.');
-                    $this->tasksService->toggle($tree, $placeName, $id);
+                    $this->tasksService->toggle($tree, $placeId, $placeName, $id);
                     break;
                 case 'edit':
                     if ($id === '') throw new \RuntimeException('Keine ID.');
-                    $this->tasksService->updateText($tree, $placeName, $id, $text);
+                    $this->tasksService->updateText($tree, $placeId, $placeName, $id, $text);
                     break;
                 case 'delete':
                     if ($id === '') throw new \RuntimeException('Keine ID.');
-                    $this->tasksService->delete($tree, $placeName, $id);
+                    $this->tasksService->delete($tree, $placeId, $placeName, $id);
                     break;
                 default:
                     return $this->json(['success' => false, 'message' => 'Unbekannte Action: ' . $action], StatusCodeInterface::STATUS_BAD_REQUEST);
@@ -80,7 +80,7 @@ final class PlaceTasksUpdate implements RequestHandlerInterface
             return $this->json(['success' => false, 'message' => $e->getMessage()], StatusCodeInterface::STATUS_CONFLICT);
         }
 
-        $tasks = $this->tasksService->read($tree, $placeName);
+        $tasks = $this->tasksService->read($tree, $placeId, $placeName);
         $open  = 0;
         $done  = 0;
         foreach ($tasks as $t) {

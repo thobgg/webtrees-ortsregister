@@ -31,6 +31,7 @@ final class LocEventLinkExecute implements RequestHandlerInterface
         private readonly LocationEventLinker $linker,
         private readonly OrteRepository      $repository,
         private readonly OperationBackup     $backup,
+        private readonly ?\Ortsregister\Service\LocBindingService $binding = null,
     ) {}
 
     public function handle(ServerRequestInterface $request): ResponseInterface
@@ -49,8 +50,10 @@ final class LocEventLinkExecute implements RequestHandlerInterface
         }
 
         try {
-            $path = $this->repository->vollerPfad($tree, $placeId) ?? $ort->name;
-            $plan = $this->linker->plan($tree, $placeId, $ort->name, $path);
+            $path  = $this->repository->vollerPfad($tree, $placeId) ?? $ort->name;
+            // Binding-first (Loch 4): gebundener _LOC als Ziel statt Namens-Match.
+            $bound = $this->binding?->resolve($tree, $placeId, $ort->name)?->xref();
+            $plan  = $this->linker->plan($tree, $placeId, $ort->name, $path, $bound);
 
             if ($plan->action === $plan::ACTION_NO_LOC) {
                 return $this->json([
@@ -75,7 +78,7 @@ final class LocEventLinkExecute implements RequestHandlerInterface
                 ], StatusCodeInterface::STATUS_OK);
             }
 
-            $result = $this->linker->execute($tree, $placeId, $ort->name, $path);
+            $result = $this->linker->execute($tree, $placeId, $ort->name, $path, $bound);
             $logId  = $this->backup->log($tree->id(), 'loc_event_link', $placeId, Auth::id(), (string) $result['backup_path']);
         } catch (Throwable $e) {
             return $this->json([

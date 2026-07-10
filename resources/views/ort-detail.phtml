@@ -34,6 +34,7 @@ use Fisharebest\Webtrees\View;
 /** @var array{open:int,done:int} $task_counts */
 /** @var \Ortsregister\OrtsregisterModule $module */
 /** @var list<\Ortsregister\Dto\LocationIdentity> $loc_records */
+/** @var bool $loc_bound */
 /** @var int|null $loc_undo_log_id */
 /** @var list<array{id:int,pfad:string}> $gov_geschwister */
 /** @var list<array{id:int,pfad:string}> $gov_kandidaten */
@@ -419,7 +420,11 @@ foreach ($bilder as $medium) {
                     </div>
                 <?php endforeach ?>
                 <div class="form-text">
-                    <?= I18N::translate('Vorhandene _LOC-Records (GEDCOM-L Identitäts-Schicht) mit passendem Ortsnamen. Nur gelesen, nichts geschrieben — die Zuordnung über den Namen ist ein Hinweis, keine feste Verknüpfung.') ?>
+                    <?php if ($loc_bound ?? false) : ?>
+                        <?= I18N::translate('Der mit diesem Ort verknüpfte _LOC-Record (GEDCOM-L Identitäts-Schicht) — Beschreibung, Aufgaben und GOV-Kennung leben dort und reisen im GEDCOM-Export mit.') ?>
+                    <?php else : ?>
+                        <?= I18N::translate('Vorhandene _LOC-Records (GEDCOM-L Identitäts-Schicht) mit passendem Ortsnamen. Nur gelesen, nichts geschrieben — die Zuordnung über den Namen ist ein Hinweis, keine feste Verknüpfung.') ?>
+                    <?php endif ?>
                 </div>
             </div>
         </div>

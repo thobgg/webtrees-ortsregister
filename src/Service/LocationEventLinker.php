@@ -46,10 +46,17 @@ final class LocationEventLinker
     /**
      * Ermittelt, welche Ereignisse am Ort einen `_LOC`-Zeiger bekämen.
      * $placePath = voller Komma-Pfad des Orts (gegen den PLACs gematcht werden).
+     * $targetXref (optional) = der GEBUNDENE _LOC des Orts (Binding-first, Loch 4) —
+     * dann entfällt der Namens-Match, der bei gleichnamigen Orten falsch greifen kann.
      */
-    public function plan(Tree $tree, int $placeId, string $leaf, string $placePath): LocEventLinkPlan
+    public function plan(Tree $tree, int $placeId, string $leaf, string $placePath, ?string $targetXref = null): LocEventLinkPlan
     {
-        $existing = $this->reader->forPlaceName($tree, $leaf);
+        if ($targetXref !== null && $targetXref !== '') {
+            $bound    = $this->reader->make($tree, $targetXref);
+            $existing = $bound !== null ? [$bound] : [];
+        } else {
+            $existing = $this->reader->forPlaceName($tree, $leaf);
+        }
 
         if (count($existing) > 1) {
             $candidates = array_map(
@@ -96,9 +103,9 @@ final class LocationEventLinker
      *
      * @return array{written:bool, records:int, pointers:int, xref:?string, backup_path:?string}
      */
-    public function execute(Tree $tree, int $placeId, string $leaf, string $placePath): array
+    public function execute(Tree $tree, int $placeId, string $leaf, string $placePath, ?string $targetXref = null): array
     {
-        $plan = $this->plan($tree, $placeId, $leaf, $placePath);
+        $plan = $this->plan($tree, $placeId, $leaf, $placePath, $targetXref);
         if (!$plan->willWrite()) {
             return ['written' => false, 'records' => 0, 'pointers' => 0, 'xref' => $plan->locXref, 'backup_path' => null];
         }
