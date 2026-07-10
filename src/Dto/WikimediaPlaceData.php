@@ -34,6 +34,12 @@ final class WikimediaPlaceData
      */
     public function wikipediaUrl(string $lang): ?string
     {
+        // Cache-Altbestand: ein vor diesem Feld gecachtes (serialisiertes) Objekt hat
+        // die Property nicht initialisiert — Zugriff wäre ein Fatal (500 auf der
+        // Ortsseite). isset() ist auf uninitialisierten typed Properties false → null.
+        if (!isset($this->wikipediaSitelinks)) {
+            return null;
+        }
         $primary = strtolower(explode('-', $lang)[0]);
         foreach ([strtolower($lang), $primary, 'de', 'en'] as $l) {
             if (($this->wikipediaSitelinks[$l] ?? '') !== '') {

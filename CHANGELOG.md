@@ -4,6 +4,35 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+## [1.5.0] – 2026-07-10
+
+### Hinzugefügt
+- **Orts-Aufgaben leben jetzt im Stammbaum (`_LOC:_TODO`).** Aufgaben eines Orts werden
+  als GEDCOM-L-Forschungsaufgaben am `_LOC`-Record gespeichert (`_TODO` mit Beschreibung,
+  Datum, Bearbeiter `_WT_USER`, Status und Kennung) statt als `_tasks.json`-Datei — sie
+  reisen im GEDCOM-Export mit und überstehen Server-/Datenbank-Umzüge. Das Modul
+  registriert die Tags nach dem Muster des webtrees-Aufgabenmoduls (das nur INDI/FAM
+  kennt), dadurch zeigt auch die native `_LOC`-Seite die Aufgaben strukturiert an.
+  Vorhandene `_tasks.json` wird beim ersten Bearbeiten übernommen und stillgelegt.
+  Der Ort ist damit der dritte Aufgaben-Anker neben Person und Familie — für
+  Quellen-Durchsichten und Negativbefunde, die an keiner Person hängen. (Issue #7)
+- **Orte-Liste erkennt Varianten-Gruppen.** Gleichnamige Einträge (webtrees legt pro
+  Schreibweise der Elternkette einen eigenen Orts-Datensatz an) tragen jetzt ein Badge:
+  „N× derselbe Ort" (blau, über dieselbe GOV-Kennung verknüpft) bzw. „N× gleicher Name"
+  (gelb, Kandidaten — auf der Ortsseite prüfen: Schreibvarianten zusammenführen oder
+  Zeit-Varianten über GOV verknüpfen). Die Liste zeigt damit, was wahrscheinlich EIN
+  realer Ort ist, entscheiden bleibt Sache des Nutzers. (Issue #11)
+
+### Geändert
+- **UI sagt ehrlich, wo Daten liegen.** Beschreibung ist mit `_LOC` gekennzeichnet,
+  Aufgaben mit `_LOC:_TODO` (statt Dateinamen); Datei-basierte Slots (Recherche-Logbuch,
+  KB-Liste) sind weiterhin als Dateien ausgewiesen.
+
+### Behoben
+- **500-Fehler auf Ortsseiten mit älterem Anzeige-Cache.** Nach v1.4.0 konnte ein vor dem
+  Update gecachtes Wikimedia-Objekt (ohne das neue Sprachlink-Feld) die Ortsseite mit
+  einem Fatal abbrechen. Jetzt abgesichert plus Cache-Schlüssel gewechselt.
+
 ## [1.4.0] – 2026-07-09
 
 Leitlinie dieses Releases (Daten-Doktrin): Erhaltenswertes, das sich nicht automatisch

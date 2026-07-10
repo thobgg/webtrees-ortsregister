@@ -7,7 +7,7 @@
 | | |
 |---|---|
 | Modul-Name | `ortsregister` |
-| Version | 1.4.0 |
+| Version | 1.5.0 |
 | webtrees | 2.2.x |
 | PHP | 8.2 – 8.4 |
 | Lizenz | GPL-3.0-or-later |
@@ -80,9 +80,10 @@ Leaflet-/OpenStreetMap-Ansicht, der Ort aus seinen Koordinaten verortet:
   optionales Verknüpfen der Ereignisse eines Orts mit diesem `_LOC`-Record (der `_LOC`-Zeiger
   unter der Ereignis-`PLAC`), damit der Baum standard-portabel wird — additiv, der
   `PLAC`-Text bleibt, mit Vorschau und Undo.
-  Die **Orts-Beschreibung** wird als `_LOC` NOTE gespeichert, und das GOV-Verknüpfen
-  **verankert die GOV-Kennung im `_LOC`** — diese kuratierten Daten reisen so im
-  GEDCOM-Export mit, statt nur in der Modul-Datenbank zu liegen
+  Die **Orts-Beschreibung** wird als `_LOC` NOTE gespeichert, **Orts-Aufgaben** als
+  GEDCOM-L-Forschungsaufgaben (`_TODO` mit Datum, Bearbeiter und Status) am `_LOC`,
+  und das GOV-Verknüpfen **verankert die GOV-Kennung im `_LOC`** — diese kuratierten
+  Daten reisen so im GEDCOM-Export mit, statt nur in der Modul-Datenbank zu liegen
 - **Zeit-bewusste Orts-Identität**: Koordinaten werden über den vollen Hierarchie-Pfad
   aufgelöst — gleichnamige Orte teilen sie nicht; die GOV-Hierarchie zeigt die historische
   Kette mit Jahren und die heutige Zugehörigkeit; Orte, die über Verwaltungsreformen
@@ -118,11 +119,12 @@ oberhalb der Liste.
   bei tausenden Datensätzen droht Timeout/Speicher (es wird gewarnt).
 - **Undo** ist sicher direkt nach einer Operation; wurde ein Datensatz seither geändert,
   bricht es ab (überschreibt nichts) — kein vollständiges Versions-Undo.
-- **Kuratierte Archiv-Daten liegen nicht im GEDCOM.** Notizen, Kirchenbuch-Logbücher,
-  Aufgaben und Digitalisate liegen als Dateien im Orts-Ordner (`media/orte/…`) plus einem
-  DB-Index — **nicht** im Stammbaum. Ein GEDCOM-Export trägt sie also nicht mit; sichere
-  den Orts-Ordner separat. (Bewusste Entscheidung: offene, lesbare Dateien statt
-  proprietärer GEDCOM-Erweiterungen.)
+- **Medien und einzelne Logbücher liegen als Dateien, nicht im GEDCOM.** Beschreibung
+  und Aufgaben eines Orts leben inzwischen im `_LOC`-Record und reisen im GEDCOM-Export
+  mit. Digitalisate, das Recherche-Logbuch und die Kirchenbuch-Liste liegen dagegen als
+  offene Dateien im Orts-Ordner (`media/orte/…`) plus einem DB-Index — sichere den
+  Orts-Ordner separat. (Bewusste Entscheidung: ein Scan gehört als Datei ins Archiv,
+  nicht als Struktur in den Stammbaum.)
 
 ## Roadmap
 
