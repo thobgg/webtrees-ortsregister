@@ -4,6 +4,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+## [1.6.0] – 2026-07-13
+
+### Hinzugefügt
+- **Inhalt des `_LOC`-Records auf der Ortsseite (Issue #12).** Die `_LOC`-Anzeige spiegelt
+  jetzt zusätzlich zur Identität (Name/Typ/GOV/Koordinaten) auch den **Inhalt** des
+  Records – rein lesend: vorhandene **Fotos** (`1 OBJE`, über die native webtrees-Media-
+  Auflösung, nur was der Nutzer sehen darf) und **Notizen** (`1 NOTE`). Bei einem fest
+  gebundenen Ort wird die erste Notiz – die Orts-Beschreibung – nicht doppelt gezeigt,
+  sie behält ihre eigene Karte. Ereignisse und Einwohnerzahlen aus dem `_LOC` folgen
+  in einem späteren Schritt (Issue #12 bleibt offen).
+
 ## [1.5.1] – 2026-07-10
 
 ### Behoben

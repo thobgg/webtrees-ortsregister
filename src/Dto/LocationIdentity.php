@@ -48,6 +48,19 @@ final class LocationIdentity
         return $this->notes[0] ?? null;
     }
 
+    /**
+     * Alle inline-NOTEs AUSSER der ersten. Die erste NOTE ist per Modul-Konvention
+     * die Orts-Beschreibung (siehe PlaceDescriptionService/LocationWriter::setInlineNote)
+     * und wird schon in ihrer eigenen Karte gezeigt — hiermit vermeidet die
+     * _LOC-Inhalts-Anzeige (Issue #12) die Doppelung bei gebundenen Records.
+     *
+     * @return list<string>
+     */
+    public function secondaryNotes(): array
+    {
+        return array_slice($this->notes, 1);
+    }
+
     public function hasCoordinates(): bool
     {
         return $this->latitude !== null && $this->longitude !== null;

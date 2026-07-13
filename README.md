@@ -7,7 +7,7 @@
 | | |
 |---|---|
 | Module name | `ortsregister` |
-| Version | 1.5.1 |
+| Version | 1.6.0 |
 | webtrees | 2.2.x |
 | PHP | 8.2 – 8.4 |
 | License | GPL-3.0-or-later |
@@ -81,7 +81,9 @@ Leaflet / OpenStreetMap view, the place located from its coordinates:
   The **place description** is stored as a `_LOC` NOTE, **place tasks** as GEDCOM-L
   research tasks (`_TODO` with date, user and status) at the `_LOC`, and linking a place
   to GOV **anchors the GOV id in its `_LOC`**, so this curated data travels with a GEDCOM
-  export instead of living only in the module database
+  export instead of living only in the module database. The place page also **mirrors the
+  `_LOC` record's own content read-only** — any photos (`OBJE`) and notes it carries are
+  shown (the description keeps its own card and is not duplicated)
 - **Time-aware place identity**: coordinates resolve by the full hierarchy path, so
   same-named places do not share them; the GOV hierarchy shows the historical chain with
   dates and today's affiliation; places that are the same across administrative reforms

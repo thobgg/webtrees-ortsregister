@@ -35,6 +35,7 @@ use Fisharebest\Webtrees\View;
 /** @var \Ortsregister\OrtsregisterModule $module */
 /** @var list<\Ortsregister\Dto\LocationIdentity> $loc_records */
 /** @var bool $loc_bound */
+/** @var array<string, list<\Fisharebest\Webtrees\Media>> $loc_media */
 /** @var int|null $loc_undo_log_id */
 /** @var list<array{id:int,pfad:string}> $gov_geschwister */
 /** @var list<array{id:int,pfad:string}> $gov_kandidaten */
@@ -417,6 +418,34 @@ foreach ($bilder as $medium) {
                                     <?= count($loc->parentXrefs) ?></span>
                             <?php endif ?>
                         </div>
+                        <?php
+                            // Inhalt aus dem _LOC-Record spiegeln (Issue #12) — read-only.
+                            // Fotos: aus dem Handler aufgelöste Media-Objekte dieses Records.
+                            // Notizen: beim GEBUNDENEN Record ist notes[0] die Beschreibung
+                            // (eigene Karte) → überspringen, sonst doppelt; sonst alle zeigen.
+                            $locFotos = $loc_media[$loc->xref] ?? [];
+                            $locNotes = ($loc_bound ?? false) ? $loc->secondaryNotes() : $loc->notes;
+                        ?>
+                        <?php if ($locFotos !== []) : ?>
+                            <div class="mt-2">
+                                <div class="text-muted small mb-1"><span aria-hidden="true">📷</span> <?= I18N::translate('Fotos') ?></div>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <?php foreach ($locFotos as $foto) : ?>
+                                        <a href="<?= e($foto->url()) ?>" title="<?= e(strip_tags((string) $foto->fullName())) ?>">
+                                            <?= $foto->displayImage(80, 80, 'crop', ['class' => 'rounded']) ?>
+                                        </a>
+                                    <?php endforeach ?>
+                                </div>
+                            </div>
+                        <?php endif ?>
+                        <?php if ($locNotes !== []) : ?>
+                            <div class="mt-2">
+                                <div class="text-muted small mb-1"><span aria-hidden="true">📝</span> <?= I18N::translate('Notizen') ?></div>
+                                <?php foreach ($locNotes as $locNote) : ?>
+                                    <div class="small text-body-secondary border-start ps-2 mb-1"><?= nl2br(e($locNote)) ?></div>
+                                <?php endforeach ?>
+                            </div>
+                        <?php endif ?>
                     </div>
                 <?php endforeach ?>
                 <div class="form-text">
