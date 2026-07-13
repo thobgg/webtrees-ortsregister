@@ -147,4 +147,61 @@ final class LocationReaderTest extends TestCase
         self::assertNull($id->govId);
         self::assertFalse($id->isEmpty());
     }
+
+    /**
+     * Issue #12 Dedup-Regel: die _LOC-Inhaltsanzeige zeigt bei gebundenem Record die
+     * ZWEITE Notiz aufwärts (die erste = Beschreibung, eigene Karte). primaryNote und
+     * secondaryNotes müssen sich sauber teilen.
+     */
+    public function testMultipleInlineNotesSplitIntoPrimaryAndSecondary(): void
+    {
+        $gedcom = implode("\n", [
+            '0 @L8@ _LOC',
+            '1 NAME Ort',
+            '1 NOTE Beschreibung des Orts',
+            '2 CONT Zweite Zeile der Beschreibung',
+            '1 NOTE Quellenhinweis aus fremdem System',
+            '1 NOTE Dritte Notiz',
+        ]);
+
+        $id = $this->reader->parse('@L8@', $gedcom);
+
+        self::assertSame("Beschreibung des Orts\nZweite Zeile der Beschreibung", $id->primaryNote());
+        self::assertSame(
+            ['Quellenhinweis aus fremdem System', 'Dritte Notiz'],
+            $id->secondaryNotes(),
+            'Bei gebundenem Record dürfen nur die Notizen NACH der Beschreibung angezeigt werden.',
+        );
+    }
+
+    /** Nur die Beschreibung vorhanden → keine sekundären Notizen → keine „📝"-Zeile. */
+    public function testSingleInlineNoteHasNoSecondaryNotes(): void
+    {
+        $gedcom = implode("\n", [
+            '0 @L9@ _LOC',
+            '1 NAME Ort',
+            '1 NOTE Nur die Beschreibung',
+        ]);
+
+        $id = $this->reader->parse('@L9@', $gedcom);
+
+        self::assertSame('Nur die Beschreibung', $id->primaryNote());
+        self::assertSame([], $id->secondaryNotes());
+    }
+
+    /** Pointer-Notizen (`1 NOTE @N1@`) zählen nicht als inline-Beschreibung. */
+    public function testPointerNotesAreNotTreatedAsInlineNotes(): void
+    {
+        $gedcom = implode("\n", [
+            '0 @L10@ _LOC',
+            '1 NAME Ort',
+            '1 NOTE @N1@',
+            '1 NOTE Echte inline-Notiz',
+        ]);
+
+        $id = $this->reader->parse('@L10@', $gedcom);
+
+        self::assertSame('Echte inline-Notiz', $id->primaryNote());
+        self::assertSame([], $id->secondaryNotes());
+    }
 }

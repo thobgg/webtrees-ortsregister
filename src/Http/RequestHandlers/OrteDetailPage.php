@@ -333,6 +333,15 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
             // Stiller Fallback — die Ortsseite darf daran nicht scheitern.
         }
 
+        // Fotos (OBJE) aus den angezeigten _LOC-Records lesend spiegeln (Issue #12):
+        // die Ortsseite zeigt, was IM Ortsdatensatz steckt. Nichts geschrieben.
+        $locMedia = [];
+        try {
+            $locMedia = $this->resolveLocMedia($tree, $locRecords);
+        } catch (Throwable) {
+            // Stiller Fallback — keine Fotos, kein Seitenfehler.
+        }
+
         // Jüngster rückgängig-machbarer _LOC-Schreibvorgang an diesem Ort (Undo-Button).
         $locUndoLogId   = null;
         $locevUndoLogId = null;
@@ -366,6 +375,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
             'ort'          => $ort,
             'loc_records'  => $locRecords,
             'loc_bound'    => $locBound,
+            'loc_media'    => $locMedia,
             'loc_undo_log_id' => $locUndoLogId,
             'locev_undo_log_id' => $locevUndoLogId,
             'gov_geschwister' => $govGeschwister,
@@ -390,6 +400,43 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
             'can_edit'     => \Fisharebest\Webtrees\Auth::isEditor($tree),
             'module'       => $this->module,
         ], $defaults));
+    }
+
+    /**
+     * Fotos (`OBJE`) der angezeigten `_LOC`-Records — read-only Spiegel (Issue #12).
+     *
+     * Nutzt die native webtrees-Media-Auflösung (`Fact::target()`), kein GEDCOM-Raten:
+     * jede `1 OBJE @…@`-Verknüpfung des Records wird zum Media-Objekt aufgelöst und nur
+     * gezeigt, was der angemeldete Nutzer sehen darf (`canShow()`). Ein defekter Record
+     * darf die Seite nicht killen — pro Record gekapselt.
+     *
+     * @param list<\Ortsregister\Dto\LocationIdentity> $locRecords
+     * @return array<string, list<\Fisharebest\Webtrees\Media>>  xref → Media-Liste (nur nicht-leere)
+     */
+    private function resolveLocMedia(Tree $tree, array $locRecords): array
+    {
+        $out = [];
+        foreach ($locRecords as $loc) {
+            try {
+                $location = Registry::locationFactory()->make($loc->xref, $tree);
+                if ($location === null) {
+                    continue;
+                }
+                $media = [];
+                foreach ($location->facts(['OBJE']) as $fact) {
+                    $target = $fact->target();
+                    if ($target instanceof \Fisharebest\Webtrees\Media && $target->canShow()) {
+                        $media[] = $target;
+                    }
+                }
+                if ($media !== []) {
+                    $out[$loc->xref] = $media;
+                }
+            } catch (Throwable) {
+                // Ein einzelner kaputter Record kippt die Seite nicht.
+            }
+        }
+        return $out;
     }
 
     /**

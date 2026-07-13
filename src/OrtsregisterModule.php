@@ -134,7 +134,7 @@ class OrtsregisterModule extends AbstractModule implements
     public function title(): string { return I18N::translate('Ortsregister'); }
     public function description(): string { return I18N::translate('Ortsregister mit visueller Landing-Page, Medien-Verknüpfung und (geplant) GOV-Integration.'); }
     public function customModuleAuthorName(): string { return 'Thomas Bugge'; }
-    public function customModuleVersion(): string { return '1.5.1'; }
+    public function customModuleVersion(): string { return '1.6.0'; }
     public function customModuleSupportUrl(): string { return ''; }
 
     /**
