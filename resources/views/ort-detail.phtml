@@ -1,5 +1,6 @@
 <?php
 
+use Fisharebest\Webtrees\Date;
 use Fisharebest\Webtrees\I18N;
 use Fisharebest\Webtrees\Media;
 use Fisharebest\Webtrees\View;
@@ -444,6 +445,34 @@ foreach ($bilder as $medium) {
                                 <?php foreach ($locNotes as $locNote) : ?>
                                     <div class="small text-body-secondary border-start ps-2 mb-1"><?= nl2br(e($locNote)) ?></div>
                                 <?php endforeach ?>
+                            </div>
+                        <?php endif ?>
+                        <?php if ($loc->demographics !== []) : ?>
+                            <div class="mt-2">
+                                <div class="text-muted small mb-1"><span aria-hidden="true">👥</span> <?= I18N::translate('Einwohner/Demografie') ?></div>
+                                <ul class="list-unstyled small mb-0">
+                                    <?php foreach ($loc->demographics as $dmgd) : ?>
+                                        <li>
+                                            <strong><?= e($dmgd->value) ?></strong>
+                                            <?php if ($dmgd->type !== null) : ?><span class="text-muted"><?= e($dmgd->type) ?></span><?php endif ?>
+                                            <?php if ($dmgd->date !== null) : ?><span class="text-muted">— <?= (new Date($dmgd->date))->display($tree) ?></span><?php endif ?>
+                                        </li>
+                                    <?php endforeach ?>
+                                </ul>
+                            </div>
+                        <?php endif ?>
+                        <?php if ($loc->events !== []) : ?>
+                            <div class="mt-2">
+                                <div class="text-muted small mb-1"><span aria-hidden="true">📅</span> <?= I18N::translate('Ereignisse') ?></div>
+                                <ul class="list-unstyled small mb-0">
+                                    <?php foreach ($loc->events as $ev) : ?>
+                                        <li>
+                                            <strong><?= e($ev->type ?? I18N::translate('Ereignis')) ?></strong>
+                                            <?php if ($ev->date !== null) : ?><span class="text-muted">— <?= (new Date($ev->date))->display($tree) ?></span><?php endif ?>
+                                            <?php if ($ev->place !== null) : ?><span class="text-muted">, <?= e($ev->place) ?></span><?php endif ?>
+                                        </li>
+                                    <?php endforeach ?>
+                                </ul>
                             </div>
                         <?php endif ?>
                     </div>

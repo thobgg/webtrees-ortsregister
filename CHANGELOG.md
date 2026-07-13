@@ -4,6 +4,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+## [1.7.0] – 2026-07-13
+
+### Hinzugefügt
+- **Ereignisse und Einwohnerzahlen aus dem `_LOC`-Record auf der Ortsseite (Issue #12,
+  zweiter Schritt).** Die `_LOC`-Anzeige spiegelt jetzt zusätzlich zu Fotos und Notizen
+  auch **Ereignisse** (`1 EVEN` mit Typ/Datum/Ort) und **demografische Angaben** wie
+  Einwohnerzahlen (`1 _DMGD` mit Wert/Art/Datum) – rein lesend, Datum über die webtrees-
+  Datumsanzeige. Grammatik nach GEDCOM-L (`_LOC:EVEN`, `_LOC:_DMGD`); die Art einer
+  demografischen Angabe wird 1:1 gezeigt, nicht gedeutet. Damit ist die `_LOC`-Inhalts-
+  spiegelung (Fotos, Notizen, Ereignisse, Einwohnerzahlen) vollständig.
+
 ## [1.6.0] – 2026-07-13
 
 ### Hinzugefügt
