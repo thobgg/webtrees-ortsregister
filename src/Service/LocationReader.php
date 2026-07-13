@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Ortsregister\Service;
 
 use Ortsregister\Dto\LocationIdentity;
+use Ortsregister\Dto\LocDemographic;
+use Ortsregister\Dto\LocEvent;
 use Fisharebest\Webtrees\DB;
 use Fisharebest\Webtrees\Location;
 use Fisharebest\Webtrees\Registry;
@@ -124,6 +126,8 @@ final class LocationReader
         $lon         = null;
         $parentXrefs = [];
         $notes       = [];
+        $events      = [];
+        $demographics = [];
 
         $n = count($lines);
         for ($i = 0; $i < $n; $i++) {
@@ -189,6 +193,29 @@ final class LocationReader
                         $notes[] = $text;
                     }
                     break;
+                case 'EVEN':
+                    // Direkte Level-2-Kinder des Ereignisses (TYPE/DATE/PLAC).
+                    $c     = $this->collectLevel2($lines, $i, $n);
+                    $event = new LocEvent(
+                        type:  $c['TYPE'] ?? null,
+                        date:  $c['DATE'] ?? null,
+                        place: $c['PLAC'] ?? null,
+                    );
+                    if ($event->hasContent()) {
+                        $events[] = $event;
+                    }
+                    break;
+                case '_DMGD':
+                    // Demografische Angabe (z.B. Einwohnerzahl): Wert steht auf der Tag-Zeile.
+                    if ($value !== '') {
+                        $c              = $this->collectLevel2($lines, $i, $n);
+                        $demographics[] = new LocDemographic(
+                            value: $value,
+                            type:  $c['TYPE'] ?? null,
+                            date:  $c['DATE'] ?? null,
+                        );
+                    }
+                    break;
             }
         }
 
@@ -207,7 +234,33 @@ final class LocationReader
             type:        $type,
             parentXrefs: array_values(array_unique($parentXrefs)),
             notes:       array_values($notes),
+            events:      array_values($events),
+            demographics: array_values($demographics),
         );
+    }
+
+    /**
+     * Sammelt die DIREKTEN Level-2-Kinder ab Zeile `$start` (eine Level-1-Struktur)
+     * als Tag→Wert-Map, erste Fundstelle je Tag gewinnt. Tiefere Ebenen (Level ≥ 3,
+     * z.B. `PLAC:MAP:LATI`) werden ignoriert. Reine String-Arbeit, testbar.
+     *
+     * @param list<string> $lines
+     * @return array<string,string>
+     */
+    private function collectLevel2(array $lines, int $start, int $n): array
+    {
+        $out = [];
+        for ($j = $start + 1; $j < $n && $this->lineLevel($lines[$j]) > 1; $j++) {
+            if (preg_match('/^2\s+(\S+)(?:\s(.*))?$/u', $lines[$j], $m) !== 1) {
+                continue;
+            }
+            $tag = $m[1];
+            $val = isset($m[2]) ? trim($m[2]) : '';
+            if ($val !== '' && !isset($out[$tag])) {
+                $out[$tag] = $val;
+            }
+        }
+        return $out;
     }
 
     /**

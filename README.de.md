@@ -7,7 +7,7 @@
 | | |
 |---|---|
 | Modul-Name | `ortsregister` |
-| Version | 1.6.0 |
+| Version | 1.7.0 |
 | webtrees | 2.2.x |
 | PHP | 8.2 – 8.4 |
 | Lizenz | GPL-3.0-or-later |
@@ -85,8 +85,9 @@ Leaflet-/OpenStreetMap-Ansicht, der Ort aus seinen Koordinaten verortet:
   und das GOV-Verknüpfen **verankert die GOV-Kennung im `_LOC`** — diese kuratierten
   Daten reisen so im GEDCOM-Export mit, statt nur in der Modul-Datenbank zu liegen.
   Die Ortsseite **spiegelt zusätzlich den Inhalt des `_LOC`-Records lesend** — vorhandene
-  Fotos (`OBJE`) und Notizen des Records werden angezeigt (die Beschreibung behält ihre
-  eigene Karte und wird nicht doppelt gezeigt)
+  Fotos (`OBJE`), Notizen, Ereignisse (`EVEN`) und demografische Angaben wie Einwohner-
+  zahlen (`_DMGD`) des Records werden angezeigt (die Beschreibung behält ihre eigene Karte
+  und wird nicht doppelt gezeigt)
 - **Zeit-bewusste Orts-Identität**: Koordinaten werden über den vollen Hierarchie-Pfad
   aufgelöst — gleichnamige Orte teilen sie nicht; die GOV-Hierarchie zeigt die historische
   Kette mit Jahren und die heutige Zugehörigkeit; Orte, die über Verwaltungsreformen

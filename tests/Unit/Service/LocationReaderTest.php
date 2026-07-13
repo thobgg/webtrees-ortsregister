@@ -204,4 +204,92 @@ final class LocationReaderTest extends TestCase
         self::assertSame('Echte inline-Notiz', $id->primaryNote());
         self::assertSame([], $id->secondaryNotes());
     }
+
+    /** Issue #12 Scheibe 2: `_LOC:EVEN` → TYPE/DATE/PLAC gespiegelt. */
+    public function testParsesLocEvents(): void
+    {
+        $gedcom = implode("\n", [
+            '0 @L11@ _LOC',
+            '1 NAME Ort',
+            '1 EVEN',
+            '2 TYPE Ersterwähnung',
+            '2 DATE 1250',
+            '2 PLAC Ort, Kreis, Land',
+            '1 EVEN',
+            '2 TYPE Eingemeindung',
+            '2 DATE 1 JAN 1972',
+        ]);
+
+        $id = $this->reader->parse('@L11@', $gedcom);
+
+        self::assertCount(2, $id->events);
+        self::assertSame('Ersterwähnung', $id->events[0]->type);
+        self::assertSame('1250', $id->events[0]->date);
+        self::assertSame('Ort, Kreis, Land', $id->events[0]->place);
+        self::assertSame('Eingemeindung', $id->events[1]->type);
+        self::assertSame('1 JAN 1972', $id->events[1]->date);
+        self::assertNull($id->events[1]->place);
+    }
+
+    /** Issue #12 Scheibe 2: `_LOC:_DMGD` → Wert/TYPE/DATE (Einwohnerzahl). */
+    public function testParsesLocDemographics(): void
+    {
+        $gedcom = implode("\n", [
+            '0 @L12@ _LOC',
+            '1 NAME Ort',
+            '1 _DMGD 1234',
+            '2 TYPE Einwohner',
+            '2 DATE 1900',
+            '1 _DMGD 2048',
+            '2 DATE 2020',
+        ]);
+
+        $id = $this->reader->parse('@L12@', $gedcom);
+
+        self::assertCount(2, $id->demographics);
+        self::assertSame('1234', $id->demographics[0]->value);
+        self::assertSame('Einwohner', $id->demographics[0]->type);
+        self::assertSame('1900', $id->demographics[0]->date);
+        self::assertSame('2048', $id->demographics[1]->value);
+        self::assertNull($id->demographics[1]->type);
+        self::assertSame('2020', $id->demographics[1]->date);
+    }
+
+    /** Level-3-Kinder (z.B. `EVEN:PLAC:MAP:LATI`) dürfen die Level-2-Felder nicht verfälschen. */
+    public function testEventLevelThreeChildrenIgnored(): void
+    {
+        $gedcom = implode("\n", [
+            '0 @L13@ _LOC',
+            '1 NAME Ort',
+            '1 EVEN',
+            '2 TYPE Ereignis',
+            '2 PLAC Irgendwo',
+            '3 MAP',
+            '4 LATI N49.0',
+            '4 LONG E9.0',
+            '2 DATE 1800',
+        ]);
+
+        $id = $this->reader->parse('@L13@', $gedcom);
+
+        self::assertCount(1, $id->events);
+        self::assertSame('Ereignis', $id->events[0]->type);
+        self::assertSame('Irgendwo', $id->events[0]->place);
+        self::assertSame('1800', $id->events[0]->date);
+    }
+
+    /** _DMGD ohne Wert auf der Tag-Zeile wird verworfen (kein leerer Eintrag). */
+    public function testDemographicWithoutValueIsDropped(): void
+    {
+        $gedcom = implode("\n", [
+            '0 @L14@ _LOC',
+            '1 NAME Ort',
+            '1 _DMGD',
+            '2 DATE 1900',
+        ]);
+
+        $id = $this->reader->parse('@L14@', $gedcom);
+
+        self::assertSame([], $id->demographics);
+    }
 }

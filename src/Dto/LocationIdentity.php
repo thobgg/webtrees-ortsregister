@@ -22,8 +22,11 @@ namespace Ortsregister\Dto;
 final class LocationIdentity
 {
     /**
-     * @param list<string> $names        alle `1 NAME`-Werte (Reihenfolge = GEDCOM-Reihenfolge)
-     * @param list<string> $parentXrefs  Xrefs aus `1 _LOC @ref@` (Hierarchie-Zeiger)
+     * @param list<string>          $names        alle `1 NAME`-Werte (Reihenfolge = GEDCOM-Reihenfolge)
+     * @param list<string>          $parentXrefs  Xrefs aus `1 _LOC @ref@` (Hierarchie-Zeiger)
+     * @param list<string>          $notes        inline-Freitext-Notizen (`1 NOTE`)
+     * @param list<LocEvent>        $events       Ereignisse (`1 EVEN`)
+     * @param list<LocDemographic>  $demographics demografische Angaben (`1 _DMGD`, z.B. Einwohnerzahlen)
      */
     public function __construct(
         public readonly string $xref,
@@ -34,6 +37,8 @@ final class LocationIdentity
         public readonly ?string $type = null,
         public readonly array $parentXrefs = [],
         public readonly array $notes = [],
+        public readonly array $events = [],
+        public readonly array $demographics = [],
     ) {}
 
     /** Erster NAME-Wert oder leer. */
