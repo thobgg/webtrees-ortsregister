@@ -9,6 +9,7 @@ use Ortsregister\Dto\WikimediaPlaceData;
 use Ortsregister\OrtsregisterModule;
 use Ortsregister\Repository\OrteRepository;
 use Ortsregister\Service\DdbClient;
+use Ortsregister\Service\GovExternalRefLinker;
 use Ortsregister\Service\GovHierarchyResolver;
 use Ortsregister\Service\GovLinkingService;
 use Ortsregister\Service\LocationReader;
@@ -50,6 +51,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
         private readonly PlaceKbListService   $kbService,
         private readonly OrtsregisterModule   $module,
         private readonly LocationReader       $locationReader = new LocationReader(),
+        private readonly GovExternalRefLinker $govRefLinker   = new GovExternalRefLinker(),
         private readonly ?OperationBackup     $operationBackup = null,
         private readonly ?PlaceDescriptionService $descriptionService = null,
         private readonly ?\Ortsregister\Service\LocBindingService $locBinding = null,
@@ -152,6 +154,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
         $govId            = $this->govLinking->getLinkedGovId($tree, $placeId);
         $govChain         = [];          // historisch (partOfIds)
         $govChainCurrent  = [];          // aktuell    (locatedInIds)
+        $govExternalRefs  = [];          // kuratierte externe Kennungen des Orts (GND, GeoNames …)
         $hierarchyMode = $this->module->hierarchyMode();
         // IMMER beide Ketten laden — GOV liefert nicht für alle Orte locatedInIds,
         // dann muss die View graceful auf historische Kette zurückfallen können.
@@ -165,6 +168,10 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
             ];
             try {
                 foreach ($this->govHierarchy->resolveWithEdges($govId, \Ortsregister\Service\GovHierarchyResolver::MODE_HISTORICAL) as $step) {
+                    // Externe Kennungen NUR vom Ort selbst (nicht von übergeordneten Ebenen).
+                    if ($govExternalRefs === [] && $step['obj']->govId === $govId) {
+                        $govExternalRefs = $this->govRefLinker->resolveAll($step['obj']->externalUrls);
+                    }
                     $govChain[] = $mapStep($step);
                 }
             } catch (Throwable) {}
@@ -385,6 +392,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
             'gov_id'             => $govId,
             'gov_chain'          => $govChain,
             'gov_chain_current'  => $govChainCurrent,
+            'gov_external_refs'  => $govExternalRefs,
             'gov_hierarchy_mode' => $hierarchyMode,
             'place_id'           => $placeId,
             'event_counts' => $eventCounts,

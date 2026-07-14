@@ -7,7 +7,7 @@
 | | |
 |---|---|
 | Module name | `ortsregister` |
-| Version | 1.7.0 |
+| Version | 1.8.0 |
 | webtrees | 2.2.x |
 | PHP | 8.2 – 8.4 |
 | License | GPL-3.0-or-later |
@@ -64,7 +64,8 @@ Leaflet / OpenStreetMap view, the place located from its coordinates:
 
 - Place list (server-side DataTables pagination, full-text filter)
 - **Hierarchy filter**: "All levels" vs. "Leaves only" (see below)
-- **GOV status column** + per-place GOV linking, GOV hierarchy on the detail page
+- **GOV status column** + per-place GOV linking, GOV hierarchy on the detail page,
+  and GOV's external identifiers (GND, GeoNames, LEO-BW, Wikidata) as ready links
 - Leaflet map with MarkerCluster
 - **Detail page** per place: event statistics (births/marriages/deaths), media gallery
   with lightbox, notes/tasks/church-book log (Markdown)
