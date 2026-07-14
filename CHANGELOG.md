@@ -4,6 +4,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+## [1.8.1] – 2026-07-14
+
+### Behoben
+- **Fataler Fehler beim Modul-Start in 1.8.0** (`TypeError` in `OrteDetailPage::__construct`).
+  Der neue `GovExternalRefLinker`-Parameter wurde mitten in den Konstruktor eingefügt,
+  während `registerServices()` die Argumente positionsbasiert übergibt — dadurch landete
+  `OperationBackup` auf dem falschen Parameter und webtrees brach beim Booten ab. Der
+  Parameter steht jetzt am Ende der Signatur; die GOV-Kennungen-Funktion bleibt unverändert.
+
 ## [1.8.0] – 2026-07-14
 
 ### Hinzugefügt
