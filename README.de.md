@@ -7,7 +7,7 @@
 | | |
 |---|---|
 | Modul-Name | `ortsregister` |
-| Version | 1.7.0 |
+| Version | 1.8.0 |
 | webtrees | 2.2.x |
 | PHP | 8.2 – 8.4 |
 | Lizenz | GPL-3.0-or-later |
@@ -65,7 +65,8 @@ Leaflet-/OpenStreetMap-Ansicht, der Ort aus seinen Koordinaten verortet:
 
 - Listenansicht aller Orte (Server-seitige DataTables-Paginierung, Volltextfilter)
 - **Hierarchie-Filter**: „Alle Ebenen" vs. „Nur Endorte" (siehe unten)
-- **GOV-Statusspalte** + GOV-Verknüpfung pro Ort, GOV-Hierarchie auf der Detailseite
+- **GOV-Statusspalte** + GOV-Verknüpfung pro Ort, GOV-Hierarchie auf der Detailseite,
+  und die externen GOV-Kennungen (GND, GeoNames, LEO-BW, Wikidata) als fertige Links
 - Leaflet-Karte mit MarkerCluster
 - **Detailseite** pro Ort: Ereignis-Statistik (Geburten/Heiraten/Tode), Medien-Galerie
   mit Lightbox, Notizen/Aufgaben/Kirchenbuch-Logbuch (Markdown)

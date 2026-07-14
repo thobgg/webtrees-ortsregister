@@ -4,6 +4,18 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+## [1.8.0] – 2026-07-14
+
+### Hinzugefügt
+- **Externe GOV-Kennungen als Links auf der Ortsseite (Issue #12, Hermann).** Die von GOV
+  geführten externen Referenzen werden jetzt als klickbare Links gezeigt — kuratiert auf
+  eine kleine, genealogisch sinnvolle Whitelist: **GND** (d-nb.info), **GeoNames**,
+  **LEO-BW** und **Wikidata**. Eine kompakte, dezente Zeile, damit die Seite übersichtlich
+  bleibt. Nicht kuratierte oder tote Systeme (z.B. opengeodb) werden bewusst weggelassen
+  statt als kryptisches Kürzel gezeigt. Die URL-Muster wurden empirisch verifiziert (die
+  GenWiki-Doku ist bot-geschützt), IDs werden URL-sicher eingesetzt — keine geratenen oder
+  kaputten Links.
+
 ## [1.7.0] – 2026-07-13
 
 ### Hinzugefügt

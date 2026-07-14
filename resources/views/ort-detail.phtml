@@ -37,6 +37,7 @@ use Fisharebest\Webtrees\View;
 /** @var list<\Ortsregister\Dto\LocationIdentity> $loc_records */
 /** @var bool $loc_bound */
 /** @var array<string, list<\Fisharebest\Webtrees\Media>> $loc_media */
+/** @var list<array{label: string, id: string, url: string}> $gov_external_refs */
 /** @var int|null $loc_undo_log_id */
 /** @var list<array{id:int,pfad:string}> $gov_geschwister */
 /** @var list<array{id:int,pfad:string}> $gov_kandidaten */
@@ -624,6 +625,15 @@ foreach ($bilder as $medium) {
             <div class="card-body py-2 px-3 small">
                 <?= implode(' &nbsp;·&nbsp; ', $quellen) ?>
             </div>
+        </div>
+        <?php endif ?>
+
+        <?php /* Kuratierte externe GOV-Kennungen als Links (Issue #12, Hermann). Nur verifizierte
+                 Systeme; unbekannte/tote werden im Linker verworfen → Zeile bleibt übersichtlich. */ ?>
+        <?php if (($gov_external_refs ?? []) !== []) : ?>
+        <div class="small text-muted mb-4">
+            <span class="me-1"><span aria-hidden="true">🔗</span> <?= I18N::translate('GOV-Kennungen') ?>:</span>
+            <?php foreach ($gov_external_refs as $i => $ref) : ?><?php if ($i > 0) : ?> &nbsp;·&nbsp; <?php endif ?><a href="<?= e($ref['url']) ?>" target="_blank" rel="noopener"><?= e($ref['label']) ?> <code><?= e($ref['id']) ?></code> ↗</a><?php endforeach ?>
         </div>
         <?php endif ?>
 
