@@ -51,10 +51,11 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
         private readonly PlaceKbListService   $kbService,
         private readonly OrtsregisterModule   $module,
         private readonly LocationReader       $locationReader = new LocationReader(),
-        private readonly GovExternalRefLinker $govRefLinker   = new GovExternalRefLinker(),
         private readonly ?OperationBackup     $operationBackup = null,
         private readonly ?PlaceDescriptionService $descriptionService = null,
         private readonly ?\Ortsregister\Service\LocBindingService $locBinding = null,
+        // WICHTIG: neue Parameter ans ENDE — registerServices() konstruiert positionsbasiert.
+        private readonly GovExternalRefLinker $govRefLinker = new GovExternalRefLinker(),
     ) {}
 
     protected function respond(
