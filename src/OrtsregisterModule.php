@@ -214,6 +214,8 @@ class OrtsregisterModule extends AbstractModule implements
         $router->get('ortsregister.orte.detail',   '/tree/{tree}/orte/{place_id}',     OrteDetailPage::class);
         $router->get('ortsregister.admin.config',  '/ortsregister/admin/config',       AdminConfigPage::class)
                ->allows('POST');
+        
+        $this->toggleTinyMde(true);
     }
 
     /**
@@ -690,5 +692,41 @@ class OrtsregisterModule extends AbstractModule implements
         }
 
         $this->setPreference('SCHEMA_VERSION', (string) self::SCHEMA_VERSION);
+    }
+
+    /**
+     * toggles registration for using markdown editor on note fields provided by linkenhancer custom module
+     * registration is persisted by linkenhancer custom module so it's not necessary to force registering again each time
+     * 
+     * see:
+     * - https://codeberg.org/bschwede/linkenhancer/issues/101
+     * - https://github.com/hartenthaler/hh_source_transcription/blob/72ce9d5e05e8c1336dfcf32210182f7208806215/src/SourceTranscription.php#L478
+     *
+     * @param bool $enable
+     * @param bool $force
+     * @return void
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     */
+    private function toggleTinyMde(bool $enable, bool $force = false): void
+    {
+        $class = "Schwendinger\\Webtrees\\Module\\LinkEnhancer\\Services\\MarkdownEditorActivationService";
+        $title = 'ortsregister';
+        if (Registry::container()->has($class)) {
+            /** @var Schwendinger\Webtrees\Module\LinkEnhancer\Services\MarkdownEditorActivationService $mde_service */
+            $mde_service = Registry::container()->get($class);
+            $existingRule = $mde_service->getCustomRule($title);
+            if (
+                $force ||
+                $enable && !$existingRule ||
+                !$enable && $existingRule
+            ) {
+                $mde_service->setCustomRule(
+                    $title,  // module name as key
+                    $enable ? ["ortsregister.orte.detail"] : [], // handler: usually the short class name / last part of the route name - see js console with enabled debug info
+                    $enable ? ["textarea[id=ortsregister-notes-textarea]"] : [] // filter: querySelector filter expressions; here: textarea id ends with "_text"
+                );
+            }
+        }
     }
 }
