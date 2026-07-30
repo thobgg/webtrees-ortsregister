@@ -7,7 +7,7 @@
 | | |
 |---|---|
 | Modul-Name | `ortsregister` |
-| Version | 1.8.1 |
+| Version | 1.9.0 |
 | webtrees | 2.2.x |
 | PHP | 8.2 – 8.4 |
 | Lizenz | GPL-3.0-or-later |
@@ -191,6 +191,7 @@ ortsregister/
 |---|---|---|
 | **webtrees Core** | Standard-Orte-Verwaltung (GEDCOM) | bleibt aktiv |
 | **Vesta Gov4Webtrees** | GOV-Daten holen + cachen | optional, kann parallel laufen |
+| **linkenhancer** (ab v1.2.13) | stellt einen visuellen Markdown-Editor bereit | optional. Ist es installiert, macht die Einstellung *„Visuellen Markdown-Editor verwenden"* aus den Notiz-Feldern (Beschreibung, Recherche, KB-Logbuch) einen Editor mit Werkzeugleiste statt eines reinen Textfelds. **Standardmäßig aus.** Gespeichert wird weiterhin reines Markdown. Setzt voraus, dass linkenhancers eigene Markdown-Optionen aktiv sind und der Baum Texte als Markdown formatiert. |
 
 ## Lokalisierung
 

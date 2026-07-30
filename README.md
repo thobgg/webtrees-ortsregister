@@ -7,7 +7,7 @@
 | | |
 |---|---|
 | Module name | `ortsregister` |
-| Version | 1.8.1 |
+| Version | 1.9.0 |
 | webtrees | 2.2.x |
 | PHP | 8.2 – 8.4 |
 | License | GPL-3.0-or-later |
@@ -186,6 +186,7 @@ ortsregister/
 |---|---|---|
 | **webtrees Core** | Standard place management (GEDCOM) | Stays active |
 | **Vesta Gov4Webtrees** | Fetches and caches GOV data | Optional, can run in parallel |
+| **linkenhancer** (v1.2.13+) | Provides a visual Markdown editor | Optional. If installed, the setting *“Use visual Markdown editor”* turns the note fields (description, research, KB log) into an editor with a toolbar instead of a plain textarea. **Off by default.** What gets saved stays plain Markdown. Requires linkenhancer’s own Markdown options to be on and the tree to format text as Markdown. |
 
 ## Localisation
 
