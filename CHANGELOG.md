@@ -4,6 +4,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+## [1.9.0] – 2026-07-30
+
 ### Hinzugefügt
 - **Visueller Markdown-Editor in den Notiz-Feldern (PR #16, Bernd Schwendinger).** Wer das
   Modul [linkenhancer](https://codeberg.org/bschwede/linkenhancer) ab v1.2.13 installiert
