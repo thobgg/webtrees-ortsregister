@@ -69,6 +69,7 @@ class AdminConfigPage implements RequestHandlerInterface
                 'medien_visible'   => $this->module->medienVisible(),
                 'bilder_visible'   => $this->module->bilderVisible(),
                 'ddb_api_key'      => $this->module->ddbApiKey(),
+                'markdown_editor'  => $this->module->markdownEditor(),
                 'link_wikipedia'   => $this->module->linkWikipedia(),
                 'link_matricula'   => $this->module->linkMatricula(),
                 'link_archion'     => $this->module->linkArchion(),
@@ -128,8 +129,9 @@ class AdminConfigPage implements RequestHandlerInterface
         $archionKm = max(1, min(100, $archionKm));
         $this->module->setPreference(OrtsregisterModule::SETTING_ARCHION_AUTO_KM, (string) $archionKm);
 
-        // Externe-Link-Toggles (Checkbox: vorhanden = '1', fehlt = '0')
+        // Checkbox-Toggles (Checkbox: vorhanden = '1', fehlt = '0')
         foreach ([
+            OrtsregisterModule::SETTING_MARKDOWN_EDITOR,
             OrtsregisterModule::SETTING_LINK_WIKIPEDIA,
             OrtsregisterModule::SETTING_LINK_MATRICULA,
             OrtsregisterModule::SETTING_LINK_ARCHION,

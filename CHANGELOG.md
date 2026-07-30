@@ -4,6 +4,24 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+### Hinzugefügt
+- **Visueller Markdown-Editor in den Notiz-Feldern (PR #16, Bernd Schwendinger).** Wer das
+  Modul [linkenhancer](https://codeberg.org/bschwede/linkenhancer) ab v1.2.13 installiert
+  hat, kann in den Notiz-Feldern statt eines reinen Textfelds einen Editor mit
+  Werkzeugleiste und Syntax-Hervorhebung verwenden. Gespeichert wird unverändert reines
+  Markdown — an Dateien und `_LOC` ändert sich nichts. Neue Einstellung
+  „Visuellen Markdown-Editor verwenden" im Kontrollzentrum, **standardmäßig aus**; ohne
+  linkenhancer bleibt sie wirkungslos. Gegenüber dem Pull Request zusätzlich das
+  KB-Logbuch abgedeckt, nicht nur Beschreibung und Recherche.
+
+### Behoben
+- **Personen-Picker verlor eingefügte Links bei aktivem Markdown-Editor.** Der Editor
+  versteckt die Textarea und überschreibt sie bei der nächsten Eingabe — der über
+  „Person einfügen" erzeugte `[Name](indi:Xxx)`-Link verschwand dadurch unbemerkt.
+  Das Einfügen läuft jetzt über den Editor, wenn dieser aktiv ist.
+- **Platzhalter blieb im Editor auf dem zuerst geöffneten Notiz-Feld stehen**, weil der
+  Editor ihn nur beim Erzeugen liest. Er wird jetzt bei jedem Öffnen nachgezogen.
+
 ## [1.8.1] – 2026-07-14
 
 ### Behoben
