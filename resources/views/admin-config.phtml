@@ -21,6 +21,7 @@ use Ortsregister\OrtsregisterModule;
 /** @var string $folder_root */
 /** @var string $hierarchy_mode */
 /** @var int    $archion_auto_km */
+/** @var bool   $markdown_editor */
 
 $secondsToDays = static fn(int $s): string => $s >= 86400
     ? round($s / 86400, 1) . ' Tage'
@@ -152,6 +153,26 @@ $secondsToDays = static fn(int $s): string => $s >= 86400
             </div>
             <div class="form-text mt-2">
                 <?= I18N::translate('Rest jeder Liste wird in einem Klapper „Alle N anzeigen" versteckt. Default Personen 10, Medien 5, Bilder 12.') ?>
+            </div>
+        </div>
+    </fieldset>
+
+    <fieldset class="card mb-4">
+        <legend class="card-header h6 mb-0"><?= I18N::translate('Notiz-Felder bearbeiten') ?></legend>
+        <div class="card-body">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox"
+                       id="markdown_editor" name="<?= e(OrtsregisterModule::SETTING_MARKDOWN_EDITOR) ?>"
+                       <?= $markdown_editor ? 'checked' : '' ?>>
+                <label class="form-check-label" for="markdown_editor">
+                    <?= I18N::translate('Visuellen Markdown-Editor verwenden') ?>
+                </label>
+            </div>
+            <div class="form-text mt-2">
+                <?= I18N::translate('Zeigt in den Notiz-Feldern (Beschreibung, Recherche, KB-Logbuch) eine Werkzeugleiste mit Formatierung statt eines reinen Textfelds. Gespeichert wird weiterhin unverändertes Markdown.') ?>
+            </div>
+            <div class="form-text">
+                <?= I18N::translate('Setzt das Modul <a href="https://codeberg.org/bschwede/linkenhancer">linkenhancer</a> (ab v1.2.13) voraus; ohne dieses Modul bleibt die Einstellung wirkungslos. Dort müssen ausserdem „Markdown enhancements" und „Markdown editor for note textareas" aktiv sein, und der Stammbaum muss Texte als Markdown formatieren.') ?>
             </div>
         </div>
     </fieldset>

@@ -110,6 +110,16 @@ class OrtsregisterModule extends AbstractModule implements
     public const SETTING_FOLDER_ROOT      = 'folder_root';
     public const SETTING_HIERARCHY_MODE   = 'hierarchy_mode';
     public const SETTING_ARCHION_AUTO_KM  = 'archion_auto_km';
+    public const SETTING_MARKDOWN_EDITOR  = 'markdown_editor';
+
+    /** Schlüssel, unter dem linkenhancer unsere Editor-Regel ablegt. */
+    private const MDE_RULE_KEY = 'ortsregister';
+
+    /** Textareas, die den visuellen Markdown-Editor bekommen sollen. */
+    private const MDE_TEXTAREA_SELECTORS = [
+        'textarea[id=ortsregister-notes-textarea]',
+        'textarea[id=ortsregister-kb-log-textarea]',
+    ];
 
     public const HIERARCHY_MODE_HISTORICAL = 'historical';
     public const HIERARCHY_MODE_CURRENT    = 'current';
@@ -130,6 +140,7 @@ class OrtsregisterModule extends AbstractModule implements
     public const DEFAULT_FOLDER_ROOT      = 'orte';
     public const DEFAULT_HIERARCHY_MODE   = self::HIERARCHY_MODE_HISTORICAL;
     public const DEFAULT_ARCHION_AUTO_KM  = 10;
+    public const DEFAULT_MARKDOWN_EDITOR  = false;
 
     public function title(): string { return I18N::translate('Ortsregister'); }
     public function description(): string { return I18N::translate('Ortsregister mit visueller Landing-Page, Medien-Verknüpfung und (geplant) GOV-Integration.'); }
@@ -214,8 +225,8 @@ class OrtsregisterModule extends AbstractModule implements
         $router->get('ortsregister.orte.detail',   '/tree/{tree}/orte/{place_id}',     OrteDetailPage::class);
         $router->get('ortsregister.admin.config',  '/ortsregister/admin/config',       AdminConfigPage::class)
                ->allows('POST');
-        
-        $this->toggleTinyMde(true);
+
+        $this->toggleTinyMde($this->markdownEditor());
     }
 
     /**
@@ -546,6 +557,11 @@ class OrtsregisterModule extends AbstractModule implements
     {
         return $this->getPreference(self::SETTING_LINK_DDB, self::DEFAULT_LINK_DDB ? '1' : '0') === '1';
     }
+    /** Visueller Markdown-Editor in den Notiz-Feldern — braucht das Modul linkenhancer. */
+    public function markdownEditor(): bool
+    {
+        return $this->getPreference(self::SETTING_MARKDOWN_EDITOR, self::DEFAULT_MARKDOWN_EDITOR ? '1' : '0') === '1';
+    }
     public function archionAutoDistanceKm(): int
     {
         return max(1, min(100, (int) $this->getPreference(self::SETTING_ARCHION_AUTO_KM, (string) self::DEFAULT_ARCHION_AUTO_KM)));
@@ -695,38 +711,39 @@ class OrtsregisterModule extends AbstractModule implements
     }
 
     /**
-     * toggles registration for using markdown editor on note fields provided by linkenhancer custom module
-     * registration is persisted by linkenhancer custom module so it's not necessary to force registering again each time
-     * 
-     * see:
-     * - https://codeberg.org/bschwede/linkenhancer/issues/101
-     * - https://github.com/hartenthaler/hh_source_transcription/blob/72ce9d5e05e8c1336dfcf32210182f7208806215/src/SourceTranscription.php#L478
+     * Meldet unsere Markdown-Textareas beim visuellen Editor (TinyMDE) an, den das
+     * Fremdmodul linkenhancer bereitstellt — bzw. meldet sie wieder ab.
      *
-     * @param bool $enable
-     * @param bool $force
-     * @return void
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
+     * Ist linkenhancer nicht installiert, passiert nichts: der Service steht dann
+     * gar nicht im Container. linkenhancer selbst registriert ihn in seinem
+     * Konstruktor, also vor allen boot()-Aufrufen — die Modul-Reihenfolge spielt
+     * daher keine Rolle. Die Regel wird von linkenhancer persistiert, wir schreiben
+     * sie nur, wenn sich am Soll-Zustand etwas geändert hat.
+     *
+     * Ursprung: PR #16 von Bernd Schwendinger.
+     * @see https://codeberg.org/bschwede/linkenhancer/issues/101
      */
     private function toggleTinyMde(bool $enable, bool $force = false): void
     {
-        $class = "Schwendinger\\Webtrees\\Module\\LinkEnhancer\\Services\\MarkdownEditorActivationService";
-        $title = 'ortsregister';
-        if (Registry::container()->has($class)) {
-            /** @var Schwendinger\Webtrees\Module\LinkEnhancer\Services\MarkdownEditorActivationService $mde_service */
-            $mde_service = Registry::container()->get($class);
-            $existingRule = $mde_service->getCustomRule($title);
-            if (
-                $force ||
-                $enable && !$existingRule ||
-                !$enable && $existingRule
-            ) {
-                $mde_service->setCustomRule(
-                    $title,  // module name as key
-                    $enable ? ["ortsregister.orte.detail"] : [], // handler: usually the short class name / last part of the route name - see js console with enabled debug info
-                    $enable ? ["textarea[id=ortsregister-notes-textarea]"] : [] // filter: querySelector filter expressions; here: textarea id ends with "_text"
-                );
-            }
+        $class = 'Schwendinger\\Webtrees\\Module\\LinkEnhancer\\Services\\MarkdownEditorActivationService';
+
+        if (!Registry::container()->has($class)) {
+            return;
         }
+
+        $mde_service   = Registry::container()->get($class);
+        $existing_rule = $mde_service->getCustomRule(self::MDE_RULE_KEY);
+
+        if (!$force && $enable === ($existing_rule !== [])) {
+            return;
+        }
+
+        $mde_service->setCustomRule(
+            self::MDE_RULE_KEY,
+            // Handler: der Routenname der Seite, auf der die Felder liegen.
+            $enable ? ['ortsregister.orte.detail'] : [],
+            // Filter: querySelector-Ausdrücke für die betroffenen Textareas.
+            $enable ? self::MDE_TEXTAREA_SELECTORS : [],
+        );
     }
 }
