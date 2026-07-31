@@ -4,6 +4,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+## [1.9.1] – 2026-07-31
+
 ### Behoben
 - **Suchlinks zu Archion, Matricula und Archivportal-D gingen ins Leere (Issue #17, bschwede).**
   Alle drei Portale haben ihre Such-URLs geändert:
