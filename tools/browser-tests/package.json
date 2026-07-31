@@ -1,0 +1,12 @@
+{
+  "name": "ortsregister-browser-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build-harness.mjs",
+    "test": "node build-harness.mjs && node test-person-picker.mjs && node test-editor-sync.mjs"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.56.0"
+  }
+}

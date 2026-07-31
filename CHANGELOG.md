@@ -4,6 +4,26 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+## [1.9.5] – 2026-07-31
+
+### Behoben
+- **Speichern verlässt sich nicht mehr darauf, dass der Markdown-Editor von sich
+  aus synchronisiert hat.** 1.9.4 zog den Editor-Stand nach jedem Klick auf einen
+  Werkzeugleisten-Knopf nach; das deckte den gemeldeten Fall ab, aber nicht die
+  Ursache. Über die Tastenkombination **Strg+K** entsteht derselbe Verlust, ohne
+  dass ein Knopf angeklickt wird. Der Abgleich läuft jetzt zusätzlich unmittelbar
+  vor jedem Speichern — in den Notiz-Feldern wie im KB-Logbuch —, womit auch
+  künftige, noch unbekannte Wege nichts mehr still verlieren können.
+
+### Intern
+- **Browser-Tests unter `tools/browser-tests/`.** Die PHPUnit-Suite fasst kein
+  JavaScript an; dieser Teil war bisher ungeprüft. Die Skripte schneiden den
+  echten `<script>`-Block aus `ort-detail.phtml` aus und fahren ihn in einem
+  Chromium gegen die tatsächlich ausgelieferten Assets von webtrees und
+  linkenhancer — 12 Prüfungen für Personen-Picker und Editor-Abgleich. Sie
+  brauchen eine echte Installation und laufen deshalb bewusst nicht bei jedem
+  Commit mit, sondern auf Zuruf (`npm test`); Einzelheiten im dortigen README.
+
 ## [1.9.4] – 2026-07-31
 
 ### Behoben
