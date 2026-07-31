@@ -7,7 +7,7 @@
 | | |
 |---|---|
 | Module name | `ortsregister` |
-| Version | 1.9.1 |
+| Version | 1.9.2 |
 | webtrees | 2.2.x |
 | PHP | 8.2 – 8.4 |
 | License | GPL-3.0-or-later |

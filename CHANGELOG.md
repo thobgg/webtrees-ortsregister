@@ -4,6 +4,34 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+## [1.9.2] – 2026-07-31
+
+### Geändert
+- **DDB-Anbindung auf die API 2.0 umgestellt — kein API-Key mehr nötig (Issue #18, bschwede).**
+  Das Antrags-Formular für den Key der alten API 1.0 antwortete nur noch mit
+  „Bad Request – 400"; der DDB-Support verwies auf die 2.0, die ohne
+  Authentifizierung auskommt. Damit funktionieren Trefferzahl und Dokumenten-Galerie
+  auf der Ortsseite jetzt **in jeder Installation sofort**, statt nur bei denen, die
+  noch einen alten Key haben. Das Eingabefeld „DDB-API-Key" ist aus den
+  Einstellungen verschwunden; ein gespeicherter Key wird schlicht nicht mehr gelesen.
+
+  Die 2.0 hat keinen `/search`-Endpoint mehr — die Suche läuft jetzt über den offenen
+  Solr-Durchgriff `/2/search/index/search/select`, das Vorschaubild über
+  `/2/items/{id}/binaries` statt über einen Regex auf der Rohantwort. Die
+  Suchstaffel („Pfarrbericht" → „Pfarr" → Ortsname) bleibt unverändert.
+
+### Behoben
+- **Platzhalter-Kacheln in der DDB-Galerie zeigten Codes wie `MEDIATYPE_007`.**
+  Jetzt steht dort der Klartext aus dem Feld `objecttype` („Akten", „Archivale"),
+  gekürzt, damit lange Bezeichnungen die Kachel nicht sprengen.
+
+### Intern
+- Vorschaubilder werden nur noch für Objekte abgefragt, die laut Suchindex ein
+  Digitalisat haben — das spart bei einer typischen Ortsseite rund zwei Drittel der
+  HTTP-Calls an die DDB.
+- Die v1-Sortierung `SORT_YEAR_ASC` ist entfallen; sie ist keine gültige Solr-Syntax
+  und quittiert mit HTTP 500. Sortiert wird nach Relevanz.
+
 ## [1.9.1] – 2026-07-31
 
 ### Behoben

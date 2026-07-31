@@ -68,7 +68,6 @@ class AdminConfigPage implements RequestHandlerInterface
                 'personen_visible' => $this->module->personenVisible(),
                 'medien_visible'   => $this->module->medienVisible(),
                 'bilder_visible'   => $this->module->bilderVisible(),
-                'ddb_api_key'      => $this->module->ddbApiKey(),
                 'markdown_editor'  => $this->module->markdownEditor(),
                 'link_wikipedia'   => $this->module->linkWikipedia(),
                 'link_matricula'   => $this->module->linkMatricula(),
@@ -101,10 +100,6 @@ class AdminConfigPage implements RequestHandlerInterface
         $this->module->setPreference(OrtsregisterModule::SETTING_PERSONEN_VISIBLE, (string) $personenVis);
         $this->module->setPreference(OrtsregisterModule::SETTING_MEDIEN_VISIBLE,   (string) $medienVis);
         $this->module->setPreference(OrtsregisterModule::SETTING_BILDER_VISIBLE,   (string) $bilderVis);
-
-        // API-Key (raw string, ohne Längen-Limit — DDB-Keys sind ~40 Zeichen)
-        $ddbKey = trim((string) ($params[OrtsregisterModule::SETTING_DDB_API_KEY] ?? ''));
-        $this->module->setPreference(OrtsregisterModule::SETTING_DDB_API_KEY, $ddbKey);
 
         // Folder-Root (path-safe: nur a-z0-9_- erlaubt, sonst Default zurueck)
         $folderRoot = trim((string) ($params[OrtsregisterModule::SETTING_FOLDER_ROOT] ?? ''));
