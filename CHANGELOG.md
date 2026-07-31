@@ -4,6 +4,20 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+### Behoben
+- **Suchlinks zu Archion, Matricula und Archivportal-D gingen ins Leere (Issue #17, bschwede).**
+  Alle drei Portale haben ihre Such-URLs geändert:
+  - *Archion* verwarf den Parameter von `/de/browse/?place=` still und zeigte die Liste
+    „Alle Archive" statt einer Suche. Jetzt `/de/suche?location_name=`.
+  - *Matricula* leitete von `www.matricula-online.eu/search/` auf die ICARUS-Infoseite um.
+    Die Ortssuche liegt inzwischen auf `data.matricula-online.eu/de/suchen/?place=`.
+  - *Archivportal-D* antwortete auf `/search?query=` mit 404. Jetzt `/objekte?query=`, und
+    mit dem Feld-Prefix `place:` grenzt die Suche zusätzlich auf Ortsbezug statt Volltext
+    ein (Beispiel Fischbach: 2.288 statt 10.335 Treffer).
+
+  Alle sechs URLs (alt und neu) wurden in einem echten Browser geprüft, ebenso Ortsnamen
+  mit Leerzeichen und Umlauten. Die Links zu Wikipedia und DDB waren nicht betroffen.
+
 ## [1.9.0] – 2026-07-30
 
 ### Hinzugefügt
