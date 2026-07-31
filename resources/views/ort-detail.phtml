@@ -1387,6 +1387,19 @@ foreach ($bilder as $medium) {
     // ---- Person einfügen (webtrees TomSelect-Picker) ----
     const indiPicker = document.getElementById('ortsregister-indi-picker');
     if (indiPicker) {
+        // Die zuletzt bekannte Cursorposition im Markdown-Editor. Notwendig, weil der
+        // Personen-Picker den Fokus übernimmt und ein späteres editor.focus() die
+        // Einfügemarke sonst an den Textanfang setzt — der Link landete dann oben.
+        let savedRange = null;
+        document.addEventListener('selectionchange', function () {
+            const editor = document.getElementById('md-' + textarea.id);
+            if (editor === null) return;
+            const sel = window.getSelection();
+            if (sel.rangeCount > 0 && editor.contains(sel.anchorNode)) {
+                savedRange = sel.getRangeAt(0).cloneRange();
+            }
+        });
+
         function insertAtCursor(el, text) {
             // Läuft der visuelle Markdown-Editor (linkenhancer/TinyMDE), ist die Textarea
             // versteckt und wird vom Editor überschrieben — dann dort einfügen, nicht hier.
@@ -1394,7 +1407,11 @@ foreach ($bilder as $medium) {
             if (editor && window.getComputedStyle(el).display === 'none') {
                 editor.focus();
                 const sel = window.getSelection();
-                if (!sel.rangeCount || !editor.contains(sel.anchorNode)) {
+                if (savedRange !== null && editor.contains(savedRange.startContainer)) {
+                    sel.removeAllRanges();
+                    sel.addRange(savedRange);
+                } else {
+                    // Nie im Editor gewesen (oder der Knoten ist inzwischen weg): ans Ende.
                     const range = document.createRange();
                     range.selectNodeContents(editor);
                     range.collapse(false);

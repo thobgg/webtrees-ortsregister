@@ -4,6 +4,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+## [1.9.3] – 2026-07-31
+
+### Behoben
+- **Personen-Picker fügte bei aktivem Markdown-Editor immer ganz oben ein.** Der in
+  1.9.0 eingebaute Fix landete zwar im Editor, aber stets am Textanfang statt an der
+  Cursorstelle: Das Auswahlfeld für die Person übernimmt beim Anklicken den Fokus, und
+  das anschließende `focus()` auf den Editor setzt die Einfügemarke bei einem
+  `contenteditable` wieder auf Position 0. Die Cursorposition wird jetzt laufend
+  mitgeschrieben (`selectionchange`) und vor dem Einfügen wiederhergestellt. War der
+  Cursor nie im Editor, wird ans Ende angefügt statt an den Anfang.
+
 ## [1.9.2] – 2026-07-31
 
 ### Geändert
