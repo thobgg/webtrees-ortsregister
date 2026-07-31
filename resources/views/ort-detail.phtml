@@ -594,7 +594,8 @@ foreach ($bilder as $medium) {
                     . '" target="_blank" rel="noopener" title="' . e($titleTxt) . '">'
                     . e($linkLabel) . '</a>';
             } else {
-                $quellen[] = '<strong>Archion</strong> · <a href="https://www.archion.de/de/browse/?place='
+                // /de/browse/?place= verwirft den Parameter und landet auf "Alle Archive" (Issue #17).
+                $quellen[] = '<strong>Archion</strong> · <a href="https://www.archion.de/de/suche?location_name='
                     . urlencode($ort->name) . '" target="_blank" rel="noopener">Suche ↗</a>';
             }
         }
@@ -607,12 +608,16 @@ foreach ($bilder as $medium) {
                 . '" target="_blank" rel="noopener">' . e($ort->name) . ' ↗</a>';
         }
         if (($link_matricula ?? true)) {
-            $quellen[] = '<strong>Matricula</strong> · <a href="https://www.matricula-online.eu/search/?q='
+            // www.matricula-online.eu leitet inzwischen auf die ICARUS-Infoseite um (Issue #17);
+            // die eigentliche Ortssuche liegt auf data.matricula-online.eu.
+            $quellen[] = '<strong>Matricula</strong> · <a href="https://data.matricula-online.eu/de/suchen/?place='
                 . urlencode($ort->name) . '" target="_blank" rel="noopener">Suche ↗</a>';
         }
         if (($link_archivpdb ?? true)) {
-            $quellen[] = '<strong>Archivportal-D</strong> · <a href="https://www.archivportal-d.de/search?query='
-                . urlencode($ort->name) . '" target="_blank" rel="noopener">Suche ↗</a>';
+            // /search?query= liefert seit einem Relaunch 404 (Issue #17). /objekte mit dem
+            // Feld-Prefix "place:" grenzt zusätzlich auf Ortsbezug ein statt Volltext.
+            $quellen[] = '<strong>Archivportal-D</strong> · <a href="https://www.archivportal-d.de/objekte?query='
+                . urlencode('place:' . $ort->name) . '" target="_blank" rel="noopener">Suche ↗</a>';
         }
         if (($link_ddb ?? true)) {
             $ddbCount = $ddb->total > 0 ? number_format($ddb->total, 0, ',', '.') . ' Treffer' : 'Suche';
