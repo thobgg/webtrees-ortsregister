@@ -1314,6 +1314,8 @@ foreach ($bilder as $medium) {
     saveBtn.addEventListener('click', () => {
         saveBtn.disabled   = true;
         status.textContent = '…';
+        // Sicherstellen, dass die Textarea den Stand des Editors trägt (siehe unten).
+        window.ortsregisterSyncMarkdownEditors();
         const filename = filenameEl.value;
         const fd = new FormData();
         fd.append('markdown', textarea.value);
@@ -1443,18 +1445,26 @@ foreach ($bilder as $medium) {
         });
     }
 
-    // ---- Notbremse für die Werkzeugleiste des Markdown-Editors ----
-    // In linkenhancer rufen die Knöpfe „Link", „Bild" und „Hervorheben" direkt
-    // TinyMDEs wrapSelection() auf, ohne anschließend fireChange() auszulösen.
-    // Der Editor zeigt die Änderung dann zwar an, schreibt sie aber nicht in die
-    // versteckte Textarea zurück — und Speichern verwirft sie stillschweigend.
-    // Ein synthetisches input-Ereignis lässt den Editor seinen Inhalt aus dem DOM
-    // neu einlesen und nachziehen. Kann raus, sobald linkenhancer das behebt.
-    document.addEventListener('click', function (e) {
-        if (e.target.closest('.TMCommandButton') === null) return;
+    // ---- Notbremse gegen auseinanderlaufenden Editor und Textarea ----
+    // Der visuelle Editor (linkenhancer/TinyMDE) versteckt die Textarea und schreibt
+    // seinen Inhalt normalerweise bei jeder Änderung dorthin zurück. Bei den Knöpfen
+    // „Link", „Bild" und „Hervorheben" unterbleibt das (wrapSelection ohne fireChange,
+    // siehe linkenhancer#118) — die Änderung ist sichtbar, geht beim Speichern aber
+    // verloren. Ein synthetisches input-Ereignis lässt den Editor seinen Inhalt aus
+    // dem DOM neu einlesen und nachziehen.
+    //
+    // Aufgerufen wird das an zwei Stellen: nach jedem Klick auf einen Knopf der
+    // Werkzeugleiste (damit der Zustand sofort stimmt) und vor jedem Speichern
+    // (damit auch ein künftiger, noch unbekannter Weg nichts verlieren kann).
+    window.ortsregisterSyncMarkdownEditors = function () {
         document.querySelectorAll('.TinyMDE').forEach(function (editor) {
             editor.dispatchEvent(new InputEvent('input', { bubbles: true }));
         });
+    };
+    document.addEventListener('click', function (e) {
+        if (e.target.closest('.TMCommandButton') !== null) {
+            window.ortsregisterSyncMarkdownEditors();
+        }
     });
 })();
 </script>
@@ -2182,6 +2192,10 @@ foreach ($bilder as $medium) {
     logSaveBtn.addEventListener('click', async () => {
         logSaveBtn.disabled = true;
         try {
+            // Stand des visuellen Editors in die Textarea ziehen, falls er aktiv ist.
+            if (typeof window.ortsregisterSyncMarkdownEditors === 'function') {
+                window.ortsregisterSyncMarkdownEditors();
+            }
             const data = await send('save-log', { id: logId.value, markdown: logTextarea.value });
             if (data.success) {
                 getLog().hide();
