@@ -4,6 +4,18 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+## [1.9.4] – 2026-07-31
+
+### Behoben
+- **Die Knöpfe „Link", „Bild" und „Hervorheben" im Markdown-Editor gingen beim
+  Speichern verloren.** Die Änderung war im Editor sichtbar, wurde aber nicht in
+  die versteckte Textarea zurückgeschrieben — gespeichert wurde der Stand davor,
+  ohne Hinweis. Ursache liegt in linkenhancer: diese drei Knöpfe rufen TinyMDEs
+  `wrapSelection()` direkt auf, ohne anschließend `fireChange()` auszulösen; die
+  benannten Befehle (Fett, Kursiv, Überschrift, Listen, Zitat) und die Tabelle
+  tun das korrekt. Bis das dort behoben ist, erzwingt ein Klick auf einen
+  Werkzeugleisten-Knopf hier ein Nachziehen der Textarea.
+
 ## [1.9.3] – 2026-07-31
 
 ### Behoben
