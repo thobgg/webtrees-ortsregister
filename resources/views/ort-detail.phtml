@@ -1442,6 +1442,20 @@ foreach ($bilder as $medium) {
             if (ts) ts.clear();
         });
     }
+
+    // ---- Notbremse für die Werkzeugleiste des Markdown-Editors ----
+    // In linkenhancer rufen die Knöpfe „Link", „Bild" und „Hervorheben" direkt
+    // TinyMDEs wrapSelection() auf, ohne anschließend fireChange() auszulösen.
+    // Der Editor zeigt die Änderung dann zwar an, schreibt sie aber nicht in die
+    // versteckte Textarea zurück — und Speichern verwirft sie stillschweigend.
+    // Ein synthetisches input-Ereignis lässt den Editor seinen Inhalt aus dem DOM
+    // neu einlesen und nachziehen. Kann raus, sobald linkenhancer das behebt.
+    document.addEventListener('click', function (e) {
+        if (e.target.closest('.TMCommandButton') === null) return;
+        document.querySelectorAll('.TinyMDE').forEach(function (editor) {
+            editor.dispatchEvent(new InputEvent('input', { bubbles: true }));
+        });
+    });
 })();
 </script>
 <?php endif ?>
