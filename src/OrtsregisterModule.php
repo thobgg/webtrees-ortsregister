@@ -101,6 +101,7 @@ class OrtsregisterModule extends AbstractModule implements
     public const SETTING_PERSONEN_VISIBLE = 'personen_visible';
     public const SETTING_MEDIEN_VISIBLE   = 'medien_visible';
     public const SETTING_BILDER_VISIBLE   = 'bilder_visible';
+    /** @deprecated seit 1.9.2 — die DDB-API 2.0 braucht keinen Key mehr (Issue #18). */
     public const SETTING_DDB_API_KEY      = 'ddb_api_key';
     public const SETTING_LINK_WIKIPEDIA   = 'link_wikipedia';
     public const SETTING_LINK_MATRICULA   = 'link_matricula';
@@ -145,7 +146,7 @@ class OrtsregisterModule extends AbstractModule implements
     public function title(): string { return I18N::translate('Ortsregister'); }
     public function description(): string { return I18N::translate('Ortsregister mit visueller Landing-Page, Medien-Verknüpfung und (geplant) GOV-Integration.'); }
     public function customModuleAuthorName(): string { return 'Thomas Bugge'; }
-    public function customModuleVersion(): string { return '1.9.1'; }
+    public function customModuleVersion(): string { return '1.9.2'; }
     public function customModuleSupportUrl(): string { return ''; }
 
     /**
@@ -289,7 +290,6 @@ class OrtsregisterModule extends AbstractModule implements
             DdbClient::class,
             new DdbClient(
                 $container->get(ApcuCacheService::class),
-                $this->ddbApiKey(),
                 $this->govCacheTtl(),
             ),
         );
@@ -532,10 +532,6 @@ class OrtsregisterModule extends AbstractModule implements
     public function bilderVisible(): int
     {
         return max(1, min(200, (int) $this->getPreference(self::SETTING_BILDER_VISIBLE, (string) self::DEFAULT_BILDER_VISIBLE)));
-    }
-    public function ddbApiKey(): string
-    {
-        return trim($this->getPreference(self::SETTING_DDB_API_KEY, ''));
     }
     public function linkWikipedia(): bool
     {

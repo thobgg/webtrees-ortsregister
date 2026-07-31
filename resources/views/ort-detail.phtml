@@ -990,8 +990,8 @@ foreach ($bilder as $medium) {
                                          loading="lazy"
                                          style="width:100%;height:140px;object-fit:cover;display:block;background:#f5f0e8">
                                 <?php else : ?>
-                                    <div style="height:140px;background:#f5f0e8;display:flex;align-items:center;justify-content:center;color:#aaa">
-                                        <span style="font-size:.75rem;text-transform:uppercase"><?= e($item->media ?: 'DDB') ?></span>
+                                    <div style="height:140px;background:#f5f0e8;display:flex;align-items:center;justify-content:center;color:#aaa;padding:0 .5rem;overflow:hidden">
+                                        <span style="font-size:.75rem;text-transform:uppercase;text-align:center;line-height:1.25"><?= e(mb_strimwidth($item->media ?: 'DDB', 0, 40, '…')) ?></span>
                                     </div>
                                 <?php endif ?>
                                 <div class="p-2">

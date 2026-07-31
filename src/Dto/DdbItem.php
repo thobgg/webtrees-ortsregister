@@ -7,8 +7,8 @@ namespace Ortsregister\Dto;
 /**
  * Ein DDB-Suchresultat (1 Dokument).
  *
- * Quelle: https://api.deutsche-digitale-bibliothek.de/search → results[].docs[]
- *         https://api.deutsche-digitale-bibliothek.de/items/{id} → für Vorschau-Bild
+ * Quelle: .../2/search/index/search/select → response.docs[]
+ *         .../2/items/{id}/binaries        → für Vorschau-Bild
  */
 final class DdbItem
 {

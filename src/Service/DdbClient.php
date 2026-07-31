@@ -9,27 +9,31 @@ use Ortsregister\Dto\DdbItem;
 use Ortsregister\Dto\DdbPlaceData;
 
 /**
- * Client für die DDB-API (Deutsche Digitale Bibliothek).
+ * Client für die DDB-API 2.0 (Deutsche Digitale Bibliothek).
  *
- * Endpoints:
- *   GET /search?query=...&rows=...&oauth_consumer_key=...
- *   GET /items/{id}?oauth_consumer_key=...   (für Vorschau-Bild-URLs)
+ * Endpoints (alle ohne Authentifizierung):
+ *   GET /2/search/index/search/select?q=...&rows=...&wt=json   (Solr-Durchgriff)
+ *   GET /2/items/{id}/binaries                                 (Vorschau-Bild)
+ *
+ * Die alte API 1.0 verlangte einen `oauth_consumer_key`; deren Antrags-Formular
+ * war ab 2026 defekt (Issue #18), und der DDB-Support verwies auf die 2.0 ohne
+ * Key. Die 2.0 hat keinen `/search`-Endpoint mehr — stattdessen liegt der Solr-
+ * Index unter `/search/index/{collection}/{requestHandler}` offen. Deshalb ist
+ * die Antwortform hier Solr (`response.numFound` / `response.docs`) statt der
+ * v1-Form (`numberOfResults` / `results[0].docs`).
  *
  * Strategie nach KIES-Vorbild: drei gestaffelte Suchen pro Ort
  *   (`<name> Pfarrbericht`, `<name> Pfarr`, `<name>`) — kirchliche/genealogische
  *   Quellen bevorzugen, dann allgemein.
- *
- * Bei leerem API-Key → leerer DTO, kein Netzwerk-Call.
  */
 class DdbClient
 {
-    private const BASE_URL   = 'https://api.deutsche-digitale-bibliothek.de';
+    private const BASE_URL   = 'https://api.deutsche-digitale-bibliothek.de/2';
     private const TIMEOUT    = 4;
     private const USER_AGENT = 'webtrees-ortsregister/0.1 (+https://github.com/thobgg/webtrees-ortsregister)';
 
     public function __construct(
         private readonly ApcuCacheService $cache,
-        private readonly string           $apiKey,
         private readonly int              $cacheTtl = 604800, // 7d
     ) {}
 
@@ -39,7 +43,7 @@ class DdbClient
     public function lookup(string $placeName, int $maxItems = 6): DdbPlaceData
     {
         $placeName = trim($placeName);
-        if ($placeName === '' || $this->apiKey === '') {
+        if ($placeName === '') {
             return DdbPlaceData::empty();
         }
         $cacheKey = sprintf('ddb:%s:%d', md5($placeName), $maxItems);
@@ -62,14 +66,14 @@ class DdbClient
             if (count($items) >= $maxItems) {
                 break;
             }
-            $resp = $this->search($query, 10, 'SORT_YEAR_ASC');
+            $resp = $this->search($query, 10);
             if ($resp === null) {
                 continue;
             }
             if ($total === 0) {
-                $total = (int) ($resp['numberOfResults'] ?? 0);
+                $total = (int) ($resp['response']['numFound'] ?? 0);
             }
-            $docs = $resp['results'][0]['docs'] ?? [];
+            $docs = $resp['response']['docs'] ?? [];
             if (!is_array($docs)) {
                 continue;
             }
@@ -79,17 +83,24 @@ class DdbClient
                 if ($id === '' || isset($seenIds[$id])) {
                     continue;
                 }
-                $label = (string) ($doc['label'] ?? '');
+                $label = self::firstString($doc['label'] ?? null);
                 if ($label === '') {
                     continue;
                 }
                 $seenIds[$id] = true;
-                $thumb        = $this->itemThumbnail($id);
-                $items[]      = new DdbItem(
+                // Nur Objekte mit Digitalisat haben Binaries — sonst sparen wir uns den Call.
+                $thumb = ((string) ($doc['digitalisat'] ?? '')) === 'true'
+                    ? $this->itemThumbnail($id)
+                    : null;
+                $items[] = new DdbItem(
                     id:           $id,
                     label:        $label,
-                    subtitle:     (string) ($doc['subtitle'] ?? ''),
-                    media:        (string) ($doc['media']    ?? ''),
+                    // v2 kennt kein `subtitle`; die haltende Einrichtung ist der
+                    // brauchbarste Ersatz für die zweite Zeile in der Galerie.
+                    subtitle:     self::firstString($doc['provider'] ?? null),
+                    // `type` ist ein Code ("mediatype_007"), der in der Platzhalter-
+                    // Kachel unlesbar ist; `objecttype` ist bereits Klartext.
+                    media:        self::firstString($doc['objecttype'] ?? null),
                     thumbnailUrl: $thumb,
                 );
                 if (count($items) >= $maxItems) {
@@ -103,35 +114,55 @@ class DdbClient
     /**
      * @return array<string, mixed>|null
      */
-    private function search(string $query, int $rows, ?string $sort = null): ?array
+    private function search(string $query, int $rows): ?array
     {
+        // Solr-Durchgriff: Standard-Sortierung ist Relevanz. Die v1-Sortierung
+        // `SORT_YEAR_ASC` ist hier keine gültige Solr-Syntax und quittiert mit 500.
         $params = [
-            'query'              => $query,
-            'rows'               => $rows,
-            'oauth_consumer_key' => $this->apiKey,
+            'q'    => $query,
+            'rows' => $rows,
+            'wt'   => 'json',
         ];
-        if ($sort !== null) {
-            $params['sort'] = $sort;
-        }
-        return $this->httpGetJson(self::BASE_URL . '/search?' . http_build_query($params));
+        return $this->httpGetJson(self::BASE_URL . '/search/index/search/select?' . http_build_query($params));
     }
 
     /**
-     * Holt eine direkte Bild-URL aus dem /items/{id}-Endpoint. Erstes JPG aus
-     * der Roh-Antwort gewinnt. Liefert null bei Fehler oder fehlendem Bild.
+     * Vorschau-Bild aus /items/{id}/binaries: erstes Binary mit Bild-Mimetype,
+     * `primary` bevorzugt. Liefert null bei Fehler oder wenn es kein Bild gibt.
      */
     private function itemThumbnail(string $itemId): ?string
     {
-        $url = self::BASE_URL . '/items/' . rawurlencode($itemId)
-            . '?oauth_consumer_key=' . rawurlencode($this->apiKey);
-        $body = $this->httpGetRaw($url);
-        if ($body === null) {
+        $resp = $this->httpGetJson(self::BASE_URL . '/items/' . rawurlencode($itemId) . '/binaries');
+        $binaries = $resp['binary'] ?? null;
+        if (!is_array($binaries)) {
             return null;
         }
-        if (preg_match('#https://[^"\'<>\s]+\.(?:jpg|jpeg|JPG)#', $body, $m) === 1) {
-            return $m[0];
+        $fallback = null;
+        foreach ($binaries as $binary) {
+            if (!is_array($binary)) {
+                continue;
+            }
+            $path = (string) ($binary['local_pathname'] ?? '');
+            if ($path === '' || !str_starts_with((string) ($binary['mimetype'] ?? ''), 'image/')) {
+                continue;
+            }
+            if (($binary['primary'] ?? false) === true) {
+                return $path;
+            }
+            $fallback ??= $path;
         }
-        return null;
+        return $fallback;
+    }
+
+    /**
+     * Solr liefert die meisten Felder als Array. Nimmt den ersten Wert.
+     */
+    private static function firstString(mixed $value): string
+    {
+        if (is_array($value)) {
+            $value = $value[0] ?? '';
+        }
+        return is_scalar($value) ? trim((string) $value) : '';
     }
 
     /**
