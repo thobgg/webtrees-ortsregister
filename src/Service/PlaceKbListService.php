@@ -66,7 +66,7 @@ class PlaceKbListService
         string $type,
         ?int $yearFrom,
         ?int $yearTo,
-        ?string $archionUrl,
+        ?string $url,
         ?string $sourXref,
     ): PlaceKb {
         $title = trim($title);
@@ -75,13 +75,13 @@ class PlaceKbListService
         }
         $kbs = $this->read($tree, $placeName);
         $kb  = new PlaceKb(
-            id:         $this->generateId(),
-            title:      $title,
-            type:       $type,
-            yearFrom:   $yearFrom,
-            yearTo:     $yearTo,
-            archionUrl: $archionUrl,
-            sourXref:   $sourXref,
+            id:       $this->generateId(),
+            title:    $title,
+            type:     $type,
+            yearFrom: $yearFrom,
+            yearTo:   $yearTo,
+            url:      $url,
+            sourXref: $sourXref,
         );
         $kbs[] = $kb;
         $this->writeAll($tree, $placeName, $kbs);
@@ -96,7 +96,7 @@ class PlaceKbListService
         string $type,
         ?int $yearFrom,
         ?int $yearTo,
-        ?string $archionUrl,
+        ?string $url,
         ?string $sourXref,
     ): ?PlaceKb {
         $title = trim($title);
@@ -108,13 +108,13 @@ class PlaceKbListService
         foreach ($kbs as $i => $existing) {
             if ($existing->id === $id) {
                 $kbs[$i] = new PlaceKb(
-                    id:         $id,
-                    title:      $title,
-                    type:       $type,
-                    yearFrom:   $yearFrom,
-                    yearTo:     $yearTo,
-                    archionUrl: $archionUrl,
-                    sourXref:   $sourXref,
+                    id:       $id,
+                    title:    $title,
+                    type:     $type,
+                    yearFrom: $yearFrom,
+                    yearTo:   $yearTo,
+                    url:      $url,
+                    sourXref: $sourXref,
                 );
                 $result = $kbs[$i];
                 break;

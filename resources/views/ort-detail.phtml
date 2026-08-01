@@ -728,7 +728,7 @@ foreach ($bilder as $medium) {
                                  data-kb-type="<?= e($kb->type) ?>"
                                  data-kb-year-from="<?= $kb->yearFrom ?? '' ?>"
                                  data-kb-year-to="<?= $kb->yearTo ?? '' ?>"
-                                 data-kb-archion-url="<?= e($kb->archionUrl ?? '') ?>"
+                                 data-kb-url="<?= e($kb->url ?? '') ?>"
                                  data-kb-sour-xref="<?= e($kb->sourXref ?? '') ?>">
                                 <div class="d-flex align-items-start gap-2">
                                     <div class="flex-grow-1 min-w-0">
@@ -739,8 +739,9 @@ foreach ($bilder as $medium) {
                                             <?php if ($ts !== '') : ?> · <?= e($ts) ?><?php endif ?>
                                         </div>
                                         <div class="d-flex gap-2 mt-1 small">
-                                            <?php if ($kb->archionUrl !== null) : ?>
-                                                <a href="<?= e($kb->archionUrl) ?>" target="_blank" rel="noopener" class="text-decoration-none" title="Archion-Deep-Link">📖 Archion</a>
+                                            <?php if ($kb->url !== null) : ?>
+                                                <a href="<?= e($kb->url) ?>" target="_blank" rel="noopener" class="text-decoration-none"
+                                                   title="<?= e(I18N::translate('Link zum Digitalisat')) ?>">📖 <?= e($kb->linkLabel()) ?></a>
                                             <?php endif ?>
                                             <?php if ($kb->sourXref !== null) : ?>
                                                 <a href="<?= e(route(\Fisharebest\Webtrees\Http\RequestHandlers\SourcePage::class, ['tree' => $tree->name(), 'xref' => $kb->sourXref])) ?>"
@@ -1147,9 +1148,10 @@ foreach ($bilder as $medium) {
                             <input type="number" class="form-control" id="ortsregister-kb-edit-year-to" min="1000" max="2100" placeholder="z.B. 1750">
                         </div>
                         <div class="col-12">
-                            <label class="form-label"><?= I18N::translate('Archion-URL (optional)') ?></label>
-                            <input type="url" class="form-control" id="ortsregister-kb-edit-archion-url"
-                                   placeholder="https://www.archion.de/...">
+                            <label class="form-label"><?= I18N::translate('Link zum Digitalisat (optional)') ?></label>
+                            <input type="url" class="form-control" id="ortsregister-kb-edit-url"
+                                   placeholder="https://...">
+                            <div class="form-text"><?= I18N::translate('Beliebiger Anbieter — Archion, Matricula, FamilySearch, eigener Server. Der Anbietername wird aus der Adresse abgeleitet.') ?></div>
                         </div>
                         <div class="col-12">
                             <label class="form-label"><?= I18N::translate('webtrees-Quelle verknüpfen (optional)') ?></label>
@@ -2068,7 +2070,7 @@ foreach ($bilder as $medium) {
     const fType      = document.getElementById('ortsregister-kb-edit-type');
     const fYearFrom  = document.getElementById('ortsregister-kb-edit-year-from');
     const fYearTo    = document.getElementById('ortsregister-kb-edit-year-to');
-    const fArchion   = document.getElementById('ortsregister-kb-edit-archion-url');
+    const fUrl       = document.getElementById('ortsregister-kb-edit-url');
     const fSour      = document.getElementById('ortsregister-kb-edit-sour');
     const titleSuffix= document.getElementById('ortsregister-kb-edit-title-suffix');
     const editStatus = document.getElementById('ortsregister-kb-edit-status');
@@ -2087,7 +2089,7 @@ foreach ($bilder as $medium) {
         fType.value     = data.type || 'sonstige';
         fYearFrom.value = data.year_from || '';
         fYearTo.value   = data.year_to || '';
-        fArchion.value  = data.archion_url || '';
+        fUrl.value      = data.url || '';
         if (fSour.tomselect) fSour.tomselect.clear();
         if (data.sour_xref) {
             if (fSour.tomselect) {
@@ -2130,7 +2132,7 @@ foreach ($bilder as $medium) {
                 type:        tile.dataset.kbType,
                 year_from:   tile.dataset.kbYearFrom,
                 year_to:     tile.dataset.kbYearTo,
-                archion_url: tile.dataset.kbArchionUrl,
+                url:         tile.dataset.kbUrl,
                 sour_xref:   tile.dataset.kbSourXref,
             });
             titleSuffix.textContent = tile.dataset.kbTitle.substring(0, 40);
@@ -2171,7 +2173,7 @@ foreach ($bilder as $medium) {
             type:        fType.value,
             year_from:   fYearFrom.value,
             year_to:     fYearTo.value,
-            archion_url: fArchion.value,
+            url:         fUrl.value,
             sour_xref:   fSour.value || '',
         };
         try {
