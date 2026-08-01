@@ -4,6 +4,31 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+## [1.10.0] – 2026-08-01
+
+### Neu
+- **GenWiki-Artikel zum GOV-Objekt auf der Ortsseite (#13).** Neben dem GOV-Eintrag
+  steht jetzt ein Link ins GenWiki, wenn dort ein Artikel zu diesem Ort hinterlegt
+  ist. Der Artikelname erscheint im Tooltip.
+
+  Der Weg dorthin: GenWiki führt einen Namensraum `GOV:<GOV-ID>`, dessen Seiten auf
+  den eigentlichen Ortsartikel weiterleiten. Die MediaWiki-API löst das auf und
+  liefert zugleich den Existenz-Nachweis und die kanonische Adresse. Verlinkt wird
+  ausschließlich, was die API auflöst — kein aus dem Ortsnamen geratener Artikelname,
+  keine toten Links. Findet sich keine Zuordnung, erscheint schlicht kein Link.
+
+  Wichtig zur Einordnung: Nicht zu jedem GOV-Objekt gibt es einen GenWiki-Artikel,
+  und ein vorhandener Artikel ist nur auffindbar, wenn im GenWiki die Weiterleitung
+  angelegt wurde. Ein fehlender Link heißt also „keine Zuordnung hinterlegt", nicht
+  „es gibt nichts".
+
+  Die Abfrage ist gecacht wie die GOV-Daten (Standard 7 Tage, über die
+  Einstellungsseite änderbar), auch das negative Ergebnis — sonst würde jeder Ort
+  ohne Zuordnung bei jedem Seitenaufruf neu anfragen.
+
+  Danke an Hermann Hartenthaler für das Issue und dafür, den Weg im CompGen-Forum
+  zu klären, sowie an Clemens Draschba, BSchwend und EWinter für die Antworten dort.
+
 ## [1.9.6] – 2026-08-01
 
 ### Geändert
