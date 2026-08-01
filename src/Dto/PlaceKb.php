@@ -27,13 +27,27 @@ final class PlaceKb
         'sonstige'      => 'Sonstige',
     ];
 
+    /**
+     * Host → Anzeigename für den Digitalisat-Link. Nur zur Beschriftung; jede
+     * andere URL wird trotzdem gespeichert und mit ihrem Host beschriftet.
+     */
+    private const LINK_LABELS = [
+        'archion.de'                => 'Archion',
+        'matricula-online.eu'       => 'Matricula',
+        'familysearch.org'          => 'FamilySearch',
+        'ancestry.de'               => 'Ancestry',
+        'ancestry.com'              => 'Ancestry',
+        'archivportal-d.de'         => 'Archivportal-D',
+        'deutsche-digitale-bibliothek.de' => 'DDB',
+    ];
+
     public function __construct(
         public readonly string  $id,
         public readonly string  $title,
         public readonly string  $type        = 'sonstige',
         public readonly ?int    $yearFrom    = null,
         public readonly ?int    $yearTo      = null,
-        public readonly ?string $archionUrl  = null,
+        public readonly ?string $url         = null,
         public readonly ?string $sourXref    = null,
     ) {}
 
@@ -41,13 +55,13 @@ final class PlaceKb
     public function toArray(): array
     {
         return [
-            'id'          => $this->id,
-            'title'       => $this->title,
-            'type'        => $this->type,
-            'year_from'   => $this->yearFrom,
-            'year_to'     => $this->yearTo,
-            'archion_url' => $this->archionUrl,
-            'sour_xref'   => $this->sourXref,
+            'id'        => $this->id,
+            'title'     => $this->title,
+            'type'      => $this->type,
+            'year_from' => $this->yearFrom,
+            'year_to'   => $this->yearTo,
+            'url'       => $this->url,
+            'sour_xref' => $this->sourXref,
         ];
     }
 
@@ -59,14 +73,38 @@ final class PlaceKb
             $type = 'sonstige';
         }
         return new self(
-            id:         (string) ($raw['id']    ?? ''),
-            title:      (string) ($raw['title'] ?? ''),
-            type:       $type,
-            yearFrom:   isset($raw['year_from']) ? (int) $raw['year_from'] : null,
-            yearTo:     isset($raw['year_to'])   ? (int) $raw['year_to']   : null,
-            archionUrl: self::strOrNull($raw, 'archion_url'),
-            sourXref:   self::strOrNull($raw, 'sour_xref'),
+            id:       (string) ($raw['id']    ?? ''),
+            title:    (string) ($raw['title'] ?? ''),
+            type:     $type,
+            yearFrom: isset($raw['year_from']) ? (int) $raw['year_from'] : null,
+            yearTo:   isset($raw['year_to'])   ? (int) $raw['year_to']   : null,
+            // `archion_url`: Schlüssel bis v1.9.5, wird weiter gelesen.
+            url:      self::strOrNull($raw, 'url') ?? self::strOrNull($raw, 'archion_url'),
+            sourXref: self::strOrNull($raw, 'sour_xref'),
         );
+    }
+
+    /**
+     * Beschriftung für den Digitalisat-Link: bekannter Anbieter, sonst der
+     * nackte Host. Nie geraten — was nicht erkannt wird, zeigt sich als Host.
+     */
+    public function linkLabel(): string
+    {
+        if ($this->url === null) {
+            return '';
+        }
+        $host = parse_url($this->url, PHP_URL_HOST);
+        if (!is_string($host) || $host === '') {
+            return 'Digitalisat';
+        }
+        $host = strtolower($host);
+        $host = str_starts_with($host, 'www.') ? substr($host, 4) : $host;
+        foreach (self::LINK_LABELS as $needle => $label) {
+            if ($host === $needle || str_ends_with($host, '.' . $needle)) {
+                return $label;
+            }
+        }
+        return $host;
     }
 
     public function timespanLabel(): string

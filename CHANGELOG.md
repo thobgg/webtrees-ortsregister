@@ -4,6 +4,28 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+## [1.9.6] – 2026-08-01
+
+### Geändert
+- **Der Digitalisat-Link am Kirchenbuch heißt nicht mehr nach einem einzelnen
+  Anbieter (#20).** Das Feld nahm schon immer jede beliebige URL an, hieß aber
+  „Archion-URL" — wer seinen Matricula-Link eintrug, musste raten, ob das
+  vorgesehen ist. Es heißt jetzt „Link zum Digitalisat", der Platzhalter nennt
+  keinen Anbieter mehr, und eine Hilfszeile sagt ausdrücklich, dass jeder
+  Anbieter erlaubt ist.
+- **Die Kachel beschriftet den Link nach seinem tatsächlichen Ziel.** Bisher
+  stand dort unabhängig vom Ziel „📖 Archion" — bei einer Matricula-URL also
+  schlicht falsch. Erkannt werden Archion, Matricula, FamilySearch, Ancestry,
+  Archivportal-D und die Deutsche Digitale Bibliothek; jede andere Adresse zeigt
+  ihren Host (z. B. `kirchenbuch.example.org`). Geraten wird nichts.
+
+### Intern
+- Der Schlüssel in `_kb_list.json` heißt jetzt `url` statt `archion_url`.
+  Bestehende Dateien werden unverändert weitergelesen, der alte Schlüssel bleibt
+  gültig — niemand verliert beim Update seine Links. Der Server nimmt beide
+  Feldnamen entgegen, damit auch ein Browser mit altem Script im Cache nichts
+  still verwirft.
+
 ## [1.9.5] – 2026-07-31
 
 ### Behoben

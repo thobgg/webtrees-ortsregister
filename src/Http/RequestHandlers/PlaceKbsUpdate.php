@@ -63,10 +63,10 @@ final class PlaceKbsUpdate implements RequestHandlerInterface
                         $tree, $placeName,
                         (string) ($body['title'] ?? ''),
                         (string) ($body['type']  ?? 'sonstige'),
-                        $this->intOrNull($body['year_from']   ?? null),
-                        $this->intOrNull($body['year_to']     ?? null),
-                        $this->strOrNull($body['archion_url'] ?? null),
-                        $this->strOrNull($body['sour_xref']   ?? null),
+                        $this->intOrNull($body['year_from'] ?? null),
+                        $this->intOrNull($body['year_to']   ?? null),
+                        $this->kbUrl($body),
+                        $this->strOrNull($body['sour_xref'] ?? null),
                     );
                     return $this->listResponse($tree, $placeName);
 
@@ -77,10 +77,10 @@ final class PlaceKbsUpdate implements RequestHandlerInterface
                         $tree, $placeName, $id,
                         (string) ($body['title'] ?? ''),
                         (string) ($body['type']  ?? 'sonstige'),
-                        $this->intOrNull($body['year_from']   ?? null),
-                        $this->intOrNull($body['year_to']     ?? null),
-                        $this->strOrNull($body['archion_url'] ?? null),
-                        $this->strOrNull($body['sour_xref']   ?? null),
+                        $this->intOrNull($body['year_from'] ?? null),
+                        $this->intOrNull($body['year_to']   ?? null),
+                        $this->kbUrl($body),
+                        $this->strOrNull($body['sour_xref'] ?? null),
                     );
                     return $this->listResponse($tree, $placeName);
 
@@ -157,6 +157,18 @@ final class PlaceKbsUpdate implements RequestHandlerInterface
     {
         if ($v === null || $v === '' || !is_numeric($v)) return null;
         return (int) $v;
+    }
+
+    /**
+     * Digitalisat-URL aus dem Body. `archion_url` war der Feldname bis v1.9.5 —
+     * wird noch akzeptiert, falls ein Browser das alte Script gecacht hat.
+     *
+     * @param array<string, mixed> $body
+     */
+    private function kbUrl(array $body): ?string
+    {
+        return $this->strOrNull($body['url'] ?? null)
+            ?? $this->strOrNull($body['archion_url'] ?? null);
     }
 
     /** @param mixed $v */
