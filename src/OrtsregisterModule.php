@@ -146,7 +146,7 @@ class OrtsregisterModule extends AbstractModule implements
     public function title(): string { return I18N::translate('Ortsregister'); }
     public function description(): string { return I18N::translate('Ortsregister mit visueller Landing-Page, Medien-Verknüpfung und (geplant) GOV-Integration.'); }
     public function customModuleAuthorName(): string { return 'Thomas Bugge'; }
-    public function customModuleVersion(): string { return '1.9.6'; }
+    public function customModuleVersion(): string { return '1.10.0'; }
     public function customModuleSupportUrl(): string { return ''; }
 
     /**
@@ -272,6 +272,15 @@ class OrtsregisterModule extends AbstractModule implements
         $container->set(
             GovHierarchyResolver::class,
             new GovHierarchyResolver($container->get(GovApiClient::class)),
+        );
+        // GenWiki-Artikel zur GOV-ID (#13) — gleicher Cache/TTL wie der GOV-Stack,
+        // die Zuordnung ändert sich noch seltener als die GOV-Daten selbst.
+        $container->set(
+            \Ortsregister\Service\GenWikiResolver::class,
+            new \Ortsregister\Service\GenWikiResolver(
+                $container->get(ApcuCacheService::class),
+                $this->govCacheTtl(),
+            ),
         );
         $container->set(
             PlaceEventCounter::class,
@@ -492,6 +501,9 @@ class OrtsregisterModule extends AbstractModule implements
                 $container->get(OperationBackup::class),
                 $container->get(\Ortsregister\Service\PlaceDescriptionService::class),
                 $container->get(\Ortsregister\Service\LocBindingService::class),
+                // Positionsbasiert: der Linker muss mit, um den Resolver dahinter zu erreichen.
+                new \Ortsregister\Service\GovExternalRefLinker(),
+                $container->get(\Ortsregister\Service\GenWikiResolver::class),
             ),
         );
     }

@@ -56,6 +56,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
         private readonly ?\Ortsregister\Service\LocBindingService $locBinding = null,
         // WICHTIG: neue Parameter ans ENDE — registerServices() konstruiert positionsbasiert.
         private readonly GovExternalRefLinker $govRefLinker = new GovExternalRefLinker(),
+        private readonly ?\Ortsregister\Service\GenWikiResolver $genWiki = null,
     ) {}
 
     protected function respond(
@@ -156,6 +157,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
         $govChain         = [];          // historisch (partOfIds)
         $govChainCurrent  = [];          // aktuell    (locatedInIds)
         $govExternalRefs  = [];          // kuratierte externe Kennungen des Orts (GND, GeoNames …)
+        $genwikiLink      = null;        // GenWiki-Artikel zum GOV-Objekt (#13), null wenn keine Zuordnung
         $hierarchyMode = $this->module->hierarchyMode();
         // IMMER beide Ketten laden — GOV liefert nicht für alle Orte locatedInIds,
         // dann muss die View graceful auf historische Kette zurückfallen können.
@@ -180,6 +182,11 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
                 foreach ($this->govHierarchy->resolveWithEdges($govId, \Ortsregister\Service\GovHierarchyResolver::MODE_CURRENT) as $step) {
                     $govChainCurrent[] = $mapStep($step);
                 }
+            } catch (Throwable) {}
+            // GenWiki-Artikel zum GOV-Objekt (#13). Gecacht wie die GOV-Abfragen,
+            // auch negativ; ein Ausfall darf die Seite nicht kosten.
+            try {
+                $genwikiLink = $this->genWiki?->resolve($govId);
             } catch (Throwable) {}
         }
 
@@ -394,6 +401,7 @@ class OrteDetailPage extends AbstractOrtsregisterHandler
             'gov_chain'          => $govChain,
             'gov_chain_current'  => $govChainCurrent,
             'gov_external_refs'  => $govExternalRefs,
+            'genwiki_link'       => $genwikiLink,
             'gov_hierarchy_mode' => $hierarchyMode,
             'place_id'           => $placeId,
             'event_counts' => $eventCounts,
