@@ -4,6 +4,30 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+## [1.11.0] – 2026-08-02
+
+### Geändert
+- **Die Notbremse im Markdown-Editor ist raus, dafür braucht es linkenhancer
+  1.2.14 (#19).** Seit 1.9.3 zog ein eigener Klick-Handler nach jedem Druck auf
+  einen Werkzeugleisten-Knopf den Editor-Stand in die Textarea, weil „Link",
+  „Bild" und „Hervorheben" das nicht selbst taten. Die Ursache lag in
+  tiny-markdown-editor (`wrapSelection` ohne `fireChange`), ist dort behoben
+  (#181) und über linkenhancer 1.2.14 ausgeliefert. Alle neun Knöpfe ziehen
+  jetzt von sich aus mit — nachgemessen mit den Browser-Tests, einzeln pro Knopf.
+
+  **Damit steigt die Mindestversion von linkenhancer auf 1.2.14.** Wer den
+  visuellen Editor nutzt und bei 1.2.13 bleibt, verliert bei diesen drei Knöpfen
+  wieder still seine Eingaben. Der Hinweis auf der Einstellungsseite und beide
+  READMEs nennen die neue Mindestversion.
+
+  Der Abgleich unmittelbar vor dem Speichern bleibt bestehen. Er kostet nichts
+  und deckt auch Wege ab, die über keinen Knopf laufen.
+
+### Intern
+- Der Browser-Test für Strg+K prüfte bisher, dass diese Tastenkombination einen
+  Desync *erzeugt* — er hielt den Fehler als erwartetes Verhalten fest. Mit
+  1.2.14 trifft das nicht mehr zu; der Test prüft jetzt das Gegenteil.
+
 ## [1.10.0] – 2026-08-01
 
 ### Neu
