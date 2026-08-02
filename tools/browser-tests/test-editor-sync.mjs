@@ -59,7 +59,8 @@ for (const knopf of KNOEPFE) {
 
 console.log('\n--- Speichern zieht auch ohne Knopf-Klick nach ---');
 {
-  // Strg+K löst denselben Befehl aus, umgeht aber den Klick-Handler.
+  // Strg+K löst denselben Befehl aus, ohne dass ein Knopf angeklickt wird.
+  // Bis linkenhancer 1.2.13 lief die Textarea hier auseinander; seit 1.2.14 nicht mehr.
   const page = await rechercheModal();
   const errs = [];
   page.on('pageerror', e => errs.push(e.message));
@@ -69,7 +70,7 @@ console.log('\n--- Speichern zieht auch ohne Knopf-Klick nach ---');
   await page.keyboard.press('Control+k');
   await page.waitForTimeout(600);
   const s = await state(page);
-  check('Strg+K erzeugt einen Desync (der Klick-Handler greift hier nicht)', s.ed !== s.ta, s);
+  check('Strg+K hält Editor und Textarea beisammen', gleich(s.ta, s.ed), s);
 
   await page.click('#ortsregister-notes-save');
   await page.waitForTimeout(500);

@@ -1454,27 +1454,22 @@ foreach ($bilder as $medium) {
         });
     }
 
-    // ---- Notbremse gegen auseinanderlaufenden Editor und Textarea ----
+    // ---- Abgleich Editor → Textarea vor dem Speichern ----
     // Der visuelle Editor (linkenhancer/TinyMDE) versteckt die Textarea und schreibt
-    // seinen Inhalt normalerweise bei jeder Änderung dorthin zurück. Bei den Knöpfen
-    // „Link", „Bild" und „Hervorheben" unterbleibt das (wrapSelection ohne fireChange,
-    // siehe linkenhancer#118) — die Änderung ist sichtbar, geht beim Speichern aber
-    // verloren. Ein synthetisches input-Ereignis lässt den Editor seinen Inhalt aus
-    // dem DOM neu einlesen und nachziehen.
+    // seinen Inhalt bei jeder Änderung dorthin zurück. Bis linkenhancer 1.2.13 tat er
+    // das bei „Link", „Bild" und „Hervorheben" nicht (wrapSelection ohne fireChange,
+    // linkenhancer#118 / tiny-markdown-editor#181) — die Änderung war sichtbar, ging
+    // beim Speichern aber still verloren. Seit 1.2.14 ziehen alle Knöpfe mit, auch
+    // über Tastenkombinationen; der Klick-Handler von damals ist entfallen.
     //
-    // Aufgerufen wird das an zwei Stellen: nach jedem Klick auf einen Knopf der
-    // Werkzeugleiste (damit der Zustand sofort stimmt) und vor jedem Speichern
-    // (damit auch ein künftiger, noch unbekannter Weg nichts verlieren kann).
+    // Der Abgleich vor dem Speichern bleibt: ein synthetisches input-Ereignis lässt
+    // den Editor seinen Inhalt aus dem DOM neu einlesen. Er kostet nichts und deckt
+    // auch künftige, noch unbekannte Wege ab.
     window.ortsregisterSyncMarkdownEditors = function () {
         document.querySelectorAll('.TinyMDE').forEach(function (editor) {
             editor.dispatchEvent(new InputEvent('input', { bubbles: true }));
         });
     };
-    document.addEventListener('click', function (e) {
-        if (e.target.closest('.TMCommandButton') !== null) {
-            window.ortsregisterSyncMarkdownEditors();
-        }
-    });
 })();
 </script>
 <?php endif ?>
