@@ -609,32 +609,52 @@ class OrtsregisterModule extends AbstractModule implements
         return __DIR__ . '/../resources/';
     }
 
+    /**
+     * Groesse des Menuesymbols je Theme, ausgelesen aus deren eigenen Symbolen.
+     * Themes ohne Menuesymbole - minimal, F.A.B. und die meisten fremden -
+     * stehen absichtlich nicht in der Liste.
+     *
+     * @var array<string,int>
+     */
+    private const SYMBOLGROESSE = [
+        'webtrees' => 50,
+        'colors'   => 40,
+        'xenea'    => 28,
+        'clouds'   => 22,
+    ];
+
+    /**
+     * Menuesymbol, das sich dem Theme fuegt statt es zu ueberstimmen.
+     *
+     * Vorher stand hier ein auf 50 Pixel skaliertes PNG, eingesetzt ueber
+     * `content: url(...)`, und zwar in jedem Theme. Eingefuegter Inhalt laesst
+     * sich per CSS nicht groessern oder kleinern - das Theme konnte sich also
+     * nicht wehren -, und Themes ganz ohne Menuesymbole bekamen trotzdem eines.
+     * In Colors war das Symbol dadurch mehr als doppelt so gross wie alle
+     * anderen, in minimal stand ein Bild mitten in einer reinen Textzeile.
+     */
     public function headContent(): string
     {
-        $path = $this->resourcesFolder() . 'menu-icon.png';
-        if (!file_exists($path) || !class_exists('Imagick')) {
+        $pfad = $this->resourcesFolder() . 'menu-icon.svg';
+
+        if (!file_exists($pfad)) {
             return '';
         }
-        try {
-            $im = new \Imagick($path);
 
-            // Hintergrund-Pixel (oben-links) bestimmen und alle gleichen
-            // Pixel transparent setzen – fuzz ~10 % toleriert leichte Abweichungen
-            $bg = $im->getImagePixelColor(0, 0)->getColorAsString();
-            $im->setImageMatte(true);
-            $im->transparentPaintImage($bg, 0.0, (int) (0.10 * \Imagick::getQuantum()), false);
+        $symbol = 'data:image/svg+xml;base64,' . base64_encode((string) file_get_contents($pfad));
+        $klasse = '.menu-ortsregister .nav-link::before';
 
-            $im->thumbnailImage(50, 50, true, true);
-            $im->setImageFormat('png');
-            $b64 = base64_encode($im->getImageBlob());
-            $im->destroy();
-        } catch (\Throwable) {
-            return '';
+        // Grundzustand: kein Symbol.
+        $css = $klasse . '{content:none}';
+
+        foreach (self::SYMBOLGROESSE as $theme => $px) {
+            $css .= '.wt-theme-' . $theme . ' ' . $klasse . '{'
+                . 'content:"";display:block;margin:0 auto;'
+                . 'width:' . $px . 'px;height:' . $px . 'px;'
+                . 'background:url("' . $symbol . '") center/contain no-repeat}';
         }
-        return '<style>'
-            . '.menu-ortsregister .nav-link:before{'
-            . 'content:url("data:image/png;base64,' . $b64 . '")}'
-            . '</style>';
+
+        return '<style>' . $css . '</style>';
     }
 
     private const SCHEMA_VERSION = 2;

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <!-- Ortsregister: Landkarte mit Ortsmarke. Flach und einfarbig, damit das
+       Symbol neben den gezeichneten Symbolen der Themes nicht auffaellt, und
+       in einem Ton, der auf hellen wie dunklen Menueleisten steht. -->
+  <path fill="#4f8a5b" d="M4 12l13-4v28L4 40zm15-4l13 4v28l-13-4zm15 4l10-4v28l-10 4z"/>
+  <path fill="#fff" d="M30 6c-4.4 0-8 3.6-8 8 0 6 8 15 8 15s8-9 8-15c0-4.4-3.6-8-8-8z"/>
+  <circle cx="30" cy="14" r="3.2" fill="#4f8a5b"/>
+</svg>
