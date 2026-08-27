@@ -1,6 +1,15 @@
 <?php
 declare(strict_types=1);
 
+// Nur in der Kommandozeile. Diese Datei liegt in einem oeffentlichen Repo und
+// oeffnet eine Datenbankverbindung mit den Rechten der Instanz; ueber den
+// Webserver aufgerufen waere sie eine Einladung. Am Aufruf per CLI aendert das
+// nichts.
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit;
+}
+
 // Diagnose: rohes GEDCOM eines _LOC-Records (oder aller _LOC mit _TODO) dumpen.
 // Pure PDO, kein Autoload — läuft mit jedem PHP, das pdo_mysql hat (NAS: /usr/local/bin/php82).
 //   php82 tools/loc_record_dump.php X2909        → ein Record

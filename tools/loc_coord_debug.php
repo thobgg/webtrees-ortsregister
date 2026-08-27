@@ -4,6 +4,14 @@
 //
 //   <php-mit-pdo_mysql> modules_v4/ortsregister/tools/loc_coord_debug.php
 
+// Nur in der Kommandozeile. Diese Datei liegt in einem oeffentlichen Repo und
+// oeffnet eine Datenbankverbindung mit den Rechten der Instanz; ueber den
+// Webserver aufgerufen waere sie eine Einladung. Am Aufruf per CLI aendert das
+// nichts.
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit;
+}
 $root = dirname(__DIR__, 3);
 $cfg  = parse_ini_file($root . '/data/config.ini.php');
 if ($cfg === false) { fwrite(STDERR, "config.ini.php nicht lesbar\n"); exit(1); }

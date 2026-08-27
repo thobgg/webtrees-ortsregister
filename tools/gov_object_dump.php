@@ -5,6 +5,14 @@
 //   php modules_v4/ortsregister/tools/gov_object_dump.php [ITEMID]
 //   (Default ITEMID = OBEACH_W7067 = Oberurbach)
 
+// Nur in der Kommandozeile. Diese Datei liegt in einem oeffentlichen Repo und
+// oeffnet eine Datenbankverbindung mit den Rechten der Instanz; ueber den
+// Webserver aufgerufen waere sie eine Einladung. Am Aufruf per CLI aendert das
+// nichts.
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit;
+}
 $id  = $argv[1] ?? 'OBEACH_W7067';
 $url = 'https://gov.genealogy.net/api/getObject?itemId=' . rawurlencode($id);
 $ctx = stream_context_create(['http' => [
