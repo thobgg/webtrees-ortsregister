@@ -4,6 +4,26 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+## [1.11.1] – 2026-08-27
+
+### Behoben
+- **Das Menüsymbol überstimmte jedes Theme.** Es wurde über `content: url(...)`
+  eingesetzt, fest auf 50 Pixel skaliert und in *jedem* Theme. Über `content:`
+  eingefügte Bilder ignorieren `width` und `height` – das Theme konnte sich also
+  nicht wehren. Gemessen sind die Symbole der Themes 50 Pixel groß (webtrees),
+  40 (Colors), 28 (Xenea), 22 (Clouds); minimal, F.A.B. und die meisten fremden
+  Themes haben gar keine. In Colors war unseres dadurch mehr als doppelt so groß
+  wie alle anderen, in minimal stand ein Bild mitten in einer reinen Textzeile.
+
+  Jetzt ist es ein Hintergrundbild in einer Box fester Größe und erscheint nur
+  in Themes, die selbst Menüsymbole zeigen; erkannt an der Klasse, die webtrees
+  am `<body>` setzt. Statt des Fotos ein flaches SVG. Damit entfällt auch
+  Imagick im Seitenkopf.
+
+  Gemeldet wurde das für das Schwestermodul
+  [Sammlungen](https://github.com/thobgg/webtrees-sammlungen/issues/22) von
+  **@ro-la**; hier stand derselbe Code.
+
 ## [1.11.0] – 2026-08-02
 
 ### Geändert
