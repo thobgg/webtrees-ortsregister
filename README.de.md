@@ -7,7 +7,7 @@
 | | |
 |---|---|
 | Modul-Name | `ortsregister` |
-| Version | 1.11.1 |
+| Version | 1.12.0 |
 | webtrees | 2.2.x |
 | PHP | 8.2 – 8.4 |
 | Lizenz | GPL-3.0-or-later |
@@ -69,6 +69,8 @@ Leaflet-/OpenStreetMap-Ansicht, der Ort aus seinen Koordinaten verortet:
   und die externen GOV-Kennungen (GND, GeoNames, LEO-BW, Wikidata) als fertige Links,
   dazu der GenWiki-Artikel zum GOV-Objekt, sofern im GenWiki eine Zuordnung hinterlegt ist
 - Leaflet-Karte mit MarkerCluster
+- **Verwaltung im Menü** (nur für Administratoren): Übersicht und Einstellungen,
+  mit Rückweg in den Baum, aus dem man kam
 - **Detailseite** pro Ort: Ereignis-Statistik (Geburten/Heiraten/Tode), Medien-Galerie
   mit Lightbox, Notizen/Aufgaben/Kirchenbuch-Logbuch (Markdown)
 - **Orts-Hygiene**: Merge & Umbenennen mit Vorschau, JSON-Backup und Undo; kuratierte

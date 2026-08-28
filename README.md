@@ -7,7 +7,7 @@
 | | |
 |---|---|
 | Module name | `ortsregister` |
-| Version | 1.11.1 |
+| Version | 1.12.0 |
 | webtrees | 2.2.x |
 | PHP | 8.2 – 8.4 |
 | License | GPL-3.0-or-later |
@@ -68,6 +68,8 @@ Leaflet / OpenStreetMap view, the place located from its coordinates:
   and GOV's external identifiers (GND, GeoNames, LEO-BW, Wikidata) as ready links,
   plus the GenWiki article for the GOV object where GenWiki has a mapping on file
 - Leaflet map with MarkerCluster
+- **Admin area in the menu** (administrators only): overview and settings,
+  with a way back to the tree you came from
 - **Detail page** per place: event statistics (births/marriages/deaths), media gallery
   with lightbox, notes/tasks/church-book log (Markdown)
 - **Place hygiene**: merge & rename with preview, JSON backup and undo; curated data

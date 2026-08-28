@@ -4,6 +4,41 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung:
 
 ## [Unreleased]
 
+## [1.12.0] – 2026-08-28
+
+Die Einstellungen lagen im falschen Layout, und in die Verwaltung kam man nur
+über die Steuerleiste. Beides fiel beim Schwestermodul
+[Sammlungen](https://github.com/thobgg/webtrees-sammlungen) auf – dort hatte
+**@ro-la** ein Menü für die Verwaltung vorgeschlagen; hier stand dieselbe Lücke.
+
+### Hinzugefügt
+- **Verwaltung direkt aus dem Menü.** Für Administratoren klappt der Menüpunkt
+  jetzt auf: Übersicht, Einstellungen. Für alle anderen bleibt es ein einzelner
+  Verweis – ein Klick, Ortsregister; ein Aufklappmenü kostet dort einen Handgriff
+  und bringt nichts.
+- **Rückweg aus den Einstellungen in den Baum, aus dem man kam.** Die
+  Einstellungen gelten baumübergreifend, die Route kennt deshalb keinen Baum –
+  und das Verwaltungs-Layout zeigt kein Genealogie-Menü. Der Menüpunkt gibt den
+  Baum jetzt mit, die Seite bietet einen Rückweg genau dorthin an und behält ihn
+  über das Speichern hinweg. Nachgeschlagen wird gegen die vorhandenen Bäume:
+  ein erfundener Name führt zu keinem Verweis, nicht zu einem falschen.
+
+### Behoben
+- **Die Einstellungsseite lief im Baum-Layout** und musste sich dafür einen Baum
+  greifen – den ersten, den der TreeService hergab, im Code als „belanglos"
+  kommentiert. Bei einer Installation mit einem Baum fällt das nicht auf. Wer
+  mehrere hat, saß in Baum B, öffnete die Einstellungen und stand mit Kopfzeile,
+  Menü und Suche sichtbar in Baum A – obwohl die Einstellungen für alle Bäume
+  gelten. Jetzt das Verwaltungs-Layout, wie webtrees es für baumübergreifende
+  Seiten vorsieht; der Baum wird nirgends mehr gebraucht.
+
+### Sonstiges
+- **Die vier Datenbank-Werkzeuge unter `tools/` antworten über den Webserver mit
+  404.** Sie lesen `data/config.ini.php` und öffnen damit eine Verbindung mit den
+  Rechten der Instanz. Zugangsdaten stehen in keinem der Skripte, aber sie liegen
+  in einem öffentlichen Repo – liegt eines einmal im Web-Verzeichnis, ist der
+  Aufruf über den Browser eine Einladung. An der Kommandozeile ändert sich nichts.
+
 ## [1.11.1] – 2026-08-27
 
 ### Behoben
