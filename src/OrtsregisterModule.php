@@ -596,11 +596,43 @@ class OrtsregisterModule extends AbstractModule implements
             return null;
         }
 
+        $register = route('ortsregister.orte', ['tree' => $tree->name()]);
+
+        // Fuer alle anderen bleibt es ein einzelner Verweis: ein Klick,
+        // Ortsregister. Ein Aufklappmenue kostet dort einen Handgriff und
+        // bringt nichts.
+        if (!Auth::isAdmin()) {
+            return new Menu(
+                I18N::translate('Ortsregister'),
+                $register,
+                'menu-ortsregister',
+                ['rel' => 'nofollow'],
+            );
+        }
+
+        // Verwalter kamen bisher nur ueber die Steuerleiste in die
+        // Einstellungen. Der Baum wird mitgegeben, damit die Seite - sie gilt
+        // baumuebergreifend und weiss von sich aus nichts von einem Baum -
+        // einen Rueckweg genau hierher anbieten kann.
         return new Menu(
             I18N::translate('Ortsregister'),
-            route('ortsregister.orte', ['tree' => $tree->name()]),
+            $register,
             'menu-ortsregister',
             ['rel' => 'nofollow'],
+            [
+                new Menu(
+                    I18N::translate('Übersicht'),
+                    $register,
+                    'menu-ortsregister-orte',
+                    ['rel' => 'nofollow'],
+                ),
+                new Menu(
+                    I18N::translate('Einstellungen'),
+                    route('ortsregister.admin.config', ['tree' => $tree->name()]),
+                    'menu-ortsregister-einstellungen',
+                    ['rel' => 'nofollow'],
+                ),
+            ],
         );
     }
 
@@ -621,6 +653,17 @@ class OrtsregisterModule extends AbstractModule implements
         'colors'   => 40,
         'xenea'    => 28,
         'clouds'   => 22,
+    ];
+
+    /**
+     * Dasselbe fuer die Eintraege im Aufklappmenue - dort fuehren die
+     * Kernmenues ein kleineres Symbol.
+     *
+     * @var array<string,int>
+     */
+    private const SYMBOLGROESSE_UNTERMENUE = [
+        'webtrees' => 24,
+        'xenea'    => 22,
     ];
 
     /**
@@ -650,6 +693,19 @@ class OrtsregisterModule extends AbstractModule implements
         foreach (self::SYMBOLGROESSE as $theme => $px) {
             $css .= '.wt-theme-' . $theme . ' ' . $klasse . '{'
                 . 'content:"";display:block;margin:0 auto;'
+                . 'width:' . $px . 'px;height:' . $px . 'px;'
+                . 'background:url("' . $symbol . '") center/contain no-repeat}';
+        }
+
+        // Ohne eigene Regel staende unser Untermenue als nackter Text neben
+        // bebilderten Kerneintraegen.
+        $unten = '.menu-ortsregister .dropdown-item::before';
+        $css .= $unten . '{content:none}';
+
+        foreach (self::SYMBOLGROESSE_UNTERMENUE as $theme => $px) {
+            $css .= '.wt-theme-' . $theme . ' ' . $unten . '{'
+                . 'content:"";display:inline-block;vertical-align:middle;'
+                . 'margin-inline-end:.5rem;'
                 . 'width:' . $px . 'px;height:' . $px . 'px;'
                 . 'background:url("' . $symbol . '") center/contain no-repeat}';
         }

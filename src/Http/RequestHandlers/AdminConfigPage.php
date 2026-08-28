@@ -9,6 +9,10 @@ use Fisharebest\Webtrees\Auth;
 use Fisharebest\Webtrees\Http\Exceptions\HttpAccessDeniedException;
 use Fisharebest\Webtrees\Http\ViewResponseTrait;
 use Fisharebest\Webtrees\I18N;
+use Fisharebest\Webtrees\Registry;
+use Fisharebest\Webtrees\Services\TreeService;
+use Fisharebest\Webtrees\Tree;
+use Fisharebest\Webtrees\Validator;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -46,15 +50,43 @@ class AdminConfigPage implements RequestHandlerInterface
         if ($request->getMethod() === 'POST') {
             return $this->save($request);
         }
-        return $this->showForm();
+        return $this->showForm($request);
     }
 
-    private function showForm(): ResponseInterface
+    /**
+     * Der Baum, aus dem der Aufruf kam - oder null.
+     *
+     * Die Einstellungen gelten baumuebergreifend; die Route kennt deshalb
+     * keinen Baum. Wer aus dem Menue eines Baums kommt, gibt ihn als
+     * Abfrageparameter mit, damit die Seite einen Rueckweg genau dorthin
+     * anbieten kann. Nachgeschlagen wird gegen die vorhandenen Baeume - ein
+     * erfundener Name fuehrt zu keinem Verweis, nicht zu einem falschen.
+     */
+    private function baumAusDerAnfrage(ServerRequestInterface $request): ?Tree
     {
+        $name = Validator::queryParams($request)->string('tree', '');
+
+        if ($name === '') {
+            return null;
+        }
+
+        return Registry::container()->get(TreeService::class)->all()->get($name);
+    }
+
+    private function showForm(ServerRequestInterface $request): ResponseInterface
+    {
+        $baum = $this->baumAusDerAnfrage($request);
+
         return $this->viewResponse(
             OrtsregisterModule::MODULE_NAME . '::admin-config',
             [
                 'title'            => I18N::translate('Ortsregister – Einstellungen'),
+                'zurueck'          => $baum === null
+                    ? ''
+                    : route('ortsregister.orte', ['tree' => $baum->name()]),
+                'formular_ziel'    => $baum === null
+                    ? route('ortsregister.admin.config')
+                    : route('ortsregister.admin.config', ['tree' => $baum->name()]),
                 'module'           => $this->module,
                 'wiki_enabled'     => $this->module->wikiEnabled(),
                 'wiki_dist_km'     => $this->module->wikiDistanceKm(),
@@ -131,6 +163,10 @@ class AdminConfigPage implements RequestHandlerInterface
             $this->module->setPreference($key, isset($params[$key]) ? '1' : '0');
         }
 
-        return redirect(route('ortsregister.admin.config'));
+        $baum = $this->baumAusDerAnfrage($request);
+
+        return redirect($baum === null
+            ? route('ortsregister.admin.config')
+            : route('ortsregister.admin.config', ['tree' => $baum->name()]));
     }
 }

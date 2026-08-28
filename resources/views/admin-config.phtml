@@ -6,6 +6,8 @@ use Ortsregister\OrtsregisterModule;
 
 /** @var \Ortsregister\OrtsregisterModule $module */
 /** @var string $title */
+/** @var string $zurueck */
+/** @var string $formular_ziel */
 /** @var bool   $wiki_enabled */
 /** @var int    $wiki_dist_km */
 /** @var int    $wiki_cache_ttl */
@@ -36,11 +38,19 @@ $secondsToDays = static fn(int $s): string => $s >= 86400
 
 <h1><?= e($title) ?></h1>
 
+<?php if ($zurueck !== '') : ?>
+    <p class="mb-2">
+        <a href="<?= e($zurueck) ?>" class="text-decoration-none">
+            ← <?= I18N::translate('Ortsregister') ?>
+        </a>
+    </p>
+<?php endif ?>
+
 <p class="text-muted">
     <?= I18N::translate('Konfiguration des Ortsregister-Moduls. Änderungen wirken sofort. Vorhandene Cache-Einträge bleiben aktiv bis sie ablaufen.') ?>
 </p>
 
-<form method="POST" action="<?= e(route('ortsregister.admin.config')) ?>">
+<form method="POST" action="<?= e($formular_ziel) ?>">
     <?= csrf_field() ?>
 
     <fieldset class="card mb-4">
