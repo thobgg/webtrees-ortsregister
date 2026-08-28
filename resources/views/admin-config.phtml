@@ -1,5 +1,6 @@
 <?php
 
+use Fisharebest\Webtrees\Http\RequestHandlers\ControlPanel;
 use Fisharebest\Webtrees\I18N;
 use Ortsregister\OrtsregisterModule;
 
@@ -26,7 +27,12 @@ $secondsToDays = static fn(int $s): string => $s >= 86400
     ? round($s / 86400, 1) . ' Tage'
     : round($s / 3600, 1) . ' h';
 ?>
-<div class="container-lg mt-4 mb-5">
+<div class="mt-4 mb-5">
+
+<?= view('components/breadcrumbs', ['links' => [
+    route(ControlPanel::class) => I18N::translate('Control panel'),
+    e($title),
+]]) ?>
 
 <h1><?= e($title) ?></h1>
 

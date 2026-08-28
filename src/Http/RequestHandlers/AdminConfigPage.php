@@ -9,12 +9,9 @@ use Fisharebest\Webtrees\Auth;
 use Fisharebest\Webtrees\Http\Exceptions\HttpAccessDeniedException;
 use Fisharebest\Webtrees\Http\ViewResponseTrait;
 use Fisharebest\Webtrees\I18N;
-use Fisharebest\Webtrees\Registry;
-use Fisharebest\Webtrees\Services\TreeService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use Throwable;
 
 /**
  * GET/POST /admin/module/ortsregister
@@ -27,7 +24,17 @@ class AdminConfigPage implements RequestHandlerInterface
 
     public function __construct(
         private readonly OrtsregisterModule $module,
-    ) {}
+    ) {
+        // Die Einstellungen gelten baumuebergreifend, also gehoert die Seite
+        // ins Verwaltungs-Layout. Vorher lief sie im Baum-Layout und musste
+        // sich dafuer irgendeinen Baum greifen - bei mehreren Baeumen stand
+        // man dann sichtbar im falschen.
+        //
+        // Zuweisung im Konstruktor, nicht als Property: ein abweichender
+        // Default kollidiert mit ViewResponseTrait::$layout und laesst schon
+        // das Laden der Klasse scheitern.
+        $this->layout = 'layouts/administration';
+    }
 
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
@@ -44,22 +51,10 @@ class AdminConfigPage implements RequestHandlerInterface
 
     private function showForm(): ResponseInterface
     {
-        // Layout default.phtml verlangt $tree im Scope (für Menü etc.).
-        // Wir nehmen den ersten verfügbaren Baum; im Admin-Kontext ist das
-        // belanglos, der Baum wird hier nur für Menü-Rendering gebraucht.
-        $tree = null;
-        try {
-            $treeService = Registry::container()->get(TreeService::class);
-            $tree        = $treeService->all()->first();
-        } catch (Throwable) {
-            // ohne Baum geht's auch — Layout muss es vertragen
-        }
-
         return $this->viewResponse(
             OrtsregisterModule::MODULE_NAME . '::admin-config',
             [
                 'title'            => I18N::translate('Ortsregister – Einstellungen'),
-                'tree'             => $tree,
                 'module'           => $this->module,
                 'wiki_enabled'     => $this->module->wikiEnabled(),
                 'wiki_dist_km'     => $this->module->wikiDistanceKm(),
