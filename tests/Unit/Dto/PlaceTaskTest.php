@@ -53,18 +53,18 @@ final class PlaceTaskTest extends TestCase
 
     public function testToggledPreservesMetadata(): void
     {
-        $t = (new PlaceTask('x', 'y', PlaceTask::STATUS_OPEN, '2026-01-02', 'Thomas'))->toggled();
+        $t = (new PlaceTask('x', 'y', PlaceTask::STATUS_OPEN, '2026-01-02', 'Anna'))->toggled();
         self::assertSame(PlaceTask::STATUS_DONE, $t->status);
         self::assertSame('2026-01-02', $t->created);
-        self::assertSame('Thomas', $t->author);
+        self::assertSame('Anna', $t->author);
     }
 
     public function testWithTextPreservesMetadata(): void
     {
-        $t = (new PlaceTask('x', 'y', PlaceTask::STATUS_DONE, '2026-01-02', 'Thomas'))->withText('neu');
+        $t = (new PlaceTask('x', 'y', PlaceTask::STATUS_DONE, '2026-01-02', 'Anna'))->withText('neu');
         self::assertSame('neu', $t->text);
         self::assertSame(PlaceTask::STATUS_DONE, $t->status);
         self::assertSame('2026-01-02', $t->created);
-        self::assertSame('Thomas', $t->author);
+        self::assertSame('Anna', $t->author);
     }
 }

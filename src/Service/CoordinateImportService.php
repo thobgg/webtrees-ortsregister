@@ -17,7 +17,7 @@ use RuntimeException;
  * Importiert PLAC-Subtag-Koordinaten (MAP/LATI/LONG) aus dem GEDCOM
  * in die webtrees-Standardtabelle `place_location`.
  *
- * Hintergrund: Ahnenblatt / Gramps / FTM / MyHeritage exportieren
+ * Hintergrund: viele Genealogie-Programme exportieren
  * Koordinaten als PLAC-Subtags. webtrees ignoriert diese bei der
  * Anzeige und nutzt nur `place_location`. Diese Operation überträgt
  * die Daten einmalig.

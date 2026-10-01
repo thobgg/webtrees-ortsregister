@@ -37,13 +37,13 @@ final class LocTodoMapperTest extends TestCase
             'KB Musterdorf 1720-1750 durchsehen',
             PlaceTask::STATUS_DONE,
             '2026-07-10',
-            'thomas',
+            'anna',
         ));
 
         self::assertSame(
             "1 _TODO KB Musterdorf 1720-1750 durchsehen\n"
             . "2 DATE 10 JUL 2026\n"
-            . "2 _WT_USER thomas\n"
+            . "2 _WT_USER anna\n"
             . "2 STAT completed\n"
             . '2 _UID abc123def456',
             $fact,
@@ -64,7 +64,7 @@ final class LocTodoMapperTest extends TestCase
     public function testRoundTripPreservesEverything(): void
     {
         $original = [
-            $this->task('Taufen 1700-1750', PlaceTask::STATUS_DONE, '2026-06-28', 'thomas', 'aaa111bbb222'),
+            $this->task('Taufen 1700-1750', PlaceTask::STATUS_DONE, '2026-06-28', 'anna', 'aaa111bbb222'),
             $this->task("Beerdigungen prüfen\nauch Nachbardorf", PlaceTask::STATUS_OPEN, '2026-07-10', 'hermann', 'ccc333ddd444'),
         ];
         $gedcom = $this->mapper->setTasks("0 @L1@ _LOC\n1 NAME Weiler\n1 _GOV WEILER_W1", $original);

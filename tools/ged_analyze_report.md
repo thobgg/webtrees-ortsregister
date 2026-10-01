@@ -1,6 +1,6 @@
 # GEDCOM-Inventur Report
 
-Erzeugt von `tools/ged_analyze.py`. Anthropic-safe.
+Erzeugt von `tools/ged_analyze.py`. Anonymisiert.
 
 ## Header (gefiltert)
 - **gedcom_version**: `5.5.1`

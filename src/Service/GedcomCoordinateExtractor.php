@@ -7,7 +7,7 @@ namespace Ortsregister\Service;
 /**
  * Extrahiert PLAC-Koordinaten (MAP/LATI/LONG) aus einem GEDCOM-Record-String.
  *
- * Viele Genealogie-Programme (Ahnenblatt, Gramps, FTM, MyHeritage) exportieren
+ * Viele Genealogie-Programme exportieren
  * Koordinaten als PLAC-Subtags. webtrees ignoriert sie bei der Anzeige und
  * nutzt nur die separate `place_location`-Tabelle. Dieser Extractor parst
  * die Subtags, der CoordinateImportService schreibt sie in place_location.

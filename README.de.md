@@ -37,7 +37,7 @@ Vorsichtsmaßnahmen:
 
 ## Warum es das gibt
 
-Ich wollte mein Familienarchiv in webtrees, nicht daneben. Vorher lag die Forschung in Ahnenblatt oder Gramps, die Fotos, Urkunden und Digitalisate irgendwo sonst. webtrees verwaltet den Stammbaum sauber und bringt ein durchdachtes Rechtesystem mit. Eine Medienverwaltung hat es auch, aber die zeigt nur, was als Medienobjekt im GEDCOM steckt.
+Ich wollte mein Familienarchiv in webtrees, nicht daneben. Vorher lag die Forschung in einem Desktop-Programm, die Fotos, Urkunden und Digitalisate irgendwo sonst. webtrees verwaltet den Stammbaum sauber und bringt ein durchdachtes Rechtesystem mit. Eine Medienverwaltung hat es auch, aber die zeigt nur, was als Medienobjekt im GEDCOM steckt.
 
 Ortsregister ordnet das Archiv nach Orten. Die Dateien liegen in Ordnern und werden angezeigt, ohne dass jede erst in den Stammbaum importiert sein muss. Jeder Ort wird zu einer Seite, auf der zusammenkommt, was du über ihn hast: Fotos, Kirchenbücher, Quellen, Karte, Notizen, ein Recherche-Tagebuch. Dazu Werkzeug, um die Orte in Ordnung zu halten, also Schreibvarianten zusammenzuführen oder umzubenennen, mit Vorschau und Backup.
 

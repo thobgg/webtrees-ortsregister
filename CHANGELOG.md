@@ -672,7 +672,7 @@ Qualitätssicherung abgesichert: statische Analyse (PHPStan, Level 5) und
   ohne Place-Kinder). Persistiert pro User. Default „Alle Ebenen".
 - **Koordinaten-Import**: `MAP/LATI/LONG`-Subtags aus PLAC-Strukturen werden
   in die webtrees-Standardtabelle `place_location` übertragen. Adressiert
-  Ahnenblatt/Gramps/FTM/MyHeritage-Exporte, deren Koordinaten webtrees
+  Exporte anderer Genealogie-Programme, deren Koordinaten webtrees
   sonst ignoriert. Idempotent — überschreibt keine vorhandenen Koordinaten.
 - **Merge-Spalte einklappbar** via „Merge-Modus"-Button. Standard-Ansicht
   kompakt, Auswahl-Radios nur bei expliziter Aktivierung.

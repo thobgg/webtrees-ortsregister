@@ -15,7 +15,7 @@ use Ortsregister\Dto\PlaceTask;
  *
  *   1 _TODO <text>          (mehrzeilig via 2 CONT)
  *   2 DATE 12 JUL 2026      (aus `created` YYYY-MM-DD; leer → weggelassen)
- *   2 _WT_USER thomas       (Bearbeiter; leer → weggelassen)
+ *   2 _WT_USER anna       (Bearbeiter; leer → weggelassen)
  *   2 STAT completed        (nur bei erledigt)
  *   2 _UID 3f9a2b1c4d5e     (Modul-Task-ID für den Round-Trip)
  *

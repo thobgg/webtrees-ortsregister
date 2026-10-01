@@ -36,7 +36,7 @@ values. Because it changes records, take the usual precautions:
 
 ## Why it exists
 
-I wanted my family archive inside webtrees, not next to it. My research used to live in Ahnenblatt or Gramps, and the photos, documents and digitised records somewhere else. webtrees manages the tree cleanly and comes with a well-designed permission system. It has media management too, but that only shows what is entered as a media object in the GEDCOM.
+I wanted my family archive inside webtrees, not next to it. My research used to live in a desktop program, and the photos, documents and digitised records somewhere else. webtrees manages the tree cleanly and comes with a well-designed permission system. It has media management too, but that only shows what is entered as a media object in the GEDCOM.
 
 Ortsregister organises the archive by place. The files sit in folders and are shown without each one having to be imported into the tree first. Every place becomes a page that gathers what you have about it: photos, church books, sources, a map, notes, a research log. Plus tools to keep the places tidy, that is merging spelling variants or renaming, with preview and backup.
 

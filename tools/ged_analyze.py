@@ -8,12 +8,12 @@ erfasst NUR ortsbezogene Strukturen (PLAC + Subtree, ADDR + Subtree) und
 schreibt zwei Outputs:
 
   --report PATH   (default tools/ged_analyze_report.md)
-      Anthropic-safe Aggregat-Report: Tag-Häufigkeiten, Struktur-Schemata
+      Anonymisierter Aggregat-Report: Tag-Häufigkeiten, Struktur-Schemata
       mit Platzhaltern, Format-Pattern für _GOV/_LOC, Dubletten-Cluster-
       Anzahl. Keine konkreten Ortsnamen, IDs, Koordinaten. Teilbar.
 
   --full-out PATH (default tools/ged_analyze_full.json)
-      Konkrete Werte für Thomas zur Merge-Vorbereitung: alle PLAC-Strings
+      Konkrete Werte zur Merge-Vorbereitung: alle PLAC-Strings
       + Häufigkeit, alle _GOV-IDs, alle Koordinaten, Dubletten-Cluster
       konkret, Beispiel-Record-Pointer pro Schema. Lokal, NICHT teilbar.
 
@@ -331,7 +331,7 @@ def build_report(header: dict[str, str],
     out: list[str] = []
     out.append(f"# GEDCOM-Inventur Report")
     out.append("")
-    out.append(f"Erzeugt von `tools/ged_analyze.py`. Anthropic-safe.")
+    out.append(f"Erzeugt von `tools/ged_analyze.py`. Anonymisiert.")
     out.append("")
 
     out.append("## Header (gefiltert)")
