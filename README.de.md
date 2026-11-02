@@ -1,5 +1,7 @@
 # Ortsregister – webtrees Custom Module
 
+> **Nicht mehr gepflegt.** Dieses Modul ist seit November 2026 archiviert. Es läuft weiter mit webtrees 2.2, Aktualisierungen gibt es keine mehr.
+
 [🇬🇧 English](README.md) · 🇩🇪 **Deutsch**
 
 **Dein Familienarchiv in webtrees, geordnet nach Orten.** Jeder Ort im Stammbaum wird zu einer Archiv-Seite mit Fotos, Kirchenbüchern, Quellen, Karte und Notizen. Dazu Werkzeug, um die Orte selbst in Ordnung zu halten (Zusammenführen und Umbenennen mit Vorschau, Backup und Undo).

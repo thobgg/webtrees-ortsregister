@@ -1,5 +1,7 @@
 # Ortsregister – webtrees Custom Module
 
+> **No longer maintained.** This module is archived as of November 2026. It still works with webtrees 2.2, but there will be no further updates.
+
 🇬🇧 **English** · [🇩🇪 Deutsch](README.de.md)
 
 **Your family archive in webtrees, organised by place.** Every place in the tree becomes an archive page with photos, church books, sources, a map and notes. Plus tools to keep the places themselves tidy (merge and rename with preview, backup and undo).
